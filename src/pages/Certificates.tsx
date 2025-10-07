@@ -32,7 +32,7 @@ export default function Certificates() {
       </div>
 
       {/* Summary Card */}
-      <Card className="border-accent/30 bg-gradient-to-br from-accent/5 to-primary/5">
+      <Card className="border-accent/30 bg-accent/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-6 w-6 text-accent" />
@@ -76,7 +76,7 @@ export default function Certificates() {
           >
             <CardContent className="p-0">
               {/* Certificate Preview */}
-              <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 flex items-center justify-center border-b border-border">
+              <div className="relative aspect-[4/3] bg-primary/10 flex items-center justify-center border-b border-border">
                 <div className="text-center p-6">
                   <div className="text-6xl mb-4">{certificate.thumbnail}</div>
                   <div className="space-y-2">
@@ -154,7 +154,7 @@ export default function Certificates() {
                 </div>
 
                 <Button
-                  className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                  className="w-full bg-primary hover:bg-primary/90"
                   onClick={() => handleViewCertificate(certificate)}
                 >
                   View Full Certificate
@@ -174,7 +174,7 @@ export default function Certificates() {
             <p className="text-muted-foreground text-center mb-6">
               Complete courses and level up to earn certificates!
             </p>
-            <Button className="bg-gradient-to-r from-primary to-secondary hover:opacity-90">
+            <Button className="bg-primary hover:bg-primary/90">
               Start Learning
             </Button>
           </CardContent>

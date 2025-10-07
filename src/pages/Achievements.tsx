@@ -65,7 +65,7 @@ export default function Achievements() {
               </p>
             </div>
 
-            <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20">
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
               <h4 className="font-semibold mb-2">Level Milestones</h4>
               <div className="grid grid-cols-4 gap-2">
                 {levelTitles.slice(0, 8).map((title, index) => (
@@ -97,7 +97,7 @@ export default function Achievements() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-center p-6 rounded-lg bg-gradient-to-br from-accent/20 to-accent/10 border border-accent/30">
+            <div className="text-center p-6 rounded-lg bg-accent/20 border border-accent/30">
               <div className="text-5xl mb-2">🔥</div>
               <div className="text-4xl font-bold text-accent mb-1">{currentTeacher.streak}</div>
               <p className="text-sm font-medium text-muted-foreground">Day Streak</p>
@@ -158,7 +158,7 @@ export default function Achievements() {
                           <div
                             className={`text-6xl mx-auto w-20 h-20 flex items-center justify-center rounded-full ${
                               badge.earned
-                                ? "bg-gradient-to-br from-accent/20 to-accent/10 animate-pulse-glow"
+                                ? "bg-accent/20 animate-pulse-glow"
                                 : "bg-muted"
                             }`}
                           >
@@ -212,18 +212,18 @@ export default function Achievements() {
                 key={entry.rank}
                 className={`flex items-center gap-4 p-4 rounded-lg transition-all ${
                   entry.name === currentTeacher.name
-                    ? "bg-gradient-to-r from-primary/20 to-secondary/20 border-2 border-primary/30 shadow-lg"
+                    ? "bg-primary/20 border-2 border-primary/30 shadow-lg"
                     : "bg-muted/30 hover:bg-muted/50"
                 }`}
               >
                 <div
                   className={`flex items-center justify-center w-12 h-12 rounded-full font-bold text-lg ${
                     entry.rank === 1
-                      ? "bg-gradient-to-br from-accent to-yellow-400 text-foreground"
+                      ? "bg-accent text-foreground"
                       : entry.rank === 2
-                      ? "bg-gradient-to-br from-gray-300 to-gray-400 text-foreground"
+                      ? "bg-secondary text-foreground"
                       : entry.rank === 3
-                      ? "bg-gradient-to-br from-orange-400 to-orange-500 text-foreground"
+                      ? "bg-primary text-foreground"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >

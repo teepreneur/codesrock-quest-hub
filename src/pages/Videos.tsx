@@ -62,7 +62,7 @@ export default function Videos() {
               <Card key={video.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex gap-4">
-                    <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-3xl flex-shrink-0">
+                    <div className="w-20 h-20 rounded-lg bg-primary/20 flex items-center justify-center text-3xl flex-shrink-0">
                       {video.thumbnail}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -105,7 +105,7 @@ export default function Videos() {
               >
                 <CardContent className="p-0">
                   <div className="relative">
-                    <div className="aspect-video bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 flex items-center justify-center text-6xl">
+                    <div className="aspect-video bg-primary/20 flex items-center justify-center text-6xl">
                       {video.thumbnail}
                     </div>
                     {video.completed && (
@@ -149,7 +149,7 @@ export default function Videos() {
                       className={`w-full ${
                         video.locked
                           ? "bg-muted text-muted-foreground"
-                          : "bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                          : "bg-primary hover:bg-primary/90"
                       }`}
                       onClick={() => handlePlayVideo(video)}
                       disabled={video.locked}

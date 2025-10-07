@@ -17,7 +17,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-primary via-primary-glow to-secondary p-8 rounded-2xl text-primary-foreground">
+      <div className="bg-primary p-8 rounded-2xl text-primary-foreground">
         <h1 className="text-3xl font-bold mb-2">
           Welcome back, {currentTeacher.name.split(" ")[0]}! 👋
         </h1>
@@ -226,7 +226,7 @@ export default function Dashboard() {
           </div>
           <Button
             onClick={() => navigate("/videos")}
-            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+            className="bg-primary hover:bg-primary/90"
           >
             Continue Learning
           </Button>

@@ -38,7 +38,7 @@ export default function Evaluation() {
       </div>
 
       {/* Overall Progress Card */}
-      <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-secondary/5">
+      <Card className="border-primary/30 bg-primary/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-6 w-6 text-primary" />
@@ -57,7 +57,7 @@ export default function Evaluation() {
           </div>
 
           {completionPercentage === 100 ? (
-            <Button className="w-full bg-gradient-to-r from-accent to-accent/80 hover:opacity-90 text-foreground font-bold">
+            <Button className="w-full bg-accent hover:bg-accent/90 text-foreground font-bold">
               <Award className="mr-2 h-5 w-5" />
               Submit for Certification
             </Button>

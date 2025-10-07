@@ -105,7 +105,7 @@ export default function Calendar() {
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row gap-6">
                     {/* Date Badge */}
-                    <div className="flex-shrink-0 text-center p-4 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
+                    <div className="flex-shrink-0 text-center p-4 rounded-lg bg-primary/10 border border-primary/20">
                       <div className="text-3xl font-bold text-primary mb-1">
                         {new Date(session.date).getDate()}
                       </div>
@@ -142,7 +142,7 @@ export default function Calendar() {
                             </Badge>
                             <Button
                               onClick={() => handleJoinSession(session)}
-                              className="bg-gradient-to-r from-green-500 to-green-600 hover:opacity-90"
+                              className="bg-green-500 hover:bg-green-600"
                             >
                               Join Session
                             </Button>
@@ -196,7 +196,7 @@ export default function Calendar() {
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row gap-6">
                   {/* Video Icon */}
-                  <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br from-secondary/20 to-secondary/10 flex items-center justify-center">
+                  <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-secondary/20 flex items-center justify-center">
                     <Video className="h-8 w-8 text-secondary" />
                   </div>
 

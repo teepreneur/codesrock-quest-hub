@@ -22,14 +22,14 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-secondary/5 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="bg-card rounded-2xl shadow-xl border border-border p-8 animate-scale-in">
           <div className="text-center mb-8">
             <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center animate-bounce-subtle">
               <img src={codesrockLogo} alt="CodesRock Logo" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold mb-2 text-primary">
               CodesRock
             </h1>
             <p className="text-muted-foreground">Teacher Training Portal</p>
@@ -75,7 +75,7 @@ export default function Login() {
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-primary-foreground font-medium"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
               disabled={loading}
             >
               {loading ? "Logging in..." : "Login"}

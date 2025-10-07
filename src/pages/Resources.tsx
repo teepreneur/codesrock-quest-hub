@@ -121,7 +121,7 @@ export default function Resources() {
               >
                 <CardContent className="p-6">
                   <div className="flex gap-4">
-                    <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center text-3xl flex-shrink-0">
+                    <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center text-3xl flex-shrink-0">
                       {resource.thumbnail}
                     </div>
 
@@ -154,7 +154,7 @@ export default function Resources() {
                       <div className="flex items-center gap-2">
                         <Button
                           size="sm"
-                          className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+                          className="flex-1 bg-primary hover:bg-primary/90"
                           onClick={() => handleDownload(resource)}
                         >
                           <Download className="mr-2 h-3 w-3" />

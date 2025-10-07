@@ -33,7 +33,7 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground text-sm font-medium">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium">
           <span className="text-lg">⚡</span>
           <span>{currentTeacher.xp} XP</span>
         </div>
