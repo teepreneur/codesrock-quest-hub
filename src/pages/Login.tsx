@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import codesrockLogo from "@/assets/codesrock-logo.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,8 +26,8 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="bg-card rounded-2xl shadow-xl border border-border p-8 animate-scale-in">
           <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-4xl animate-bounce-subtle">
-              🤖
+            <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center animate-bounce-subtle">
+              <img src={codesrockLogo} alt="CodesRock Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               CodesRock

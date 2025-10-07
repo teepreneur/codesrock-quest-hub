@@ -1,5 +1,6 @@
 import { Home, Play, BookOpen, CheckSquare, Trophy, Award, Calendar } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import codesrockLogo from "@/assets/codesrock-logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -30,9 +31,7 @@ export function AppSidebar() {
       <SidebarContent>
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl">
-              🤖
-            </div>
+            <img src={codesrockLogo} alt="CodesRock Logo" className="w-10 h-10 object-contain" />
             {open && (
               <div>
                 <h2 className="font-bold text-lg text-foreground">CodesRock</h2>
