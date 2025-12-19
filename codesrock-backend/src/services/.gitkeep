@@ -1,0 +1,8 @@
+# Services
+
+This directory contains business logic and service layer code.
+
+Example:
+- authService.ts - Authentication business logic
+- emailService.ts - Email sending functionality
+- achievementService.ts - Achievement tracking logic

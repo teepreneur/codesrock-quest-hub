@@ -1,0 +1,7 @@
+# Controllers
+
+This directory contains route controllers that handle the business logic for each endpoint.
+
+Example:
+- authController.ts - Handles authentication logic (register, login, etc.)
+- userController.ts - Handles user-related operations

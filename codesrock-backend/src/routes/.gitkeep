@@ -1,0 +1,7 @@
+# Routes
+
+This directory contains API route definitions.
+
+Example:
+- authRoutes.ts - Authentication routes
+- userRoutes.ts - User routes
