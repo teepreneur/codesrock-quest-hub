@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Single Page Apps for GitHub Pages
+    // https://github.com/rafgraph/spa-github-pages
+    // This script redirects all 404s to index.html for SPA routing
+    const pathSegmentsToKeep = 1; // Keep /codesrock-quest-hub
+    const locationPath = window.location.pathname.split('/').slice(0, pathSegmentsToKeep + 1).join('/');
+    const redirectPath = window.location.pathname.slice(locationPath.length);
+    const query = window.location.search;
+    const hash = window.location.hash;
+
+    sessionStorage.setItem('redirect', redirectPath + query + hash);
+    window.location.replace(locationPath + '/');
+  </script>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html>
