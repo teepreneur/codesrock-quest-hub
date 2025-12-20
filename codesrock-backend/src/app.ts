@@ -13,7 +13,17 @@ import adminRoutes from './routes/admin';
 // Initialize express app
 const app: Application = express();
 
-// CORS configuration - Allow any localhost port for development
+// CORS configuration
+const allowedOrigins = [
+  // GitHub Pages
+  'https://teepreneur.github.io',
+  // Custom domain (if configured)
+  'https://portal.codesrock.com',
+  'http://portal.codesrock.com',
+  // Additional origins from environment variable
+  ...(process.env.ALLOWED_ORIGINS?.split(',') || []),
+];
+
 const corsOptions = {
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow requests with no origin (like mobile apps or Postman)
@@ -24,13 +34,12 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // For production, you'd want to be more restrictive
-    // In production, check against specific domains
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+    // Check against allowed origins
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
+    console.log('CORS blocked origin:', origin);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
