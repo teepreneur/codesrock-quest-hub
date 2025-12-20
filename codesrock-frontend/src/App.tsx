@@ -3,9 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
-// Get basename for GitHub Pages deployment
-const basename = import.meta.env.PROD ? "/codesrock-quest-hub" : "";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AdminRoute } from "./components/AdminRoute";
 import Login from "./pages/Login";
@@ -31,7 +28,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename={basename}>
+      <BrowserRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />

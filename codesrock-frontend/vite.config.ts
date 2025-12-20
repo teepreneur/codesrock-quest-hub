@@ -5,8 +5,8 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // Set base for GitHub Pages deployment
-  base: mode === "production" ? "/codesrock-quest-hub/" : "/",
+  // Base is "/" for custom domain (portal.codesrock.com)
+  base: "/",
   server: {
     host: "::",
     port: 8080,
