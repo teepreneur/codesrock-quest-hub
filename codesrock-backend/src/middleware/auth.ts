@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../config/supabase';
 import { AppError } from './errorHandler';
-import '../types/express.d';
+import '../types/express';
 
 
 /**

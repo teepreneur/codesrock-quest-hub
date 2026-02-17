@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from './errorHandler';
 import { supabase } from '../config/supabase';
-import '../types/express.d';
+import '../types/express';
 
 /**
  * Middleware to check if user has required role.
