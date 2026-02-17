@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trophy, Lock, Star, Award } from "lucide-react";
+import { Trophy, Lock, Star, Award, Medal } from "lucide-react";
 import { toast } from "sonner";
 
 import { gamificationService, type Badge as BadgeType, type UserBadge, type LeaderboardEntry } from "@/services/gamification.service";
@@ -89,7 +89,10 @@ export default function Achievements() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Achievements 🏆</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <Trophy className="h-8 w-8 text-yellow-500" />
+            <h1 className="text-3xl font-bold">Achievements</h1>
+          </div>
           <p className="text-muted-foreground">
             Earn badges and climb the leaderboard
           </p>
@@ -135,8 +138,8 @@ export default function Achievements() {
                 className={`${earned ? 'border-primary/40' : 'opacity-60'} hover:scale-105 transition-transform cursor-pointer`}
               >
                 <CardContent className="p-6 text-center space-y-2">
-                  <div className="text-5xl mb-2">
-                    {earned ? badge.icon : '🔒'}
+                  <div className="text-5xl mb-2 flex justify-center h-[48px] items-center">
+                    {earned ? badge.icon : <Lock className="h-10 w-10 text-muted-foreground/50" />}
                   </div>
                   <h3 className="font-semibold text-sm">{badge.name}</h3>
                   <p className="text-xs text-muted-foreground min-h-[40px]">
@@ -185,16 +188,18 @@ export default function Achievements() {
               return (
                 <div
                   key={entry._id}
-                  className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
-                    isCurrentUser
+                  className={`flex items-center justify-between p-4 rounded-lg transition-colors ${isCurrentUser
                       ? 'bg-primary/10 border-2 border-primary'
                       : 'bg-secondary/20 hover:bg-secondary/30'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-4">
                     {/* Rank */}
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-background font-bold text-lg">
-                      {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
+                      {rank === 1 ? <Medal className="h-6 w-6 text-yellow-500" /> :
+                        rank === 2 ? <Medal className="h-6 w-6 text-gray-400" /> :
+                          rank === 3 ? <Medal className="h-6 w-6 text-amber-700" /> :
+                            rank}
                     </div>
 
                     {/* User Info */}

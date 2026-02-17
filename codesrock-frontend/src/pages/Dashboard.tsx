@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trophy, BookOpen, Clock, TrendingUp, Flame, Award, AlertCircle } from "lucide-react";
+import { Trophy, BookOpen, Clock, TrendingUp, Flame, Award, AlertCircle, Target, Star, LogIn, Sparkles, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { dashboardService, type DashboardData } from "@/services/dashboard.service";
 import { authService } from "@/services/auth.service";
@@ -108,7 +108,8 @@ export default function Dashboard() {
       {/* Welcome Section */}
       <div className="bg-primary p-8 rounded-2xl text-primary-foreground">
         <h1 className="text-3xl font-bold mb-2">
-          Welcome back, {user.firstName}! 👋
+          Welcome back, {user.firstName}!
+
         </h1>
         <p className="text-primary-foreground/90">
           You're doing amazing! Keep up the great work on your coding journey.
@@ -187,12 +188,16 @@ export default function Dashboard() {
               <Progress value={levelProgress} className="h-3" />
               <div className="flex items-center justify-between">
                 <div className="text-center">
-                  <div className="text-2xl mb-1">🎯</div>
+                  <div className="flex justify-center mb-1">
+                    <Target className="h-6 w-6 text-primary" />
+                  </div>
                   <p className="text-xs text-muted-foreground">Level {progress.currentLevel}</p>
                 </div>
                 <div className="flex-1 h-px bg-border mx-4" />
                 <div className="text-center">
-                  <div className="text-2xl mb-1">⭐</div>
+                  <div className="flex justify-center mb-1">
+                    <Star className="h-6 w-6 text-secondary" />
+                  </div>
                   <p className="text-xs text-muted-foreground">Level {progress.currentLevel + 1}</p>
                 </div>
               </div>
@@ -255,10 +260,11 @@ export default function Dashboard() {
               {recentActivities && recentActivities.length > 0 ? (
                 recentActivities.slice(0, 5).map((activity, index) => (
                   <div key={index} className="flex items-start gap-3">
-                    <div className="text-2xl">
-                      {activity.type === 'course_completed' ? '📚' :
-                       activity.type === 'badge_earned' ? '🏆' :
-                       activity.type === 'login' ? '👋' : '✨'}
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary/10">
+                      {activity.type === 'course_completed' ? <BookOpen className="h-5 w-5 text-primary" /> :
+                        activity.type === 'badge_earned' ? <Award className="h-5 w-5 text-accent" /> :
+                          activity.type === 'login' ? <LogIn className="h-5 w-5 text-muted-foreground" /> :
+                            <Sparkles className="h-5 w-5 text-secondary" />}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm">{activity.description}</p>
@@ -338,7 +344,9 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex items-center gap-6">
-            <div className="text-5xl">📚</div>
+            <div className="p-3 bg-primary/10 rounded-full">
+              <GraduationCap className="h-8 w-8 text-primary" />
+            </div>
             <div className="flex-1">
               <h3 className="font-semibold text-lg mb-1">
                 {recommendedCourses[0].title}

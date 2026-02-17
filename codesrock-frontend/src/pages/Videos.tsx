@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play, Lock, CheckCircle, Search, Clock, Star, X } from "lucide-react";
+import { Play, Lock, CheckCircle, Search, Clock, Star, X, Video } from "lucide-react";
 import { toast } from "sonner";
 
 import { courseService, type CourseWithProgress } from "@/services/course.service";
@@ -167,7 +167,7 @@ export default function Videos() {
 
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         course.description.toLowerCase().includes(searchQuery.toLowerCase());
+      course.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || course.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -191,7 +191,12 @@ export default function Videos() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Video Library 🎥</h1>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Video className="h-6 w-6 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold">Video Library</h1>
+        </div>
         <p className="text-muted-foreground">
           Learn at your own pace with our comprehensive video courses
         </p>
@@ -265,9 +270,8 @@ export default function Videos() {
               return (
                 <Card
                   key={course.id}
-                  className={`hover:shadow-lg transition-shadow ${
-                    isCompleted ? 'border-green-500/30' : ''
-                  } ${isLocked ? 'opacity-60' : ''}`}
+                  className={`hover:shadow-lg transition-shadow ${isCompleted ? 'border-green-500/30' : ''
+                    } ${isLocked ? 'opacity-60' : ''}`}
                 >
                   <CardHeader>
                     <div className="flex justify-between items-start mb-2">
