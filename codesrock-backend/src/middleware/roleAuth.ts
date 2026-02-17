@@ -1,64 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from './errorHandler';
 import { supabase } from '../config/supabase';
-
-// Extend Express Request to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        userId: string;
-        email: string;
-        role?: string;
-        firstName?: string;
-        lastName?: string;
-      };
-    }
-  }
-}
+import '../types/express.d';
 
 /**
- * Middleware to check if user has required role
+ * Middleware to check if user has required role.
+ * IMPORTANT: This must run AFTER the `protect` middleware, which attaches
+ * req.user with role data from the profiles table. This avoids a redundant
+ * database query.
  * @param roles - Array of allowed roles
  */
 export const requireRole = (roles: string[]) => {
-  return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
     try {
       if (!req.user) {
         throw new AppError('Authentication required', 401);
       }
 
-      // Fetch user from Supabase to get current role
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', req.user.userId)
-        .single();
-
-      if (error || !profile) {
-        throw new AppError('User not found', 404);
-      }
-
-      // Check if user is active
-      if (!profile.is_active) {
-        throw new AppError('Account is deactivated', 403);
-      }
-
-      // Check if user has required role
-      if (!roles.includes(profile.role)) {
+      // Role is already populated by the `protect` middleware
+      if (!req.user.role || !roles.includes(req.user.role)) {
         throw new AppError(
           'You do not have permission to access this resource',
           403
         );
       }
-
-      // Update user in request with full profile data
-      req.user = {
-        ...req.user,
-        role: profile.role,
-        firstName: profile.first_name,
-        lastName: profile.last_name,
-      };
 
       next();
     } catch (error) {
@@ -92,29 +57,23 @@ export const requireContentAdmin = requireRole(['content_admin', 'super_admin'])
 export const requireSchoolAdmin = requireRole(['school_admin', 'super_admin']);
 
 /**
- * Middleware to check granular permissions
+ * Middleware to check granular permissions.
+ * IMPORTANT: This must run AFTER the `protect` middleware, which attaches
+ * req.user with role data from the profiles table.
  * @param resource - Resource name (e.g., 'users', 'courses')
  * @param action - Action name (e.g., 'create', 'read', 'update', 'delete')
  */
 export const requirePermission = (resource: string, action: string) => {
-  return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
     try {
       if (!req.user) {
         throw new AppError('Authentication required', 401);
       }
 
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', req.user.userId)
-        .single();
-
-      if (error || !profile) {
-        throw new AppError('User not found', 404);
-      }
+      const userRole = req.user.role;
 
       // Super admin has all permissions
-      if (profile.role === 'super_admin') {
+      if (userRole === 'super_admin') {
         return next();
       }
 
@@ -148,7 +107,7 @@ export const requirePermission = (resource: string, action: string) => {
       };
 
       const permissionString = `${resource}:${action}`;
-      const userDefaultPermissions = defaultPermissions[profile.role] || [];
+      const userDefaultPermissions = defaultPermissions[userRole || ''] || [];
 
       if (userDefaultPermissions.includes(permissionString)) {
         return next();

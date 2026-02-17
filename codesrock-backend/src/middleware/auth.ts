@@ -1,21 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../config/supabase';
 import { AppError } from './errorHandler';
+import '../types/express.d';
 
-// Extend Express Request type to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        userId: string;
-        email: string;
-        role?: string;
-        firstName?: string;
-        lastName?: string;
-      };
-    }
-  }
-}
 
 /**
  * Protect routes - Verify Supabase authentication
