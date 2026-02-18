@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Search, User } from "lucide-react";
+import { Bell, Search, User, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -26,6 +26,7 @@ export function AppHeader() {
   const userXP = userProgress?.totalXP || 0;
   const userLevel = userProgress?.currentLevel || 1;
   const levelTitle = userProgress?.levelName || levelTitles[userLevel - 1] || "Code Cadet";
+  const isAdmin = user?.role && ['super_admin', 'school_admin', 'content_admin'].includes(user.role);
 
   useEffect(() => {
     const loadUserProgress = async () => {
@@ -44,7 +45,7 @@ export function AppHeader() {
   return (
     <header className="h-16 border-b border-border bg-card flex items-center px-6 gap-4">
       <SidebarTrigger />
-      
+
       <div className="flex-1 max-w-md">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -56,10 +57,12 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium">
-          <span className="text-lg">⚡</span>
-          <span>{userXP} XP</span>
-        </div>
+        {!isAdmin && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium">
+            <Zap className="h-4 w-4 fill-current" />
+            <span>{userXP} XP</span>
+          </div>
+        )}
 
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -76,7 +79,7 @@ export function AppHeader() {
               </div>
               <div className="text-left hidden md:block">
                 <p className="text-sm font-medium">{userName}</p>
-                <p className="text-xs text-muted-foreground">{levelTitle}</p>
+                <p className="text-xs text-muted-foreground">{isAdmin ? 'Administrator' : levelTitle}</p>
               </div>
             </Button>
           </DropdownMenuTrigger>
