@@ -15,6 +15,8 @@ import Achievements from "./pages/Achievements";
 import Certificates from "./pages/Certificates";
 import Calendar from "./pages/Calendar";
 import NotFound from "./pages/NotFound";
+import Classes from "./pages/Classes";
+import ClassDetails from "./pages/ClassDetails";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import ContentManagement from "./pages/admin/ContentManagement";
@@ -40,6 +42,8 @@ const App = () => (
           <Route path="/achievements" element={<AppLayout><Achievements /></AppLayout>} />
           <Route path="/certificates" element={<AppLayout><Certificates /></AppLayout>} />
           <Route path="/calendar" element={<AppLayout><Calendar /></AppLayout>} />
+          <Route path="/classes" element={<AppLayout><Classes /></AppLayout>} />
+          <Route path="/classes/:id" element={<AppLayout><ClassDetails /></AppLayout>} />
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminRoute><AppLayout><AdminDashboard /></AppLayout></AdminRoute>} />
           <Route path="/admin/users" element={<AdminRoute><AppLayout><UserManagement /></AppLayout></AdminRoute>} />

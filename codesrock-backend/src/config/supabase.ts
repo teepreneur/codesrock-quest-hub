@@ -25,7 +25,7 @@ export interface Database {
           email: string;
           first_name: string;
           last_name: string;
-          role: 'teacher' | 'school_admin' | 'content_admin' | 'super_admin';
+          role: 'teacher' | 'school_admin' | 'content_admin' | 'super_admin' | 'student';
           school_id?: string;
           is_active: boolean;
           created_at: string;
@@ -177,6 +177,29 @@ export interface Database {
           attended: boolean;
           xp_awarded: boolean;
         };
+      };
+      classes: {
+        Row: {
+          id: string;
+          name: string;
+          teacher_id: string;
+          course_id?: string;
+          school_id?: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['classes']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Database['public']['Tables']['classes']['Insert']>;
+      };
+      class_students: {
+        Row: {
+          id: string;
+          class_id: string;
+          student_id: string;
+          enrolled_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['class_students']['Row'], 'id' | 'enrolled_at'>;
+        Update: Partial<Database['public']['Tables']['class_students']['Insert']>;
       };
     };
     Functions: {

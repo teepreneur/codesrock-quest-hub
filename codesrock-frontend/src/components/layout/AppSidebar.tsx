@@ -17,6 +17,7 @@ import {
 const teacherMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "Video Library", url: "/videos", icon: Play },
+  { title: "My Classes", url: "/classes", icon: Users },
   { title: "Resources", url: "/resources", icon: BookOpen },
   { title: "Evaluation", url: "/evaluation", icon: CheckSquare },
   { title: "Achievements", url: "/achievements", icon: Trophy },

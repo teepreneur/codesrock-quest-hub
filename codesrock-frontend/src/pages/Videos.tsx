@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { courseService, type CourseWithProgress } from "@/services/course.service";
 import { authService } from "@/services/auth.service";
 import { YouTubePlayer } from "@/components/video/YouTubePlayer";
+import { QuestMap } from "@/components/learning/QuestMap";
 
 // Helper function to extract YouTube video ID from URL
 const extractYouTubeVideoId = (url: string | undefined): string | null => {
@@ -69,7 +70,6 @@ export default function Videos() {
       }
 
       const data = await courseService.getCourses({ userId: user.id });
-      console.log('Courses loaded:', data);
       setCourses(data);
     } catch (error) {
       console.error('Failed to load courses:', error);
@@ -261,7 +261,32 @@ export default function Videos() {
         </TabsList>
 
         <TabsContent value={selectedCategory} className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-card/50 backdrop-blur-sm border rounded-xl overflow-hidden mb-8">
+            <QuestMap 
+              nodes={filteredCourses.map(course => ({
+                id: course.id,
+                title: course.title,
+                status: course.isCompleted || (course.progress || 0) >= 100 
+                  ? 'completed' 
+                  : course.isLocked 
+                    ? 'locked' 
+                    : (course.progress || 0) > 0 
+                      ? 'in-progress' 
+                      : 'available',
+                type: 'video',
+                xpReward: course.xpReward
+              }))}
+              onNodeClick={(node) => {
+                const course = courses.find(c => c.id === node.id);
+                if (course) handleWatchVideo(course);
+              }}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-40 hover:opacity-100 transition-opacity">
+            <div className="col-span-full border-b pb-2 mb-4">
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Detailed View</h3>
+            </div>
             {filteredCourses.map(course => {
               const isCompleted = course.isCompleted || (course.progress || 0) >= 100;
               const isLocked = course.isLocked || false;
@@ -270,82 +295,51 @@ export default function Videos() {
               return (
                 <Card
                   key={course.id}
-                  className={`hover:shadow-lg transition-shadow ${isCompleted ? 'border-green-500/30' : ''
-                    } ${isLocked ? 'opacity-60' : ''}`}
+                  className={`hover:shadow-lg transition-shadow overflow-hidden group ${
+                    isCompleted ? 'border-green-500/30' : ''
+                  } ${isLocked ? 'opacity-60' : ''}`}
                 >
-                  <CardHeader>
-                    <div className="flex justify-between items-start mb-2">
+                  <div className={`h-1 w-full ${isCompleted ? 'bg-green-500' : 'bg-primary/20 group-hover:bg-primary transition-colors'}`} />
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <CardTitle className="text-lg mb-2">{course.title}</CardTitle>
                         <div className="flex gap-2 flex-wrap">
-                          <Badge variant="secondary">{course.category}</Badge>
-                          <Badge variant="outline">{course.difficulty}</Badge>
-                          {isCompleted && (
-                            <Badge className="bg-green-500">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Completed
-                            </Badge>
-                          )}
+                          <Badge variant="secondary" className="text-[10px]">{course.category}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{course.difficulty}</Badge>
                         </div>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-1">
                       {course.description}
                     </p>
 
                     <div className="space-y-3">
-                      {/* Duration and XP */}
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-xs">
                         <span className="flex items-center gap-1 text-muted-foreground">
-                          <Clock className="h-4 w-4" />
+                          <Clock className="h-3 w-3" />
                           {course.duration} min
                         </span>
                         <span className="flex items-center gap-1 text-primary font-semibold">
-                          <Star className="h-4 w-4" />
+                          <Star className="h-3 w-3" />
                           +{course.xpReward} XP
                         </span>
                       </div>
 
-                      {/* Progress Bar */}
                       {progress > 0 && !isCompleted && (
-                        <div>
-                          <Progress value={progress} />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {progress}% complete
-                          </p>
-                        </div>
+                        <Progress value={progress} className="h-1" />
                       )}
 
-                      {/* Watch Button */}
                       <Button
-                        className="w-full"
+                        size="sm"
+                        className="w-full h-8"
                         onClick={() => handleWatchVideo(course)}
                         disabled={isLocked}
                         variant={isCompleted ? 'outline' : 'default'}
                       >
-                        {isLocked ? (
-                          <>
-                            <Lock className="mr-2 h-4 w-4" />
-                            Locked
-                          </>
-                        ) : isCompleted ? (
-                          <>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Review
-                          </>
-                        ) : progress > 0 ? (
-                          <>
-                            <Play className="mr-2 h-4 w-4" />
-                            Continue
-                          </>
-                        ) : (
-                          <>
-                            <Play className="mr-2 h-4 w-4" />
-                            Start
-                          </>
-                        )}
+                        {isLocked ? 'Locked' : isCompleted ? 'Review' : 'Watch'}
                       </Button>
                     </div>
                   </CardContent>
@@ -372,14 +366,6 @@ export default function Videos() {
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>{watchingCourse?.title}</DialogTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={closePlayer}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           </DialogHeader>
           {watchingCourse && (
@@ -400,15 +386,6 @@ export default function Videos() {
                     {watchingCourse.duration} min
                   </span>
                 </div>
-                <span className="flex items-center gap-1 text-primary font-semibold">
-                  <Star className="h-4 w-4" />
-                  +{watchingCourse.xpReward} XP
-                </span>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {watchingCourse.description}
-                </p>
               </div>
             </div>
           )}

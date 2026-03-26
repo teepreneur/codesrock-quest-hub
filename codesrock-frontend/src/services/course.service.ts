@@ -7,7 +7,7 @@ import { apiService } from './api.service';
 import { API_CONFIG } from '../config/api.config';
 
 export interface Course {
-  _id: string;
+  id: string;
   title: string;
   description: string;
   thumbnail: string;
@@ -24,7 +24,7 @@ export interface Course {
 }
 
 export interface VideoProgress {
-  _id: string;
+  id: string;
   userId: string;
   courseId: string;
   watchedSeconds: number;
@@ -33,6 +33,7 @@ export interface VideoProgress {
   completed: boolean;
   xpAwarded: boolean;
   xpReward?: number;
+  justCompleted?: boolean;
   notes?: string;
   bookmarks: Array<{
     time: number;
