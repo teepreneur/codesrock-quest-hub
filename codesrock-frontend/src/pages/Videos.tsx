@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { courseService, type CourseWithProgress, type CourseDetail, type VideoItem } from "@/services/course.service";
 import { authService } from "@/services/auth.service";
 import { YouTubePlayer } from "@/components/video/YouTubePlayer";
+import { QuestMap } from "@/components/learning/QuestMap";
 
 // Helper function to extract YouTube video ID from URL
 const extractYouTubeVideoId = (url: string | undefined): string | null => {
@@ -195,34 +196,29 @@ export default function Videos() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <CardContent className="pt-0 pb-4">
-                      <div className="space-y-2 ml-8">
-                        {(topic.videos || []).map((video: any, vIdx: number) => {
-                          const isCompleted = video.userProgress?.completed;
-                          const hasVideoUrl = !!extractYouTubeVideoId(video.video_url);
-
-                          return (
-                            <div key={video.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${isCompleted ? "bg-green-500/5 border-green-500/20" : "hover:bg-muted/50"}`}>
-                              <div className="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0" style={{ background: isCompleted ? "var(--green-500, #22c55e)" : "var(--primary, hsl(var(--primary)))", color: "white", opacity: isCompleted ? 1 : 0.8 }}>
-                                {isCompleted ? <CheckCircle className="h-4 w-4" /> : <span className="text-xs font-bold">{vIdx + 1}</span>}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-sm font-medium truncate ${isCompleted ? "text-green-700 dark:text-green-400" : ""}`}>{video.title}</p>
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{video.duration} min</span>
-                                  <span className="flex items-center gap-1"><Star className="h-3 w-3" />+{video.xp_reward} XP</span>
-                                </div>
-                              </div>
-                              <Button size="sm" variant={isCompleted ? "outline" : "default"} disabled={!hasVideoUrl} onClick={() => handleWatchVideo(video, course.id)} className="flex-shrink-0">
-                                <Play className="h-3 w-3 mr-1" />
-                                {isCompleted ? "Review" : "Watch"}
-                              </Button>
-                            </div>
-                          );
-                        })}
-                        {(topic.videos || []).length === 0 && (
-                          <p className="text-sm text-muted-foreground text-center py-4">No videos in this topic yet</p>
-                        )}
-                      </div>
+                      {(topic.videos || []).length > 0 ? (
+                        <div className="bg-card/50 backdrop-blur-sm border rounded-xl overflow-hidden">
+                          <QuestMap
+                            nodes={(topic.videos || []).map((video: any) => ({
+                              id: video.id,
+                              title: video.title,
+                              status: video.userProgress?.completed
+                                ? 'completed'
+                                : video.userProgress?.watchPercentage > 0
+                                  ? 'in-progress'
+                                  : 'available',
+                              type: 'video' as const,
+                              xpReward: video.xp_reward,
+                            }))}
+                            onNodeClick={(node) => {
+                              const video = (topic.videos || []).find((v: any) => v.id === node.id);
+                              if (video) handleWatchVideo(video, course.id);
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No videos in this topic yet</p>
+                      )}
                     </CardContent>
                   </CollapsibleContent>
                 </Collapsible>
