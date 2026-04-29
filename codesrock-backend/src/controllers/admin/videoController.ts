@@ -74,7 +74,7 @@ export const createVideo = async (
         .eq('topic_id', topicId)
         .order('order_index', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       order = (lastVideo?.order_index || 0) + 1;
     }

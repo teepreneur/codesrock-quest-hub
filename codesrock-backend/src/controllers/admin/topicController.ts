@@ -87,7 +87,7 @@ export const createTopic = async (
         .eq('course_id', courseId)
         .order('order_index', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       order = (lastTopic?.order_index || 0) + 1;
     }
