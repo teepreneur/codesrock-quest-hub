@@ -35,16 +35,16 @@ router.use(auditLog);
 // Content stats
 router.get('/stats', getContentStats);
 
-// Course routes
+// Course routes — specific nested routes MUST come before generic :id route
 router.route('/courses').get(getAllCourses).post(createCourse);
+router.route('/courses/:courseId/topics').get(getTopicsByCourse).post(createTopic);
 router.route('/courses/:id').put(updateCourse).delete(deleteCourse);
 
-// Topic routes (nested under courses)
-router.route('/courses/:courseId/topics').get(getTopicsByCourse).post(createTopic);
+// Topic routes
+router.route('/topics/:topicId/videos').get(getVideosByTopic).post(createVideo);
 router.route('/topics/:topicId').put(updateTopic).delete(deleteTopic);
 
-// Video routes (nested under topics)
-router.route('/topics/:topicId/videos').get(getVideosByTopic).post(createVideo);
+// Video routes
 router.route('/videos/:videoId').put(updateVideo).delete(deleteVideo);
 
 // Resource routes
