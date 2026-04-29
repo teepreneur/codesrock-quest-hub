@@ -1,17 +1,16 @@
 /**
  * Course Service
- * Handles all course-related API calls
+ * Handles all course-related API calls for the teacher portal
  */
 
 import { apiService } from './api.service';
 import { API_CONFIG } from '../config/api.config';
 
-export interface Course {
+export interface CourseWithProgress {
   id: string;
   title: string;
   description: string;
   thumbnail: string;
-  videoUrl: string;
   category: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   duration: number;
@@ -19,38 +18,78 @@ export interface Course {
   prerequisites: string[];
   order: number;
   tags: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface VideoProgress {
-  id: string;
-  userId: string;
-  courseId: string;
-  watchedSeconds: number;
-  totalSeconds: number;
-  progressPercentage: number;
-  completed: boolean;
-  xpAwarded: boolean;
-  xpReward?: number;
-  justCompleted?: boolean;
-  notes?: string;
-  bookmarks: Array<{
-    time: number;
-    note: string;
-  }>;
-  lastWatchedAt: string;
-}
-
-export interface CourseWithProgress extends Course {
+  isActive: boolean;
+  topicCount: number;
+  videoCount: number;
+  userProgress: {
+    completedVideos: number;
+    totalVideos: number;
+    progressPercentage: number;
+    isCompleted: boolean;
+  } | null;
+  // Legacy compat
   progress?: number;
   isCompleted?: boolean;
   isLocked?: boolean;
 }
 
+export interface TopicWithVideos {
+  id: string;
+  course_id: string;
+  title: string;
+  description: string;
+  thumbnail: string | null;
+  order_index: number;
+  is_active: boolean;
+  videoCount: number;
+  videos: VideoItem[];
+}
+
+export interface VideoItem {
+  id: string;
+  topic_id: string;
+  course_id: string;
+  title: string;
+  description: string;
+  video_url: string | null;
+  thumbnail: string | null;
+  duration: number;
+  xp_reward: number;
+  order_index: number;
+  is_active: boolean;
+  view_count: number;
+  completion_count: number;
+  userProgress: {
+    completed: boolean;
+    watchPercentage: number;
+    lastWatchedAt: string;
+  } | null;
+}
+
+export interface CourseDetail {
+  course: CourseWithProgress & {
+    topics: TopicWithVideos[];
+  };
+  courseProgress: {
+    completedVideos: number;
+    totalVideos: number;
+    progressPercentage: number;
+    isCompleted: boolean;
+  } | null;
+}
+
+export interface VideoProgressResult {
+  progress: {
+    completed: boolean;
+    progressPercentage: number;
+    xpAwarded: boolean;
+  };
+  justCompleted: boolean;
+}
+
 class CourseService {
   /**
-   * Get all courses with user progress
+   * Get all courses with topic/video counts and user progress
    */
   async getCourses(filters?: {
     category?: string;
@@ -73,10 +112,14 @@ class CourseService {
   }
 
   /**
-   * Get course by ID
+   * Get course by ID with full hierarchy (topics → videos) and user progress
    */
-  async getCourseById(id: string): Promise<Course> {
-    return apiService.get<Course>(API_CONFIG.ENDPOINTS.COURSES.BY_ID(id));
+  async getCourseById(id: string, userId?: string): Promise<CourseDetail> {
+    let endpoint = API_CONFIG.ENDPOINTS.COURSES.BY_ID(id);
+    if (userId) {
+      endpoint += `?userId=${userId}`;
+    }
+    return apiService.get<CourseDetail>(endpoint);
   }
 
   /**
@@ -84,32 +127,32 @@ class CourseService {
    */
   async updateVideoProgress(
     userId: string,
+    videoId: string,
     courseId: string,
     watchedSeconds: number,
     totalSeconds: number,
-    notes?: string
-  ): Promise<VideoProgress> {
-    return apiService.post<VideoProgress>('/courses/progress', {
+  ): Promise<VideoProgressResult> {
+    return apiService.post<VideoProgressResult>('/courses/progress', {
       userId,
+      videoId,
       courseId,
       watchedSeconds: Math.floor(watchedSeconds),
-      totalSeconds: Math.floor(totalSeconds) || 1, // Ensure at least 1 to avoid validation error
-      notes,
+      totalSeconds: Math.floor(totalSeconds) || 1,
     });
   }
 
   /**
    * Get user's course progress for all courses
    */
-  async getUserCourseProgress(userId: string): Promise<VideoProgress[]> {
-    return apiService.get<VideoProgress[]>(`/courses/progress/${userId}`);
+  async getUserCourseProgress(userId: string): Promise<any> {
+    return apiService.get(`/courses/progress/${userId}`);
   }
 
   /**
    * Get recommended courses for user
    */
-  async getRecommendedCourses(userId: string): Promise<Course[]> {
-    return apiService.get<Course[]>(`/courses/recommended/${userId}`);
+  async getRecommendedCourses(userId: string): Promise<CourseWithProgress[]> {
+    return apiService.get<CourseWithProgress[]>(`/courses/recommended/${userId}`);
   }
 
   /**

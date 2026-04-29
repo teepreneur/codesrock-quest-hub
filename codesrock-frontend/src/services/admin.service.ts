@@ -4,7 +4,6 @@
  */
 
 import { apiService } from './api.service';
-import { API_CONFIG } from '../config/api.config';
 
 // Types
 export interface UserStats {
@@ -126,16 +125,12 @@ export interface UserCredentials {
 }
 
 class AdminService {
-  /**
-   * Get user statistics
-   */
+  // ==================== User Management ====================
+
   async getUserStats(): Promise<UserStats> {
     return apiService.get<UserStats>('/admin/users/stats');
   }
 
-  /**
-   * Get all users with pagination and filters
-   */
   async getAllUsers(params?: {
     page?: number;
     limit?: number;
@@ -151,13 +146,9 @@ class AdminService {
     if (params?.schoolId) queryParams.append('schoolId', params.schoolId);
     if (params?.isActive !== undefined) queryParams.append('isActive', params.isActive.toString());
     if (params?.search) queryParams.append('search', params.search);
-
     return apiService.get<PaginatedUsers>(`/admin/users?${queryParams.toString()}`);
   }
 
-  /**
-   * Alias for getAllUsers (for compatibility)
-   */
   async getUsers(params?: {
     page?: number;
     limit?: number;
@@ -169,72 +160,46 @@ class AdminService {
     return this.getAllUsers(params);
   }
 
-  /**
-   * Get single user by ID
-   */
   async getUserById(userId: string): Promise<{ user: User; progress: any }> {
     return apiService.get<{ user: User; progress: any }>(`/admin/users/${userId}`);
   }
 
-  /**
-   * Create new user with auto-generated credentials
-   */
   async createUser(data: CreateUserData): Promise<{ user: User; credentials?: UserCredentials }> {
     return apiService.post<{ user: User; credentials?: UserCredentials }>('/admin/users', data);
   }
 
-  /**
-   * Update user
-   */
   async updateUser(userId: string, data: UpdateUserData): Promise<{ user: User }> {
     return apiService.put<{ user: User }>(`/admin/users/${userId}`, data);
   }
 
-  /**
-   * Delete/deactivate user
-   */
   async deleteUser(userId: string): Promise<void> {
     return apiService.delete(`/admin/users/${userId}`);
   }
 
-  /**
-   * Reset user password (generates new secure password)
-   */
   async resetUserPassword(userId: string): Promise<{ credentials: UserCredentials }> {
     return apiService.post<{ credentials: UserCredentials }>(`/admin/users/${userId}/reset-password`, {});
   }
 
-  /**
-   * Get analytics overview
-   */
+  // ==================== Analytics ====================
+
   async getAnalyticsOverview(): Promise<AnalyticsOverview> {
     return apiService.get<AnalyticsOverview>('/admin/analytics/overview');
   }
 
-  /**
-   * Get teacher analytics
-   */
   async getTeacherAnalytics(teacherId: string): Promise<any> {
     return apiService.get(`/admin/analytics/teachers/${teacherId}`);
   }
 
-  /**
-   * Get course analytics
-   */
   async getCourseAnalytics(): Promise<any> {
     return apiService.get('/admin/analytics/courses');
   }
 
-  /**
-   * Get engagement metrics
-   */
   async getEngagementMetrics(days = 30): Promise<any> {
     return apiService.get(`/admin/analytics/engagement?days=${days}`);
   }
 
-  /**
-   * Get all courses (content management)
-   */
+  // ==================== Course Management ====================
+
   async getAllCourses(params?: {
     page?: number;
     limit?: number;
@@ -246,34 +211,59 @@ class AdminService {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.category) queryParams.append('category', params.category);
     if (params?.search) queryParams.append('search', params.search);
-
     return apiService.get(`/admin/content/courses?${queryParams.toString()}`);
   }
 
-  /**
-   * Create course
-   */
   async createCourse(data: any): Promise<any> {
     return apiService.post('/admin/content/courses', data);
   }
 
-  /**
-   * Update course
-   */
   async updateCourse(courseId: string, data: any): Promise<any> {
     return apiService.put(`/admin/content/courses/${courseId}`, data);
   }
 
-  /**
-   * Delete course
-   */
   async deleteCourse(courseId: string): Promise<void> {
     return apiService.delete(`/admin/content/courses/${courseId}`);
   }
 
-  /**
-   * Get all resources
-   */
+  // ==================== Topic Management ====================
+
+  async getTopics(courseId: string): Promise<any> {
+    return apiService.get(`/admin/content/courses/${courseId}/topics`);
+  }
+
+  async createTopic(courseId: string, data: any): Promise<any> {
+    return apiService.post(`/admin/content/courses/${courseId}/topics`, data);
+  }
+
+  async updateTopic(topicId: string, data: any): Promise<any> {
+    return apiService.put(`/admin/content/topics/${topicId}`, data);
+  }
+
+  async deleteTopic(topicId: string): Promise<void> {
+    return apiService.delete(`/admin/content/topics/${topicId}`);
+  }
+
+  // ==================== Video Management ====================
+
+  async getVideos(topicId: string): Promise<any> {
+    return apiService.get(`/admin/content/topics/${topicId}/videos`);
+  }
+
+  async createVideo(topicId: string, data: any): Promise<any> {
+    return apiService.post(`/admin/content/topics/${topicId}/videos`, data);
+  }
+
+  async updateVideo(videoId: string, data: any): Promise<any> {
+    return apiService.put(`/admin/content/videos/${videoId}`, data);
+  }
+
+  async deleteVideo(videoId: string): Promise<void> {
+    return apiService.delete(`/admin/content/videos/${videoId}`);
+  }
+
+  // ==================== Resource Management ====================
+
   async getAllResources(params?: {
     page?: number;
     limit?: number;
@@ -285,43 +275,27 @@ class AdminService {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.type) queryParams.append('type', params.type);
     if (params?.search) queryParams.append('search', params.search);
-
     return apiService.get(`/admin/content/resources?${queryParams.toString()}`);
   }
 
-  /**
-   * Create resource
-   */
   async createResource(data: any): Promise<any> {
     return apiService.post('/admin/content/resources', data);
   }
 
-  /**
-   * Update resource
-   */
   async updateResource(resourceId: string, data: any): Promise<any> {
     return apiService.put(`/admin/content/resources/${resourceId}`, data);
   }
 
-  /**
-   * Delete resource
-   */
   async deleteResource(resourceId: string): Promise<void> {
     return apiService.delete(`/admin/content/resources/${resourceId}`);
   }
 
-  /**
-   * Get content statistics
-   */
   async getContentStats(): Promise<any> {
     return apiService.get('/admin/content/stats');
   }
 
   // ==================== School Management ====================
 
-  /**
-   * Get all schools with pagination and filters
-   */
   async getSchools(params?: {
     page?: number;
     limit?: number;
@@ -337,41 +311,25 @@ class AdminService {
     if (params?.region) queryParams.append('region', params.region);
     if (params?.district) queryParams.append('district', params.district);
     if (params?.isActive !== undefined) queryParams.append('isActive', params.isActive.toString());
-
     return apiService.get<PaginatedSchools>(`/admin/schools?${queryParams.toString()}`);
   }
 
-  /**
-   * Get single school by ID
-   */
   async getSchoolById(schoolId: string): Promise<{ school: School; teachers: any[] }> {
     return apiService.get<{ school: School; teachers: any[] }>(`/admin/schools/${schoolId}`);
   }
 
-  /**
-   * Get school by code (for validation)
-   */
   async getSchoolByCode(code: string): Promise<{ school: { id: string; name: string; schoolCode: string } }> {
     return apiService.get<{ school: { id: string; name: string; schoolCode: string } }>(`/admin/schools/code/${code}`);
   }
 
-  /**
-   * Create new school
-   */
   async createSchool(data: CreateSchoolData): Promise<{ school: School }> {
     return apiService.post<{ school: School }>('/admin/schools', data);
   }
 
-  /**
-   * Update school
-   */
   async updateSchool(schoolId: string, data: UpdateSchoolData): Promise<{ school: School }> {
     return apiService.put<{ school: School }>(`/admin/schools/${schoolId}`, data);
   }
 
-  /**
-   * Deactivate school
-   */
   async deactivateSchool(schoolId: string): Promise<void> {
     return apiService.delete(`/admin/schools/${schoolId}`);
   }

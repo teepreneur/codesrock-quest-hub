@@ -10,6 +10,18 @@ import {
   deleteResource,
   getContentStats,
 } from '../../controllers/admin/contentController';
+import {
+  getTopicsByCourse,
+  createTopic,
+  updateTopic,
+  deleteTopic,
+} from '../../controllers/admin/topicController';
+import {
+  getVideosByTopic,
+  createVideo,
+  updateVideo,
+  deleteVideo,
+} from '../../controllers/admin/videoController';
 import { protect } from '../../middleware/auth';
 import { requireContentAdmin, auditLog } from '../../middleware/roleAuth';
 
@@ -25,18 +37,18 @@ router.get('/stats', getContentStats);
 
 // Course routes
 router.route('/courses').get(getAllCourses).post(createCourse);
+router.route('/courses/:id').put(updateCourse).delete(deleteCourse);
 
-router
-  .route('/courses/:id')
-  .put(updateCourse)
-  .delete(deleteCourse);
+// Topic routes (nested under courses)
+router.route('/courses/:courseId/topics').get(getTopicsByCourse).post(createTopic);
+router.route('/topics/:topicId').put(updateTopic).delete(deleteTopic);
+
+// Video routes (nested under topics)
+router.route('/topics/:topicId/videos').get(getVideosByTopic).post(createVideo);
+router.route('/videos/:videoId').put(updateVideo).delete(deleteVideo);
 
 // Resource routes
 router.route('/resources').get(getAllResources).post(createResource);
-
-router
-  .route('/resources/:id')
-  .put(updateResource)
-  .delete(deleteResource);
+router.route('/resources/:id').put(updateResource).delete(deleteResource);
 
 export default router;

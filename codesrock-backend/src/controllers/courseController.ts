@@ -3,23 +3,19 @@ import { supabase } from '../config/supabase';
 import logger from '../utils/logger';
 
 /**
- * Get all courses with user progress
+ * Get all courses with topic/video counts and user progress
  * GET /api/courses
  */
 export const getAllCourses = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { category, difficulty, userId } = req.query;
+    const { userId } = req.query;
 
     // Build query
-    let query = supabase
+    const { data: courses, error } = await supabase
       .from('courses')
       .select('*')
-      .eq('is_active', true);
-
-    if (category) query = query.eq('category', category);
-    if (difficulty) query = query.eq('difficulty', difficulty);
-
-    const { data: courses, error } = await query.order('category').order('order_index');
+      .eq('is_active', true)
+      .order('order_index');
 
     if (error) {
       console.error('Error getting courses:', error);
@@ -27,44 +23,60 @@ export const getAllCourses = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // If userId provided, get user's progress for these courses
-    let coursesWithProgress: any = courses;
-    if (userId && courses) {
-      // Security Check: IDOR Protection
-      if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
-        logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access course progress of ${userId}`);
-        res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
-        return;
-      }
-      const courseIds = courses.map((c) => c.id);
-      const { data: progressRecords } = await supabase
-        .from('video_progress')
-        .select('*')
-        .eq('user_id', userId as string)
-        .in('course_id', courseIds);
+    // Enrich each course with topic count, video count, and user progress
+    const enrichedCourses = await Promise.all(
+      (courses || []).map(async (course) => {
+        // Get topic and video counts
+        const [
+          { count: topicCount },
+          { count: videoCount },
+        ] = await Promise.all([
+          supabase.from('topics').select('*', { count: 'exact', head: true }).eq('course_id', course.id).eq('is_active', true),
+          supabase.from('videos').select('*', { count: 'exact', head: true }).eq('course_id', course.id).eq('is_active', true),
+        ]);
 
-      const progressMap = new Map(
-        progressRecords?.map((p) => [p.course_id, p]) || []
-      );
+        let userProgress = null;
+        if (userId) {
+          // Security Check: IDOR Protection
+          if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+            logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access course progress of ${userId}`);
+            res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+            return;
+          }
 
-      coursesWithProgress = courses.map((course) => {
-        const progress = progressMap.get(course.id);
+          // Calculate progress: completed videos / total videos in this course
+          const { count: completedVideos } = await supabase
+            .from('video_progress')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId as string)
+            .eq('course_id', course.id)
+            .not('video_id', 'is', null)
+            .eq('completed', true);
+
+          const totalVideos = videoCount || 0;
+          const progressPercentage = totalVideos > 0 ? Math.round(((completedVideos || 0) / totalVideos) * 100) : 0;
+
+          userProgress = {
+            completedVideos: completedVideos || 0,
+            totalVideos,
+            progressPercentage,
+            isCompleted: progressPercentage >= 100,
+          };
+        }
+
         return {
           ...course,
-          userProgress: progress
-            ? {
-                completed: progress.completed,
-                progressPercentage: progress.watch_percentage || 0,
-              }
-            : null,
+          topicCount: topicCount || 0,
+          videoCount: videoCount || 0,
+          userProgress,
         };
-      });
-    }
+      })
+    );
 
     res.status(200).json({
       success: true,
-      count: coursesWithProgress?.length || 0,
-      data: coursesWithProgress || [],
+      count: enrichedCourses?.length || 0,
+      data: enrichedCourses || [],
     });
   } catch (error: any) {
     console.error('Error getting courses:', error);
@@ -73,7 +85,7 @@ export const getAllCourses = async (req: Request, res: Response): Promise<void> 
 };
 
 /**
- * Get course by ID with prerequisite check
+ * Get course by ID with full hierarchy (topics → videos) and user progress
  * GET /api/courses/:courseId
  */
 export const getCourseById = async (req: Request, res: Response): Promise<void> => {
@@ -99,50 +111,76 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Check prerequisites if userId provided
-    let prerequisitesMet = true;
-    let missingPrerequisites: any[] = [];
+    // Get topics with their videos
+    const { data: topics } = await supabase
+      .from('topics')
+      .select('*')
+      .eq('course_id', courseId)
+      .eq('is_active', true)
+      .order('order_index');
 
-    if (userId && course.prerequisites && course.prerequisites.length > 0) {
-      const { data: completedCourses } = await supabase
-        .from('video_progress')
-        .select('course_id')
-        .eq('user_id', userId as string)
-        .in('course_id', course.prerequisites)
-        .eq('completed', true);
+    const topicsWithVideos = await Promise.all(
+      (topics || []).map(async (topic) => {
+        const { data: videos } = await supabase
+          .from('videos')
+          .select('*')
+          .eq('topic_id', topic.id)
+          .eq('is_active', true)
+          .order('order_index');
 
-      const completedIds = new Set(completedCourses?.map((c) => c.course_id) || []);
+        // Get per-video progress if userId provided
+        let videosWithProgress = videos || [];
+        if (userId) {
+          const videoIds = (videos || []).map((v) => v.id);
+          const { data: progressRecords } = await supabase
+            .from('video_progress')
+            .select('*')
+            .eq('user_id', userId as string)
+            .in('video_id', videoIds.length > 0 ? videoIds : ['__none__']);
 
-      // Get prerequisite course details
-      const { data: prereqCourses } = await supabase
-        .from('courses')
-        .select('id, title, thumbnail')
-        .in('id', course.prerequisites);
+          const progressMap = new Map(
+            progressRecords?.map((p) => [p.video_id, p]) || []
+          );
 
-      missingPrerequisites = (prereqCourses || []).filter(
-        (prereq) => !completedIds.has(prereq.id)
-      );
+          videosWithProgress = (videos || []).map((video) => {
+            const progress = progressMap.get(video.id);
+            return {
+              ...video,
+              userProgress: progress
+                ? {
+                    completed: progress.completed,
+                    watchPercentage: progress.watch_percentage || 0,
+                    lastWatchedAt: progress.last_watched_at,
+                  }
+                : null,
+            };
+          });
+        }
 
-      prerequisitesMet = missingPrerequisites.length === 0;
-    }
-
-    // Get user progress if userId provided
-    let userProgress = null;
-    if (userId) {
-      const { data: progress } = await supabase
-        .from('video_progress')
-        .select('*')
-        .eq('user_id', userId as string)
-        .eq('course_id', courseId)
-        .single();
-
-      if (progress) {
-        userProgress = {
-          completed: progress.completed,
-          progressPercentage: progress.watch_percentage || 0,
-          lastWatchedAt: progress.last_watched_at,
+        return {
+          ...topic,
+          videos: videosWithProgress,
+          videoCount: videosWithProgress.length,
         };
-      }
+      })
+    );
+
+    // Calculate overall course progress
+    let courseProgress = null;
+    if (userId) {
+      const totalVideos = topicsWithVideos.reduce((sum, t) => sum + t.videoCount, 0);
+      const completedVideos = topicsWithVideos.reduce(
+        (sum, t) => sum + t.videos.filter((v: any) => v.userProgress?.completed).length,
+        0
+      );
+      const progressPercentage = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
+
+      courseProgress = {
+        completedVideos,
+        totalVideos,
+        progressPercentage,
+        isCompleted: progressPercentage >= 100,
+      };
     }
 
     // Increment view count
@@ -154,10 +192,13 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
     res.status(200).json({
       success: true,
       data: {
-        course,
-        userProgress,
-        prerequisitesMet,
-        missingPrerequisites,
+        course: {
+          ...course,
+          topics: topicsWithVideos,
+          topicCount: topicsWithVideos.length,
+          videoCount: topicsWithVideos.reduce((sum, t) => sum + t.videoCount, 0),
+        },
+        courseProgress,
       },
     });
   } catch (error: any) {
@@ -182,12 +223,6 @@ export const getCoursesByCategory = async (req: Request, res: Response): Promise
       return;
     }
 
-    const validCategories = ['HTML/CSS', 'JavaScript', 'Computer Science', 'Coding'];
-    if (!validCategories.includes(category)) {
-      res.status(400).json({ success: false, message: 'Invalid category' });
-      return;
-    }
-
     const { data: courses, error } = await supabase
       .from('courses')
       .select('*')
@@ -201,39 +236,11 @@ export const getCoursesByCategory = async (req: Request, res: Response): Promise
       return;
     }
 
-    // Get user progress if userId provided
-    let coursesWithProgress: any = courses;
-    if (userId && courses) {
-      const courseIds = courses.map((c) => c.id);
-      const { data: progressRecords } = await supabase
-        .from('video_progress')
-        .select('*')
-        .eq('user_id', userId as string)
-        .in('course_id', courseIds);
-
-      const progressMap = new Map(
-        progressRecords?.map((p) => [p.course_id, p]) || []
-      );
-
-      coursesWithProgress = courses.map((course) => {
-        const progress = progressMap.get(course.id);
-        return {
-          ...course,
-          userProgress: progress
-            ? {
-                completed: progress.completed,
-                progressPercentage: progress.watch_percentage || 0,
-              }
-            : null,
-        };
-      });
-    }
-
     res.status(200).json({
       success: true,
       category,
-      count: coursesWithProgress?.length || 0,
-      data: coursesWithProgress || [],
+      count: courses?.length || 0,
+      data: courses || [],
     });
   } catch (error: any) {
     console.error('Error getting courses by category:', error);
@@ -247,7 +254,7 @@ export const getCoursesByCategory = async (req: Request, res: Response): Promise
  */
 export const updateVideoProgress = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId, courseId, watchedSeconds, totalSeconds } = req.body;
+    const { userId, videoId, courseId, watchedSeconds, totalSeconds } = req.body;
 
     // Security Check: IDOR Protection
     if (userId !== req.user?.userId && !['super_admin', 'content_admin'].includes(req.user?.role || '')) {
@@ -257,10 +264,10 @@ export const updateVideoProgress = async (req: Request, res: Response): Promise<
     }
 
     // Validation
-    if (!userId || !courseId || watchedSeconds === undefined || !totalSeconds) {
+    if (!userId || !videoId || !courseId || watchedSeconds === undefined || !totalSeconds) {
       res.status(400).json({
         success: false,
-        message: 'User ID, course ID, watched seconds, and total seconds are required',
+        message: 'User ID, video ID, course ID, watched seconds, and total seconds are required',
       });
       return;
     }
@@ -268,12 +275,12 @@ export const updateVideoProgress = async (req: Request, res: Response): Promise<
     // Calculate progress percentage
     const progressPercentage = totalSeconds > 0 ? Math.round((watchedSeconds / totalSeconds) * 100) : 0;
 
-    // Find or create video progress
+    // Find or create video progress (keyed by video_id now)
     const { data: existingProgress } = await supabase
       .from('video_progress')
       .select('*')
       .eq('user_id', userId)
-      .eq('course_id', courseId)
+      .eq('video_id', videoId)
       .single();
 
     let progress = existingProgress;
@@ -285,6 +292,7 @@ export const updateVideoProgress = async (req: Request, res: Response): Promise<
         .insert({
           user_id: userId,
           course_id: courseId,
+          video_id: videoId,
           watch_percentage: progressPercentage,
           completed: false,
           xp_awarded: false,
@@ -301,20 +309,20 @@ export const updateVideoProgress = async (req: Request, res: Response): Promise<
 
       progress = newProgress;
 
-      // Create activity for starting course
-      const { data: course } = await supabase
-        .from('courses')
+      // Create activity for starting video
+      const { data: video } = await supabase
+        .from('videos')
         .select('title')
-        .eq('id', courseId)
+        .eq('id', videoId)
         .single();
 
-      if (course) {
+      if (video) {
         await supabase.from('activities').insert({
           user_id: userId,
-          type: 'course_started',
-          description: `Started watching: ${course.title}`,
+          type: 'video_started',
+          description: `Started watching: ${video.title}`,
           xp_earned: 0,
-          metadata: { courseId, courseTitle: course.title },
+          metadata: { videoId, courseId, videoTitle: video.title },
         });
       }
     }
@@ -323,7 +331,7 @@ export const updateVideoProgress = async (req: Request, res: Response): Promise<
     const wasCompleted = progress.completed;
     const isNowCompleted = !wasCompleted && progressPercentage >= 80;
 
-    const updateData: any = {
+    const updateData: Record<string, any> = {
       watch_percentage: progressPercentage,
       last_watched_at: new Date().toISOString(),
     };
@@ -337,7 +345,7 @@ export const updateVideoProgress = async (req: Request, res: Response): Promise<
       .from('video_progress')
       .update(updateData)
       .eq('user_id', userId)
-      .eq('course_id', courseId)
+      .eq('video_id', videoId)
       .select()
       .single();
 
@@ -351,41 +359,41 @@ export const updateVideoProgress = async (req: Request, res: Response): Promise<
 
     // Award XP if just completed and not already awarded
     if (isNowCompleted && !progress.xp_awarded) {
-      const { data: course } = await supabase
-        .from('courses')
+      const { data: video } = await supabase
+        .from('videos')
         .select('title, xp_reward')
-        .eq('id', courseId)
+        .eq('id', videoId)
         .single();
 
-      if (course) {
-        // Use the complete_course function
-        const { error: completeError } = await supabase.rpc('complete_course', {
+      if (video) {
+        // Award XP via RPC
+        await supabase.rpc('award_xp', {
           p_user_id: userId,
-          p_course_id: courseId,
+          p_xp_amount: video.xp_reward,
+          p_activity_type: 'video_completed',
+          p_description: `Completed video: ${video.title}`,
+          p_metadata: { videoId, courseId, videoTitle: video.title },
         });
 
-        if (!completeError) {
-          // Mark XP as awarded
-          await supabase
-            .from('video_progress')
-            .update({ xp_awarded: true })
-            .eq('user_id', userId)
-            .eq('course_id', courseId);
+        // Mark XP as awarded
+        await supabase
+          .from('video_progress')
+          .update({ xp_awarded: true })
+          .eq('user_id', userId)
+          .eq('video_id', videoId);
 
-          // Increment course completion count
-          await supabase.rpc('increment', {
-            table_name: 'courses',
-            column_name: 'completion_count',
-            row_id: courseId,
-          });
-        }
+        // Increment video completion count
+        await supabase
+          .from('videos')
+          .update({ completion_count: (video as any).completion_count + 1 || 1 })
+          .eq('id', videoId);
       }
     }
 
     res.status(200).json({
       success: true,
       message: isNowCompleted
-        ? 'Course completed! XP awarded.'
+        ? 'Video completed! XP awarded.'
         : 'Progress updated successfully',
       data: {
         progress: {
@@ -418,50 +426,17 @@ export const getRecommendedCourses = async (req: Request, res: Response): Promis
     }
     const limit = parseInt(req.query.limit as string) || 5;
 
-    // Get user's completed courses
-    const { data: completedProgress } = await supabase
-      .from('video_progress')
-      .select('course_id, courses(category)')
-      .eq('user_id', userId)
-      .eq('completed', true);
-
-    // Extract categories from completed courses
-    const categories = completedProgress
-      ? [...new Set(completedProgress.map((p: any) => p.courses?.category).filter(Boolean))]
-      : ['HTML/CSS', 'JavaScript'];
-
-    const completedIds = completedProgress?.map((p: any) => p.course_id) || [];
-
-    // Get in-progress course IDs
-    const { data: inProgressRecords } = await supabase
-      .from('video_progress')
-      .select('course_id')
-      .eq('user_id', userId)
-      .eq('completed', false);
-
-    const inProgressIds = inProgressRecords?.map((r) => r.course_id) || [];
-
-    // Find recommended courses
-    let query = supabase
+    const { data: courses } = await supabase
       .from('courses')
       .select('id, title, thumbnail, category, difficulty, xp_reward')
       .eq('is_active', true)
-      .in('category', categories.length > 0 ? categories : ['HTML/CSS', 'JavaScript'])
-      .order('average_rating', { ascending: false })
-      .order('completion_count', { ascending: false })
-      .limit(limit * 2); // Get more to filter out completed/in-progress
-
-    const { data: allRecommendations } = await query;
-
-    // Filter out completed and in-progress courses
-    const recommendations = (allRecommendations || [])
-      .filter((c) => !completedIds.includes(c.id) && !inProgressIds.includes(c.id))
-      .slice(0, limit);
+      .order('view_count', { ascending: false })
+      .limit(limit);
 
     res.status(200).json({
       success: true,
-      count: recommendations.length,
-      data: recommendations,
+      count: courses?.length || 0,
+      data: courses || [],
     });
   } catch (error: any) {
     console.error('Error getting recommended courses:', error);
@@ -474,7 +449,6 @@ export const getRecommendedCourses = async (req: Request, res: Response): Promis
  * POST /api/courses/bookmark
  */
 export const bookmarkMoment = async (_req: Request, res: Response): Promise<void> => {
-  // Bookmark feature is not currently supported by the database schema
   res.status(501).json({
     success: false,
     message: 'Bookmark feature is not currently available',
@@ -513,7 +487,7 @@ export const getUserCourseProgress = async (req: Request, res: Response): Promis
         .eq('user_id', userId)
         .eq('completed', true),
       supabase
-        .from('courses')
+        .from('videos')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true),
     ]);
@@ -521,8 +495,9 @@ export const getUserCourseProgress = async (req: Request, res: Response): Promis
     // Get recent progress
     const { data: recentProgress } = await supabase
       .from('video_progress')
-      .select('*, courses(title, thumbnail, category, difficulty)')
+      .select('*, videos(title, thumbnail, duration, xp_reward), courses(title, category)')
       .eq('user_id', userId)
+      .not('video_id', 'is', null)
       .order('last_watched_at', { ascending: false })
       .limit(5);
 
@@ -530,7 +505,7 @@ export const getUserCourseProgress = async (req: Request, res: Response): Promis
       success: true,
       data: {
         summary: {
-          totalCourses: total || 0,
+          totalVideos: total || 0,
           inProgress: inProgress || 0,
           completed: completed || 0,
           notStarted: (total || 0) - (inProgress || 0) - (completed || 0),
