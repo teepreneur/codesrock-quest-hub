@@ -1,20 +1,22 @@
 import { Router } from 'express';
 import * as classController from '../controllers/classController';
-// Assuming authMiddleware exists based on project structure
-// import { protect, restrictTo } from '../middleware/authMiddleware';
+import { protect, authorize } from '../middleware/auth';
 
 const router = Router();
 
-// Temporarily leaving unprotected for testing, should add protect middleware later
+// All routes are protected
+router.use(protect);
+
+// Class routes
 router.route('/')
   .get(classController.getTeacherClasses)
-  .post(classController.createClass);
+  .post(authorize('super_admin', 'school_admin', 'teacher'), classController.createClass);
 
 router.route('/:classId/students')
-  .get(classController.getClassStudents)
-  .post(classController.addStudentToClass);
+  .get(authorize('super_admin', 'school_admin', 'teacher'), classController.getClassStudents)
+  .post(authorize('super_admin', 'school_admin', 'teacher'), classController.addStudentToClass);
 
-router.post('/:classId/batch-enroll', classController.batchEnrollStudents);
-router.post('/:classId/enroll-email', classController.enrollStudentByEmail);
+router.post('/:classId/batch-enroll', authorize('super_admin', 'school_admin', 'teacher'), classController.batchEnrollStudents);
+router.post('/:classId/enroll-email', authorize('super_admin', 'school_admin', 'teacher'), classController.enrollStudentByEmail);
 
 export default router;

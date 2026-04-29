@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
+import logger from '../utils/logger';
 
 /**
  * Get all training sessions
@@ -57,6 +58,13 @@ export const getSessionById = async (req: Request, res: Response): Promise<void>
   try {
     const { sessionId } = req.params;
     const { userId } = req.query;
+
+    // Security Check: IDOR Protection
+    if (userId && userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access session details with userId ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     const { data: session, error } = await supabase
       .from('training_sessions')
@@ -122,6 +130,13 @@ export const getSessionById = async (req: Request, res: Response): Promise<void>
 export const registerForSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, sessionId } = req.body;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to register for session for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     if (!userId || !sessionId) {
       res.status(400).json({
@@ -229,6 +244,13 @@ export const markAttendance = async (req: Request, res: Response): Promise<void>
   try {
     const { userId, sessionId, duration } = req.body;
 
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to mark attendance for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
     if (!userId || !sessionId) {
       res.status(400).json({
         success: false,
@@ -322,6 +344,13 @@ export const submitFeedback = async (req: Request, res: Response): Promise<void>
   try {
     const { userId, sessionId, rating, feedback } = req.body;
 
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to submit feedback for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
     if (!userId || !sessionId || !rating) {
       res.status(400).json({
         success: false,
@@ -388,6 +417,13 @@ export const submitFeedback = async (req: Request, res: Response): Promise<void>
 export const getUserSessions = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId } = req.params;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access sessions of ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     const { data: registrations, error } = await supabase
       .from('session_registrations')

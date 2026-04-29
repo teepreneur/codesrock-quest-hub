@@ -5,7 +5,13 @@
 
 export const API_CONFIG = {
   // Base URL for the backend API
-  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:5001',
+  BASE_URL: (() => {
+    const url = import.meta.env.VITE_API_URL;
+    if (!url && import.meta.env.PROD) {
+      throw new Error('VITE_API_URL environment variable is required in production');
+    }
+    return url || 'http://localhost:5001';
+  })(),
 
   // API version
   API_VERSION: '/api',

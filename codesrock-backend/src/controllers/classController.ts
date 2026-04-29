@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
+import logger from '../utils/logger';
 
 /**
  * Get all classes for a teacher
@@ -8,6 +9,13 @@ import { supabase } from '../config/supabase';
 export const getTeacherClasses = async (req: Request, res: Response): Promise<void> => {
   try {
     const { teacherId } = req.query;
+
+    // Security Check: IDOR Protection
+    if (teacherId !== req.user?.userId && !['super_admin', 'school_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access classes for teacher ${teacherId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     if (!teacherId) {
       res.status(400).json({ success: false, message: 'Teacher ID is required' });
@@ -55,6 +63,13 @@ export const createClass = async (req: Request, res: Response): Promise<void> =>
   try {
     const { name, teacherId, courseId, schoolId } = req.body;
 
+    // Security Check: IDOR Protection
+    if (teacherId !== req.user?.userId && !['super_admin', 'school_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to create class for teacher ${teacherId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
     if (!name || !teacherId) {
       res.status(400).json({ success: false, message: 'Class name and teacher ID are required' });
       return;
@@ -96,6 +111,14 @@ export const addStudentToClass = async (req: Request, res: Response): Promise<vo
   try {
     const { classId } = req.params;
     const { studentId } = req.body;
+
+    // Security Check: IDOR Protection (Verify teacher owns the class)
+    const { data: cls } = await supabase.from('classes').select('teacher_id').eq('id', classId).single();
+    if (!cls || (cls.teacher_id !== req.user?.userId && !['super_admin', 'school_admin'].includes(req.user?.role || ''))) {
+      logger.warn(`Unauthorized class access: User ${req.user?.userId} tried to add student to class ${classId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     if (!studentId) {
       res.status(400).json({ success: false, message: 'Student ID is required' });
@@ -140,6 +163,14 @@ export const getClassStudents = async (req: Request, res: Response): Promise<voi
   try {
     const { classId } = req.params;
 
+    // Security Check: IDOR Protection (Verify teacher owns the class)
+    const { data: cls } = await supabase.from('classes').select('teacher_id').eq('id', classId).single();
+    if (!cls || (cls.teacher_id !== req.user?.userId && !['super_admin', 'school_admin'].includes(req.user?.role || ''))) {
+      logger.warn(`Unauthorized class access: User ${req.user?.userId} tried to get students for class ${classId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
     const { data: enrollments, error } = await supabase
       .from('class_students')
       .select('*, profiles!student_id(*)')
@@ -173,6 +204,14 @@ export const batchEnrollStudents = async (req: Request, res: Response): Promise<
   try {
     const { classId } = req.params;
     const { studentIds } = req.body;
+
+    // Security Check: IDOR Protection (Verify teacher owns the class)
+    const { data: cls } = await supabase.from('classes').select('teacher_id').eq('id', classId).single();
+    if (!cls || (cls.teacher_id !== req.user?.userId && !['super_admin', 'school_admin'].includes(req.user?.role || ''))) {
+      logger.warn(`Unauthorized class access: User ${req.user?.userId} tried to batch enroll students in class ${classId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     if (!Array.isArray(studentIds) || studentIds.length === 0) {
       res.status(400).json({ success: false, message: 'An array of student IDs is required' });
@@ -214,6 +253,14 @@ export const enrollStudentByEmail = async (req: Request, res: Response): Promise
   try {
     const { classId } = req.params;
     const { email } = req.body;
+
+    // Security Check: IDOR Protection (Verify teacher owns the class)
+    const { data: cls } = await supabase.from('classes').select('teacher_id').eq('id', classId).single();
+    if (!cls || (cls.teacher_id !== req.user?.userId && !['super_admin', 'school_admin'].includes(req.user?.role || ''))) {
+      logger.warn(`Unauthorized class access: User ${req.user?.userId} tried to enroll student by email in class ${classId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     if (!email) {
       res.status(400).json({ success: false, message: 'Student email is required' });

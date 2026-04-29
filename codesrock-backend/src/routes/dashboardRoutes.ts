@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { param } from 'express-validator';
 import { getUserDashboard, getAdminStats } from '../controllers/dashboardController';
-import { protect } from '../middleware/auth';
+import { protect, authorize } from '../middleware/auth';
 import { validate } from '../middleware/validator';
 
 const router = Router();
@@ -22,6 +22,10 @@ router.use(protect);
 
 // Dashboard routes
 router.get('/dashboard/:userId', validate(userIdParamValidation), getUserDashboard);
-router.get('/dashboard/admin/stats', getAdminStats);
+router.get(
+  '/dashboard/admin/stats',
+  authorize('super_admin', 'school_admin', 'content_admin'),
+  getAdminStats
+);
 
 export default router;

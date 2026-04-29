@@ -1,7 +1,10 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { errorHandler, notFound } from './middleware/errorHandler';
+import logger from './utils/logger';
 
 // Rate limiting configuration
 // General API rate limit: 100 requests per 15 minutes
@@ -66,7 +69,7 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    console.log('CORS blocked origin:', origin);
+    logger.warn('CORS blocked origin: %s', origin);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -76,6 +79,10 @@ const corsOptions = {
 };
 
 // Middleware
+app.use(helmet()); // Secure HTTP headers
+app.use(morgan('combined', { 
+  stream: { write: (message) => logger.info(message.trim()) } 
+})); // Request logging
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

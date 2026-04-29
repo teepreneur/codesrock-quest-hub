@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
+import logger from '../utils/logger';
 
 /**
  * Get resources with filters
@@ -35,6 +36,12 @@ export const getResources = async (req: Request, res: Response): Promise<void> =
     // If userId provided, get user's downloads
     let resourcesWithInteraction: any = resources;
     if (userId && resources) {
+      // Security Check: IDOR Protection
+      if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+        logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access resource interaction data for ${userId}`);
+        res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+        return;
+      }
       const resourceIds = resources.map((r) => r.id);
       const { data: downloads } = await supabase
         .from('resource_downloads')
@@ -85,6 +92,13 @@ export const getResources = async (req: Request, res: Response): Promise<void> =
 export const downloadResource = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, resourceId } = req.body;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to download resource for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     // Validation
     if (!userId || !resourceId) {
@@ -169,6 +183,13 @@ export const downloadResource = async (req: Request, res: Response): Promise<voi
 export const rateResource = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, resourceId, rating, review } = req.body;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to rate resource for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     // Validation
     if (!userId || !resourceId || !rating) {
@@ -300,6 +321,13 @@ export const getPopularResources = async (req: Request, res: Response): Promise<
 export const getUserDownloads = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId } = req.params;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access downloads of ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
@@ -344,6 +372,13 @@ export const getResourceById = async (req: Request, res: Response): Promise<void
   try {
     const { resourceId } = req.params;
     const { userId } = req.query;
+
+    // Security Check: IDOR Protection
+    if (userId && userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access resource details with userId ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     const { data: resource, error } = await supabase
       .from('resources')

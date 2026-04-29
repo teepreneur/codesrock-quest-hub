@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
 import crypto from 'crypto';
+import logger from '../utils/logger';
 
 /**
  * Get all evaluations
@@ -69,6 +70,13 @@ export const getEvaluationById = async (req: Request, res: Response): Promise<vo
 export const startEvaluation = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, evaluationId } = req.body;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to start evaluation for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     if (!userId || !evaluationId) {
       res.status(400).json({
@@ -145,6 +153,13 @@ export const startEvaluation = async (req: Request, res: Response): Promise<void
 export const updateEvaluationProgress = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, evaluationId, completedItems } = req.body;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to update evaluation progress for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     if (!userId || !evaluationId || !completedItems) {
       res.status(400).json({
@@ -232,6 +247,13 @@ export const submitEvaluation = async (req: Request, res: Response): Promise<voi
   try {
     const { userId, evaluationId } = req.body;
 
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to submit evaluation for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
     if (!userId || !evaluationId) {
       res.status(400).json({
         success: false,
@@ -317,6 +339,13 @@ export const submitEvaluation = async (req: Request, res: Response): Promise<voi
 export const reviewEvaluation = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userEvaluationId, reviewerId, status, feedback } = req.body;
+
+    // Security Check: IDOR Protection (Verify reviewer identity)
+    if (reviewerId !== req.user?.userId || !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`Unauthorized review attempt: User ${req.user?.userId} tried to review evaluation using reviewerId ${reviewerId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     if (!userEvaluationId || !reviewerId || !status) {
       res.status(400).json({
@@ -432,6 +461,13 @@ export const getUserEvaluations = async (req: Request, res: Response): Promise<v
   try {
     const { userId } = req.params;
 
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access evaluations of ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
     const { data: userEvaluations, error } = await supabase
       .from('user_evaluations')
       .select('*, evaluations(title, description), certificates(certificate_number, issued_date)')
@@ -498,6 +534,13 @@ export const verifyCertificate = async (req: Request, res: Response): Promise<vo
 export const getUserCertificates = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId } = req.params;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access certificates of ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     const { data: certificates, error } = await supabase
       .from('certificates')

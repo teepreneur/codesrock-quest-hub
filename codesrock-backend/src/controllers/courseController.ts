@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
+import logger from '../utils/logger';
 
 /**
  * Get all courses with user progress
@@ -29,6 +30,12 @@ export const getAllCourses = async (req: Request, res: Response): Promise<void> 
     // If userId provided, get user's progress for these courses
     let coursesWithProgress: any = courses;
     if (userId && courses) {
+      // Security Check: IDOR Protection
+      if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+        logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access course progress of ${userId}`);
+        res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+        return;
+      }
       const courseIds = courses.map((c) => c.id);
       const { data: progressRecords } = await supabase
         .from('video_progress')
@@ -73,6 +80,13 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
   try {
     const { courseId } = req.params;
     const { userId } = req.query;
+
+    // Security Check: IDOR Protection
+    if (userId && userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access course details with userId ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     const { data: course, error } = await supabase
       .from('courses')
@@ -161,6 +175,13 @@ export const getCoursesByCategory = async (req: Request, res: Response): Promise
     const { category } = req.params;
     const { userId } = req.query;
 
+    // Security Check: IDOR Protection
+    if (userId && userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access courses by category for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
     const validCategories = ['HTML/CSS', 'JavaScript', 'Computer Science', 'Coding'];
     if (!validCategories.includes(category)) {
       res.status(400).json({ success: false, message: 'Invalid category' });
@@ -227,6 +248,13 @@ export const getCoursesByCategory = async (req: Request, res: Response): Promise
 export const updateVideoProgress = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, courseId, watchedSeconds, totalSeconds } = req.body;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to update video progress for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     // Validation
     if (!userId || !courseId || watchedSeconds === undefined || !totalSeconds) {
@@ -381,6 +409,13 @@ export const updateVideoProgress = async (req: Request, res: Response): Promise<
 export const getRecommendedCourses = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId } = req.params;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to get recommendations for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
     const limit = parseInt(req.query.limit as string) || 5;
 
     // Get user's completed courses
@@ -453,6 +488,13 @@ export const bookmarkMoment = async (_req: Request, res: Response): Promise<void
 export const getUserCourseProgress = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId } = req.params;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access course progress summary of ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     const [
       { count: inProgress },

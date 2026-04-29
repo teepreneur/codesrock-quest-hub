@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
+import logger from '../utils/logger';
 
 // Level definitions (from Level model)
 export const LEVELS = [
@@ -29,6 +30,13 @@ function getLevelByXP(xp: number) {
 export const getUserProgress = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId } = req.params;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access progress of ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     // Find user progress
     let { data: progress, error } = await supabase
@@ -118,6 +126,13 @@ export const getUserProgress = async (req: Request, res: Response): Promise<void
 export const addXP = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, amount, description, metadata } = req.body;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to award XP to ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     // Validation
     if (!userId || !amount || !description) {
@@ -232,6 +247,13 @@ export const updateStreak = async (req: Request, res: Response): Promise<void> =
   try {
     const { userId } = req.body;
 
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to update streak for ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
     if (!userId) {
       res.status(400).json({ success: false, message: 'User ID is required' });
       return;
@@ -307,6 +329,13 @@ export const getUserBadges = async (req: Request, res: Response): Promise<void> 
   try {
     const { userId } = req.params;
 
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access badges of ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
     const { data: userBadges, error} = await supabase
       .from('user_badges')
       .select('*, badges(name, description, icon, category, rarity, xp_reward)')
@@ -336,6 +365,13 @@ export const getUserBadges = async (req: Request, res: Response): Promise<void> 
 export const awardBadge = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, badgeId } = req.body;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to award badge to ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
 
     if (!userId || !badgeId) {
       res.status(400).json({
@@ -419,6 +455,13 @@ export const awardBadge = async (req: Request, res: Response): Promise<void> => 
 export const getActivityFeed = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId } = req.params;
+
+    // Security Check: IDOR Protection
+    if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access activity feed of ${userId}`);
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
     const limit = parseInt(req.query.limit as string) || 20;
     const page = parseInt(req.query.page as string) || 1;
     const type = req.query.type as string;
