@@ -81,7 +81,7 @@ const corsOptions = {
 // Middleware
 app.use(helmet()); // Secure HTTP headers
 app.use(morgan('combined', { 
-  stream: { write: (message) => logger.info(message.trim()) } 
+  stream: { write: (message: string) => logger.info(message.trim()) } 
 })); // Request logging
 app.use(cors(corsOptions));
 app.use(express.json());
