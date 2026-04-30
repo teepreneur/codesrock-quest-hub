@@ -119,8 +119,8 @@ export default function ContentManagement() {
   useEffect(() => { loadResources(); }, [resourceSearchTerm]);
 
   // Navigation
-  const navigateToTopics = (course: any) => { setSelectedCourse(course); setViewLevel("topics"); loadTopics(course.id); };
-  const navigateToVideos = (topic: any) => { setSelectedTopic(topic); setViewLevel("videos"); loadVideos(topic.id); };
+  const navigateToTopics = (course: any) => { setSelectedCourse(course); setViewLevel("topics"); loadTopics(course.id || course._id); };
+  const navigateToVideos = (topic: any) => { setSelectedTopic(topic); setViewLevel("videos"); loadVideos(topic.id || topic._id); };
   const navigateBack = () => {
     if (viewLevel === "videos") { setViewLevel("topics"); setSelectedTopic(null); }
     else if (viewLevel === "topics") { setViewLevel("courses"); setSelectedCourse(null); }
@@ -130,10 +130,10 @@ export default function ContentManagement() {
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
-      if (deleteTarget.type === "course") { await adminService.deleteCourse(deleteTarget.item.id); loadCourses(); loadStats(); }
-      else if (deleteTarget.type === "topic") { await adminService.deleteTopic(deleteTarget.item.id); loadTopics(selectedCourse.id); }
-      else if (deleteTarget.type === "video") { await adminService.deleteVideo(deleteTarget.item.id); loadVideos(selectedTopic.id); }
-      else if (deleteTarget.type === "resource") { await adminService.deleteResource(deleteTarget.item.id); loadResources(); loadStats(); }
+      if (deleteTarget.type === "course") { await adminService.deleteCourse(deleteTarget.item.id || deleteTarget.item._id); loadCourses(); loadStats(); }
+      else if (deleteTarget.type === "topic") { await adminService.deleteTopic(deleteTarget.item.id || deleteTarget.item._id); loadTopics(selectedCourse.id || selectedCourse._id); }
+      else if (deleteTarget.type === "video") { await adminService.deleteVideo(deleteTarget.item.id || deleteTarget.item._id); loadVideos(selectedTopic.id || selectedTopic._id); }
+      else if (deleteTarget.type === "resource") { await adminService.deleteResource(deleteTarget.item.id || deleteTarget.item._id); loadResources(); loadStats(); }
       toast.success(`${deleteTarget.type.charAt(0).toUpperCase() + deleteTarget.type.slice(1)} deleted`);
     } catch (error: any) { toast.error(error.message || "Delete failed"); }
     setDeleteTarget(null);
@@ -186,7 +186,7 @@ export default function ContentManagement() {
               ) : courses.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No courses found</TableCell></TableRow>
               ) : courses.map((course: any) => (
-                <TableRow key={course.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigateToTopics(course)}>
+                <TableRow key={course.id || course._id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigateToTopics(course)}>
                   <TableCell className="font-medium"><div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" />{course.title}</div></TableCell>
                   <TableCell><Badge variant="outline"><Layers className="h-3 w-3 mr-1" />{course.stats?.topicCount ?? "—"}</Badge></TableCell>
                   <TableCell><Badge variant="outline"><Video className="h-3 w-3 mr-1" />{course.stats?.videoCount ?? "—"}</Badge></TableCell>
@@ -232,7 +232,7 @@ export default function ContentManagement() {
               ) : topics.length === 0 ? (
                 <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No topics yet. Add one to get started.</TableCell></TableRow>
               ) : topics.map((topic: any) => (
-                <TableRow key={topic.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigateToVideos(topic)}>
+                <TableRow key={topic.id || topic._id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigateToVideos(topic)}>
                   <TableCell className="w-16 text-center font-mono">{topic.order_index}</TableCell>
                   <TableCell className="font-medium"><div className="flex items-center gap-2"><Layers className="h-4 w-4 text-primary" />{topic.title}</div></TableCell>
                   <TableCell><Badge variant="outline"><Video className="h-3 w-3 mr-1" />{topic.videoCount ?? 0}</Badge></TableCell>
@@ -277,7 +277,7 @@ export default function ContentManagement() {
               ) : videos.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No videos yet. Add one to get started.</TableCell></TableRow>
               ) : videos.map((video: any) => (
-                <TableRow key={video.id}>
+                <TableRow key={video.id || video._id}>
                   <TableCell className="w-16 text-center font-mono">{video.order_index}</TableCell>
                   <TableCell className="font-medium"><div className="flex items-center gap-2"><Video className="h-4 w-4 text-primary" />{video.title}</div></TableCell>
                   <TableCell>{video.duration} min</TableCell>
@@ -341,7 +341,7 @@ export default function ContentManagement() {
                     {resourcesLoading ? (<TableRow><TableCell colSpan={5} className="text-center py-8">Loading...</TableCell></TableRow>
                     ) : resources.length === 0 ? (<TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No resources found</TableCell></TableRow>
                     ) : resources.map((resource: any) => (
-                      <TableRow key={resource.id}>
+                      <TableRow key={resource.id || resource._id}>
                         <TableCell className="font-medium">{resource.title}</TableCell>
                         <TableCell><Badge variant="outline">{resource.category}</Badge></TableCell>
                         <TableCell><Badge>{resource.file_type || resource.fileType}</Badge></TableCell>
@@ -364,8 +364,8 @@ export default function ContentManagement() {
 
       {/* Dialogs */}
       <CourseFormDialog open={courseDialogOpen} onOpenChange={setCourseDialogOpen} course={editingCourse} onSuccess={() => { loadCourses(); loadStats(); }} />
-      {selectedCourse && <TopicFormDialog open={topicDialogOpen} onOpenChange={setTopicDialogOpen} courseId={selectedCourse.id} topic={editingTopic} onSuccess={() => loadTopics(selectedCourse.id)} />}
-      {selectedTopic && <VideoFormDialog open={videoDialogOpen} onOpenChange={setVideoDialogOpen} topicId={selectedTopic.id} video={editingVideo} onSuccess={() => loadVideos(selectedTopic.id)} />}
+      {selectedCourse && <TopicFormDialog open={topicDialogOpen} onOpenChange={setTopicDialogOpen} courseId={selectedCourse.id || selectedCourse._id} topic={editingTopic} onSuccess={() => loadTopics(selectedCourse.id || selectedCourse._id)} />}
+      {selectedTopic && <VideoFormDialog open={videoDialogOpen} onOpenChange={setVideoDialogOpen} topicId={selectedTopic.id || selectedTopic._id} video={editingVideo} onSuccess={() => loadVideos(selectedTopic.id || selectedTopic._id)} />}
       <ResourceFormDialog open={resourceDialogOpen} onOpenChange={setResourceDialogOpen} resource={editingResource} onSuccess={() => { loadResources(); loadStats(); }} />
 
       {/* Delete Confirmation */}
