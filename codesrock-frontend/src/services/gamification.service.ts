@@ -7,7 +7,7 @@ import { apiService } from './api.service';
 import { API_CONFIG } from '../config/api.config';
 
 export interface Badge {
-  _id: string;
+  id: string;
   name: string;
   description: string;
   icon: string;
@@ -23,7 +23,7 @@ export interface Badge {
 }
 
 export interface UserBadge {
-  _id: string;
+  id: string;
   badgeId: Badge | string;
   earnedAt: string;
 }
@@ -43,7 +43,7 @@ export interface UserProgress {
 }
 
 export interface Activity {
-  _id: string;
+  id: string;
   userId: string;
   type: string;
   description: string;
@@ -53,9 +53,9 @@ export interface Activity {
 }
 
 export interface LeaderboardEntry {
-  _id: string;
+  id: string;
   userId: {
-    _id: string;
+    id: string;
     firstName: string;
     lastName: string;
     email: string;

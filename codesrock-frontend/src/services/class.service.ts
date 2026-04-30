@@ -36,7 +36,7 @@ class ClassService {
    * Get all classes for a teacher
    */
   async getTeacherClasses(teacherId: string): Promise<Class[]> {
-    return apiService.get<Class[]>(`/api/classes?teacherId=${teacherId}`);
+    return apiService.get<Class[]>(`/classes?teacherId=${teacherId}`);
   }
 
   /**
@@ -48,28 +48,28 @@ class ClassService {
     courseId?: string;
     schoolId?: string;
   }): Promise<Class> {
-    return apiService.post<Class>('/api/classes', data);
+    return apiService.post<Class>('/classes', data);
   }
 
   /**
    * Get students in a class
    */
   async getClassStudents(classId: string): Promise<ClassEnrollment[]> {
-    return apiService.get<ClassEnrollment[]>(`/api/classes/${classId}/students`);
+    return apiService.get<ClassEnrollment[]>(`/classes/${classId}/students`);
   }
 
   /**
    * Batch enroll students into a class
    */
   async batchEnroll(classId: string, studentIds: string[]): Promise<any> {
-    return apiService.post(`/api/classes/${classId}/batch-enroll`, { studentIds });
+    return apiService.post(`/classes/${classId}/batch-enroll`, { studentIds });
   }
 
   /**
    * Enroll a student by email
    */
   async enrollByEmail(classId: string, email: string): Promise<ClassEnrollment> {
-    return apiService.post<ClassEnrollment>(`/api/classes/${classId}/enroll-email`, { email });
+    return apiService.post<ClassEnrollment>(`/classes/${classId}/enroll-email`, { email });
   }
 }
 

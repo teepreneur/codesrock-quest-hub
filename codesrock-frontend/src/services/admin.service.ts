@@ -15,7 +15,6 @@ export interface UserStats {
 }
 
 export interface User {
-  _id: string;
   id: string;
   email: string;
   username?: string;
@@ -71,7 +70,7 @@ export interface AnalyticsOverview {
   trends: {
     newUsersThisMonth: number;
     totalActivities: number;
-    engagementTrend: Array<{ _id: string; count: number }>;
+    engagementTrend: Array<{ id: string; count: number }>;
   };
 }
 

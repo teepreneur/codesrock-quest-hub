@@ -114,7 +114,15 @@ export const createTopic = async (
       message: 'Topic created successfully',
       data: { topic },
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[CREATE_TOPIC ERROR]', {
+      courseId: req.params.courseId,
+      body: req.body,
+      error: error?.message || error,
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint,
+    });
     next(error);
   }
 };

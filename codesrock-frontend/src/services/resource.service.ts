@@ -7,7 +7,7 @@ import { apiService } from './api.service';
 import { API_CONFIG } from '../config/api.config';
 
 export interface Resource {
-  _id: string;
+  id: string;
   title: string;
   description: string;
   category: string;
@@ -25,7 +25,7 @@ export interface Resource {
 }
 
 export interface ResourceInteraction {
-  _id: string;
+  id: string;
   userId: string;
   resourceId: string;
   type: 'download';
