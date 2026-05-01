@@ -73,7 +73,9 @@ export default function ContentManagement() {
     try {
       setTopicsLoading(true);
       const response = await adminService.getTopics(courseId);
-      setTopics(response.data || []);
+      // Handle both { topics: [] } and raw [] formats
+      const topicsData = response.topics || response.data?.topics || (Array.isArray(response) ? response : response.data || []);
+      setTopics(topicsData);
     } catch (error: any) {
       toast.error("Failed to load topics");
     } finally {
@@ -85,7 +87,9 @@ export default function ContentManagement() {
     try {
       setVideosLoading(true);
       const response = await adminService.getVideos(topicId);
-      setVideos(response.data || []);
+      // Handle both { videos: [] } and raw [] formats
+      const videosData = response.videos || response.data?.videos || (Array.isArray(response) ? response : response.data || []);
+      setVideos(videosData);
     } catch (error: any) {
       toast.error("Failed to load videos");
     } finally {

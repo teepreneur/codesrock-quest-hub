@@ -40,7 +40,9 @@ export const getTopicsByCourse = async (
     res.status(200).json({
       success: true,
       count: topicsWithCounts.length,
-      data: topicsWithCounts,
+      data: {
+        topics: topicsWithCounts
+      },
     });
   } catch (error) {
     next(error);

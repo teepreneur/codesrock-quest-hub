@@ -27,7 +27,9 @@ export const getVideosByTopic = async (
     res.status(200).json({
       success: true,
       count: videos?.length || 0,
-      data: videos || [],
+      data: {
+        videos: videos || []
+      },
     });
   } catch (error) {
     next(error);
