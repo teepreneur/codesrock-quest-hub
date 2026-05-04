@@ -109,7 +109,7 @@ export default function Dashboard() {
             <div className="relative shrink-0 animate-float">
               <div className="absolute -inset-4 bg-white/20 rounded-full blur-2xl" />
               <img 
-                src="/assets/rocky/signature.png" 
+                src="/assets/rocky/idea-transparent.png" 
                 alt="Rocky the Logic Star" 
                 className="w-48 h-48 md:w-56 md:h-56 object-contain relative z-10 drop-shadow-2xl"
               />
@@ -271,7 +271,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center py-6">
-                 <img src="/assets/rocky/idea.png" alt="Rocky Thinking" className="w-24 h-24 mb-4 opacity-50 grayscale" />
+                 <img src="/assets/rocky/idea-transparent.png" alt="Rocky" className="w-12 h-12 object-contain drop-shadow-md group-hover:scale-110 transition-transform" />
                  <p className="text-sm font-medium text-muted-foreground text-center">
                   No badges yet.<br/>Start an activity to earn one!
                 </p>

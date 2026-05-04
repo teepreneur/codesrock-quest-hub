@@ -97,11 +97,16 @@ export default function Achievements() {
             Earn badges and climb the leaderboard
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-muted-foreground">Badges Earned</p>
-          <p className="text-3xl font-bold text-primary">
-            {userBadges.length}/{allBadges.length}
-          </p>
+        <div className="text-right flex items-center gap-6">
+          <div className="animate-bounce-subtle hidden md:block">
+            <img src="/assets/rocky/celebration-transparent.png" alt="Rocky Celebration" className="w-20 h-20 object-contain drop-shadow-xl" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground font-bold uppercase tracking-wider">Badges Earned</p>
+            <p className="text-4xl font-black text-primary">
+              {userBadges.length}<span className="text-lg text-muted-foreground">/{allBadges.length}</span>
+            </p>
+          </div>
         </div>
       </div>
 

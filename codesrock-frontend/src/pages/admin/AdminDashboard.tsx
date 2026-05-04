@@ -83,7 +83,7 @@ export default function AdminDashboard() {
             <div className="relative shrink-0 animate-float">
               <div className="absolute -inset-4 bg-white/10 rounded-full blur-2xl" />
               <img 
-                src="/assets/rocky/signature.png" 
+                src="/assets/rocky/idea-transparent.png" 
                 alt="Rocky System Guide" 
                 className="w-40 h-40 md:w-48 md:h-48 object-contain relative z-10 drop-shadow-2xl brightness-110"
               />
