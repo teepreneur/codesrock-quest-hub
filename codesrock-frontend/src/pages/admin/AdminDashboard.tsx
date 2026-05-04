@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Shield, Users, TrendingUp, BookOpen, AlertCircle, Activity } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Shield, Users, TrendingUp, BookOpen, AlertCircle, Activity, ArrowRight, Settings, PlusCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { adminService, type AnalyticsOverview } from "@/services/admin.service";
 import { toast } from "sonner";
@@ -22,7 +21,6 @@ export default function AdminDashboard() {
         const overview = await adminService.getAnalyticsOverview();
         setData(overview);
       } catch (err: any) {
-        console.error('Admin dashboard error:', err);
         setError(err.message || 'Failed to load dashboard');
         toast.error('Failed to load admin dashboard');
       } finally {
@@ -35,10 +33,12 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="space-y-8 animate-fade-in p-6">
-        <Skeleton className="h-40 w-full rounded-3xl" />
-        <div className="grid gap-6 md:grid-cols-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+      <div className="space-y-6 animate-fade-in-up">
+        <Skeleton className="h-48 w-full rounded-3xl" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+          ))}
         </div>
       </div>
     );
@@ -46,17 +46,21 @@ export default function AdminDashboard() {
 
   if (error || !data) {
     return (
-      <div className="p-6">
-        <Card className="border-destructive/20 bg-destructive/5 text-destructive backdrop-blur-sm">
+      <div className="space-y-6 animate-fade-in">
+        <Card className="border-destructive glass-panel">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertCircle className="h-5 w-5" />
-              Admin Portal Error
+              Error Loading Dashboard
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mb-6 opacity-80">{error || 'Unable to load admin analytics. Please check your permissions.'}</p>
-            <Button onClick={() => window.location.reload()} variant="destructive">Try Again</Button>
+            <p className="text-muted-foreground mb-4">
+              {error || 'Unable to load admin dashboard. Please try again.'}
+            </p>
+            <Button onClick={() => window.location.reload()} variant="default">
+              Retry
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -66,100 +70,202 @@ export default function AdminDashboard() {
   const { stats, trends } = data;
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
-      {/* Admin Hero Section */}
-      <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-8 text-white shadow-2xl">
-        <div className="relative z-10">
-          <Badge className="bg-primary hover:bg-primary text-white border-none mb-4">
-            Command Center
-          </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2">
-            Platform Overview 🛡️
-          </h1>
-          <p className="text-lg text-slate-400 max-w-2xl">
-            Monitor educational growth, manage content curriculum, and oversee teacher activities across the CodesRock network.
-          </p>
+    <div className="space-y-8 animate-fade-in-up pb-10">
+      {/* Admin Header with Rocky System Guide */}
+      <section className="relative overflow-visible mt-10 mb-12">
+        <div className="bg-gradient-to-br from-deep-purple via-deep-purple/90 to-primary/80 p-8 md:p-12 rounded-[2rem] text-white shadow-2xl relative overflow-hidden group">
+          {/* Decorative background elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl group-hover:scale-110 transition-transform duration-700" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-secondary/10 rounded-full -ml-20 -mb-20 blur-3xl" />
+          
+          <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+            {/* Rocky 3D Image - Professional Poses */}
+            <div className="relative shrink-0 animate-float">
+              <div className="absolute -inset-4 bg-white/10 rounded-full blur-2xl" />
+              <img 
+                src="/assets/rocky/signature.png" 
+                alt="Rocky System Guide" 
+                className="w-40 h-40 md:w-48 md:h-48 object-contain relative z-10 drop-shadow-2xl brightness-110"
+              />
+            </div>
+
+            {/* Welcome Text & System Status */}
+            <div className="flex-1 space-y-4 text-center md:text-left">
+               <div className="glass-panel bg-white/10 border-white/20 rounded-2xl p-4 inline-block mb-2 backdrop-blur-xl animate-scale-in">
+                  <p className="text-white font-bold text-sm flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-secondary animate-pulse" />
+                    SYSTEM STATUS: ALL SYSTEMS NOMINAL 🤘
+                  </p>
+               </div>
+              <h1 className="text-3xl md:text-5xl font-heading font-extrabold tracking-tight">
+                Admin Control Center
+              </h1>
+              <p className="text-white/80 text-lg max-w-2xl font-medium">
+                Monitoring activity across <span className="text-secondary font-bold">{stats.totalTeachers} teachers</span> and <span className="text-secondary font-bold">{stats.totalCourses} modules</span>.
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-3 shrink-0">
+               <Button onClick={() => navigate('/admin/users')} className="bg-secondary hover:bg-secondary/90 text-white font-black rounded-xl px-6 py-6 shadow-lg shadow-secondary/20 group">
+                  <Users className="mr-2 h-5 w-5" />
+                  Manage Users
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+               </Button>
+               <Button onClick={() => navigate('/admin/content')} className="bg-white/10 hover:bg-white/20 text-white border-white/20 border font-bold rounded-xl px-6 py-6 backdrop-blur-md">
+                  <PlusCircle className="mr-2 h-5 w-5 text-primary" />
+                  New Content
+               </Button>
+            </div>
+          </div>
         </div>
-        
-        {/* Abstract shapes for premium feel */}
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-64 h-64 bg-slate-500/20 rounded-full blur-3xl" />
-      </div>
+      </section>
 
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: 'Total Teachers', value: stats.totalTeachers, icon: Users, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20' },
-          { label: 'Active Today', value: stats.activeToday, icon: Activity, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
-          { label: 'Total Courses', value: stats.totalCourses, icon: BookOpen, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-          { label: 'Avg. Completion', value: `${stats.avgCompletionRate}%`, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-        ].map((stat, i) => (
-          <Card key={i} className={`bg-card/50 backdrop-blur-sm border ${stat.border} shadow-sm transition-all hover:shadow-md hover:-translate-y-1`}>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className={`p-3 rounded-2xl ${stat.bg}`}>
-                <stat.icon className={`h-6 w-6 ${stat.color}`} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                <p className="text-2xl font-bold">{stat.value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Trend Insights */}
-        <Card className="lg:col-span-2 border-none shadow-xl bg-card/30 backdrop-blur-md overflow-hidden">
-          <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">Growth Metrics</CardTitle>
-            <CardDescription>Activity overview for the current month</CardDescription>
+        <Card className="glass-panel border-primary/20 hover:scale-105 transition-all duration-300 group overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -mr-10 -mt-10 blur-xl" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Total Teachers</CardTitle>
+            <Users className="h-5 w-5 text-primary" />
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-6 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 flex flex-col gap-2">
-                <span className="text-sm font-semibold text-indigo-400 uppercase tracking-wider">New Registrations</span>
-                <span className="text-4xl font-black">{trends.newUsersThisMonth}</span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-500" />
-                  Growth upward this month
-                </span>
-              </div>
-              <div className="p-6 rounded-2xl bg-purple-500/5 border border-purple-500/10 flex flex-col gap-2">
-                <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">Total Interactions</span>
-                <span className="text-4xl font-black">{trends.totalActivities}</span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Activity className="h-3 w-3 text-indigo-400" />
-                  High engagement levels
-                </span>
-              </div>
-            </div>
+          <CardContent>
+            <div className="text-4xl font-black text-primary mb-1">{stats.totalTeachers}</div>
+            <p className="text-xs font-bold text-muted-foreground/70">+12% from last month</p>
           </CardContent>
         </Card>
 
-        {/* Quick Management */}
-        <Card className="border-none shadow-xl bg-slate-900 text-white">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Quick Actions</CardTitle>
+        <Card className="glass-panel border-secondary/20 hover:scale-105 transition-all duration-300 group overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-secondary/5 rounded-full -mr-10 -mt-10 blur-xl" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Active Today</CardTitle>
+            <Activity className="h-5 w-5 text-secondary" />
           </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              { label: 'Manage Users', icon: Users, path: '/admin/users', variant: 'secondary' as const },
-              { label: 'Update Content', icon: BookOpen, path: '/admin/content', variant: 'secondary' as const },
-              { label: 'Platform Analytics', icon: Activity, path: '/admin/analytics', variant: 'secondary' as const },
-              { label: 'Switch to Teacher', icon: Shield, path: '/dashboard', variant: 'ghost' as const },
-            ].map((action, i) => (
-              <Button
-                key={i}
-                className={`w-full justify-start rounded-xl font-semibold gap-3 h-12 ${action.variant === 'ghost' ? 'text-slate-400 hover:text-white' : ''}`}
-                variant={action.variant}
-                onClick={() => navigate(action.path)}
-              >
-                <action.icon className="h-4 w-4" />
-                {action.label}
-              </Button>
-            ))}
+          <CardContent>
+            <div className="text-4xl font-black text-secondary mb-1">{stats.activeToday}</div>
+            <p className="text-xs font-bold text-muted-foreground/70">{Math.round((stats.activeToday / stats.totalTeachers) * 100)}% engagement rate</p>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-panel border-accent/20 hover:scale-105 transition-all duration-300 group overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-accent/5 rounded-full -mr-10 -mt-10 blur-xl" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Content Count</CardTitle>
+            <BookOpen className="h-5 w-5 text-accent" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-black text-accent mb-1">{stats.totalCourses}</div>
+            <p className="text-xs font-bold text-muted-foreground/70">Published modules</p>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-panel border-deep-purple/20 hover:scale-105 transition-all duration-300 group overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-deep-purple/5 rounded-full -mr-10 -mt-10 blur-xl" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Avg Progress</CardTitle>
+            <TrendingUp className="h-5 w-5 text-deep-purple" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-black text-deep-purple mb-1">{stats.avgCompletionRate}%</div>
+            <p className="text-xs font-bold text-muted-foreground/70">Global completion avg</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Analytics & Actions */}
+      <div className="grid gap-8 lg:grid-cols-2">
+        <Card className="glass-panel overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-secondary/5 rounded-full -mr-24 -mt-24 blur-3xl" />
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-2xl font-black text-deep-purple">
+              <TrendingUp className="h-6 w-6 text-secondary" />
+              Platform Trends
+            </CardTitle>
+            <CardDescription className="font-bold text-muted-foreground uppercase tracking-wider text-xs">Activity overview for the last 30 days</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 relative z-10">
+            <div className="flex items-center justify-between p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-3xl border border-primary/10 hover:border-primary/30 transition-all duration-300 group">
+              <div>
+                <p className="font-black text-deep-purple text-lg">New Teachers</p>
+                <p className="text-sm font-bold text-muted-foreground/70 uppercase">Joined this month</p>
+              </div>
+              <div className="text-4xl font-black text-primary group-hover:scale-110 transition-transform">+{trends.newUsersThisMonth}</div>
+            </div>
+            
+            <div className="flex items-center justify-between p-6 bg-gradient-to-br from-secondary/5 to-secondary/10 rounded-3xl border border-secondary/10 hover:border-secondary/30 transition-all duration-300 group">
+              <div>
+                <p className="font-black text-deep-purple text-lg">Total Interactions</p>
+                <p className="text-sm font-bold text-muted-foreground/70 uppercase">Learning activities logged</p>
+              </div>
+              <div className="text-4xl font-black text-secondary group-hover:scale-110 transition-transform">{trends.totalActivities.toLocaleString()}</div>
+            </div>
+            
+            <Button variant="ghost" className="w-full text-secondary font-black hover:bg-secondary/5 py-6 rounded-2xl">
+               View Full Analytics Report
+               <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-panel">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-2xl font-black text-deep-purple">
+              <Settings className="h-6 w-6 text-primary" />
+              Operational Hub
+            </CardTitle>
+            <CardDescription className="font-bold text-muted-foreground uppercase tracking-wider text-xs">Direct access to administrative tools</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <Button
+              className="w-full justify-between h-16 px-6 rounded-2xl bg-white hover:bg-muted/30 border-muted text-deep-purple font-black shadow-sm group"
+              variant="outline"
+              onClick={() => navigate('/admin/users')}
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <span>Teacher Directory</span>
+              </div>
+              <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+            </Button>
+            
+            <Button
+              className="w-full justify-between h-16 px-6 rounded-2xl bg-white hover:bg-muted/30 border-muted text-deep-purple font-black shadow-sm group"
+              variant="outline"
+              onClick={() => navigate('/admin/content')}
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <BookOpen className="h-5 w-5 text-accent" />
+                </div>
+                <span>Content Library</span>
+              </div>
+              <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+            </Button>
+            
+            <Button
+              className="w-full justify-between h-16 px-6 rounded-2xl bg-white hover:bg-muted/30 border-muted text-deep-purple font-black shadow-sm group"
+              variant="outline"
+              onClick={() => navigate('/admin/schools')}
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Activity className="h-5 w-5 text-secondary" />
+                </div>
+                <span>School Partners</span>
+              </div>
+              <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+            </Button>
+
+            <div className="pt-4 mt-4 border-t border-muted/50">
+               <Button
+                  className="w-full h-14 rounded-2xl bg-deep-purple hover:bg-deep-purple/90 text-white font-black shadow-lg shadow-deep-purple/20"
+                  onClick={() => navigate('/dashboard')}
+                >
+                  <Activity className="mr-2 h-5 w-5 text-secondary" />
+                  Experience Teacher View
+                </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

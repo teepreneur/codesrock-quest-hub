@@ -55,23 +55,20 @@ A gamified teacher portal for professional development and training management. 
 ```
 codesrock-quest-hub/
 ├── codesrock-frontend/     # React + TypeScript frontend
-│   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── pages/          # Page components
-│   │   ├── services/       # API service layer
-│   │   └── config/         # Configuration files
-│   └── package.json
-│
 ├── codesrock-backend/      # Node.js + Express backend
-│   ├── src/
-│   │   ├── controllers/    # Request handlers
-│   │   ├── routes/         # API routes
-│   │   ├── middleware/     # Auth & validation middleware
-│   │   └── config/         # Supabase configuration
-│   └── package.json
-│
+├── docs/                   # Documentation & Guides
+│   ├── migration/          # Migration logs
+│   └── sql/                # Database scripts
 └── README.md
 ```
+
+## Documentation
+
+Detailed documentation is available in the `docs/` directory:
+- [Setup Guide](docs/SETUP.md)
+- [Admin Guide](docs/ADMIN_IMPLEMENTATION_GUIDE.md)
+- [Testing Checklist](docs/TESTING_CHECKLIST.md)
+- [Database Scripts](docs/sql/)
 
 ## Quick Start
 

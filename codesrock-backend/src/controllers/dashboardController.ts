@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
 import logger from '../utils/logger';
+import { LEVELS, getLevelByXP } from './gamificationController';
 
 /**
  * Get unified dashboard data for user
@@ -152,6 +153,18 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
         lastActivityDate: progress.last_activity_date,
         badgeCount: userBadges?.length || 0,
         recentBadges,
+        levelDetails: {
+          current: getLevelByXP(progress.current_xp),
+          next: LEVELS.find((l) => l.level === progress.current_level + 1) || null,
+          progressToNextLevel: (() => {
+            const currentLevelData = getLevelByXP(progress.current_xp);
+            const nextLevel = LEVELS.find((l) => l.level === progress.current_level + 1);
+            if (!nextLevel) return 0;
+            const xpInCurrentLevel = progress.current_xp - currentLevelData.minXP;
+            const xpNeededForNextLevel = nextLevel.minXP - currentLevelData.minXP;
+            return Math.round((xpInCurrentLevel / xpNeededForNextLevel) * 100);
+          })()
+        },
       },
       stats: {
         totalCourses: totalCourses || 0,

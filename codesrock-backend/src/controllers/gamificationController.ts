@@ -14,7 +14,7 @@ export const LEVELS = [
   { level: 8, name: 'CodesRock Champion', minXP: 2250, icon: '🏆' },
 ];
 
-function getLevelByXP(xp: number) {
+export function getLevelByXP(xp: number) {
   for (let i = LEVELS.length - 1; i >= 0; i--) {
     if (xp >= LEVELS[i].minXP) {
       return LEVELS[i];
@@ -275,8 +275,8 @@ export const updateStreak = async (req: Request, res: Response): Promise<void> =
       message: result?.streak_broken
         ? 'Streak was broken and reset to 1'
         : result?.streak_updated
-        ? 'Streak updated successfully'
-        : 'Streak maintained',
+          ? 'Streak updated successfully'
+          : 'Streak maintained',
       data: {
         currentStreak: result?.current_streak || 0,
         streakUpdated: result?.streak_updated || false,
@@ -336,7 +336,7 @@ export const getUserBadges = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { data: userBadges, error} = await supabase
+    const { data: userBadges, error } = await supabase
       .from('user_badges')
       .select('*, badges(name, description, icon, category, rarity, xp_reward)')
       .eq('user_id', userId);
