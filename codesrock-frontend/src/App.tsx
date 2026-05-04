@@ -34,23 +34,28 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
+          
+          {/* Protected Routes Wrapper */}
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/videos" element={<Videos />} />
+            <Route path="/resources" element={<Resources />} />
+            <Route path="/evaluation" element={<Evaluation />} />
+            <Route path="/achievements" element={<Achievements />} />
+            <Route path="/certificates" element={<Certificates />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/classes" element={<Classes />} />
+            <Route path="/classes/:id" element={<ClassDetails />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+            <Route path="/admin/content" element={<AdminRoute><ContentManagement /></AdminRoute>} />
+            <Route path="/admin/analytics" element={<AdminRoute><Analytics /></AdminRoute>} />
+            <Route path="/admin/schools" element={<AdminRoute><SchoolManagement /></AdminRoute>} />
+          </Route>
+
           <Route path="/test-dashboard" element={<TestDashboard />} />
-          <Route path="/videos" element={<AppLayout><Videos /></AppLayout>} />
-          <Route path="/resources" element={<AppLayout><Resources /></AppLayout>} />
-          <Route path="/evaluation" element={<AppLayout><Evaluation /></AppLayout>} />
-          <Route path="/achievements" element={<AppLayout><Achievements /></AppLayout>} />
-          <Route path="/certificates" element={<AppLayout><Certificates /></AppLayout>} />
-          <Route path="/calendar" element={<AppLayout><Calendar /></AppLayout>} />
-          <Route path="/classes" element={<AppLayout><Classes /></AppLayout>} />
-          <Route path="/classes/:id" element={<AppLayout><ClassDetails /></AppLayout>} />
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminRoute><AppLayout><AdminDashboard /></AppLayout></AdminRoute>} />
-          <Route path="/admin/users" element={<AdminRoute><AppLayout><UserManagement /></AppLayout></AdminRoute>} />
-          <Route path="/admin/content" element={<AdminRoute><AppLayout><ContentManagement /></AppLayout></AdminRoute>} />
-          <Route path="/admin/analytics" element={<AdminRoute><AppLayout><Analytics /></AppLayout></AdminRoute>} />
-          <Route path="/admin/schools" element={<AdminRoute><AppLayout><SchoolManagement /></AppLayout></AdminRoute>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
