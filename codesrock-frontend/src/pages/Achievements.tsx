@@ -99,7 +99,7 @@ export default function Achievements() {
         </div>
         <div className="text-right flex items-center gap-6">
           <div className="animate-bounce-subtle hidden md:block">
-            <img src="/assets/rocky/celebration-transparent.png" alt="Rocky Celebration" className="w-20 h-20 object-contain drop-shadow-xl" />
+            <img src="/assets/rocky/celebration-transparent.webp" alt="Rocky Celebration" className="w-20 h-20 object-contain drop-shadow-xl" />
           </div>
           <div>
             <p className="text-sm text-muted-foreground font-bold uppercase tracking-wider">Badges Earned</p>

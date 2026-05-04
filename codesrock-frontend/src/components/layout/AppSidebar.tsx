@@ -99,7 +99,7 @@ export function AppSidebar() {
             <div className="bg-gradient-to-br from-secondary/10 to-primary/10 rounded-[2rem] p-5 border border-white/40 backdrop-blur-sm relative overflow-hidden group">
                <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -mr-10 -mt-10 blur-xl" />
                <div className="flex items-center gap-3 relative z-10">
-                  <img src="/assets/rocky/idea-transparent.png" alt="Rocky" className="w-12 h-12 object-contain drop-shadow-md group-hover:scale-110 transition-transform" />
+                  <img src="/assets/rocky/idea-transparent.webp" alt="Rocky" className="w-12 h-12 object-contain drop-shadow-md group-hover:scale-110 transition-transform" />
                   <div>
                     <p className="text-[11px] font-black text-deep-purple leading-none mb-1 uppercase tracking-wider">Logic Spark</p>
                     <p className="text-[10px] font-bold text-muted-foreground leading-tight italic">"Keep rocking the code! 🤘"</p>

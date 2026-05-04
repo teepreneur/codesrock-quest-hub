@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -6,44 +6,34 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy, BookOpen, Clock, TrendingUp, Flame, Award, AlertCircle, Target, Star, LogIn, Sparkles, GraduationCap, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { dashboardService, type DashboardData } from "@/services/dashboard.service";
+import { dashboardService } from "@/services/dashboard.service";
 import { authService } from "@/services/auth.service";
 import { toast } from "sonner";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const user = authService.getStoredUser();
 
-  useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Use TanStack Query for high-performance data fetching
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['dashboard', user?.id],
+    queryFn: async () => {
+      if (!user?.id) throw new Error('Not authenticated');
+      return dashboardService.getUserDashboard(user.id);
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
+    retry: 2
+  });
 
-        const user = authService.getStoredUser();
+  // Handle redirect if not logged in
+  if (!user?.id && !isLoading) {
+    navigate('/login');
+    return null;
+  }
 
-        if (!user?.id) {
-          toast.error('Please login again');
-          navigate('/login');
-          return;
-        }
-
-        const dashboardData = await dashboardService.getUserDashboard(user.id);
-        setData(dashboardData);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load dashboard');
-        toast.error('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboard();
-  }, [navigate]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6 animate-fade-in-up">
         <Skeleton className="h-48 w-full rounded-3xl" />
@@ -61,6 +51,7 @@ export default function Dashboard() {
   }
 
   if (error || !data) {
+    const errorMsg = error instanceof Error ? error.message : "Failed to load dashboard";
     return (
       <div className="space-y-6 animate-fade-in">
         <Card className="border-destructive glass-panel">
@@ -72,7 +63,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              {error || 'Unable to load dashboard data. Please try again.'}
+              {errorMsg || 'Unable to load dashboard data. Please try again.'}
             </p>
             <div className="flex gap-2">
               <Button onClick={() => window.location.reload()} variant="default">
@@ -109,7 +100,7 @@ export default function Dashboard() {
             <div className="relative shrink-0 animate-float">
               <div className="absolute -inset-4 bg-white/20 rounded-full blur-2xl" />
               <img 
-                src="/assets/rocky/idea-transparent.png" 
+                src="/assets/rocky/idea-transparent.webp" 
                 alt="Rocky the Logic Star" 
                 className="w-48 h-48 md:w-56 md:h-56 object-contain relative z-10 drop-shadow-2xl"
               />
@@ -271,7 +262,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center py-6">
-                 <img src="/assets/rocky/idea-transparent.png" alt="Rocky" className="w-12 h-12 object-contain drop-shadow-md group-hover:scale-110 transition-transform" />
+                 <img src="/assets/rocky/idea-transparent.webp" alt="Rocky" className="w-12 h-12 object-contain drop-shadow-md group-hover:scale-110 transition-transform" />
                  <p className="text-sm font-medium text-muted-foreground text-center">
                   No badges yet.<br/>Start an activity to earn one!
                 </p>

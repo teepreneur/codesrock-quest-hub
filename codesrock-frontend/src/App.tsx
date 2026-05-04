@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -5,23 +6,39 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AdminRoute } from "./components/AdminRoute";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import TestDashboard from "./pages/TestDashboard";
-import Videos from "./pages/Videos";
-import Resources from "./pages/Resources";
-import Evaluation from "./pages/Evaluation";
-import Achievements from "./pages/Achievements";
-import Certificates from "./pages/Certificates";
-import Calendar from "./pages/Calendar";
-import NotFound from "./pages/NotFound";
-import Classes from "./pages/Classes";
-import ClassDetails from "./pages/ClassDetails";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import UserManagement from "./pages/admin/UserManagement";
-import ContentManagement from "./pages/admin/ContentManagement";
-import Analytics from "./pages/admin/Analytics";
-import SchoolManagement from "./pages/admin/SchoolManagement";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy Load Pages
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const TestDashboard = lazy(() => import("./pages/TestDashboard"));
+const Videos = lazy(() => import("./pages/Videos"));
+const Resources = lazy(() => import("./pages/Resources"));
+const Evaluation = lazy(() => import("./pages/Evaluation"));
+const Achievements = lazy(() => import("./pages/Achievements"));
+const Certificates = lazy(() => import("./pages/Certificates"));
+const Calendar = lazy(() => import("./pages/Calendar"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Classes = lazy(() => import("./pages/Classes"));
+const ClassDetails = lazy(() => import("./pages/ClassDetails"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
+const ContentManagement = lazy(() => import("./pages/admin/ContentManagement"));
+const Analytics = lazy(() => import("./pages/admin/Analytics"));
+const SchoolManagement = lazy(() => import("./pages/admin/SchoolManagement"));
+
+// Loading fallback
+const PageLoader = () => (
+  <div className="p-8 space-y-6 animate-pulse">
+    <Skeleton className="h-48 w-full rounded-3xl" />
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <Skeleton className="h-32 w-full rounded-2xl" />
+      <Skeleton className="h-32 w-full rounded-2xl" />
+      <Skeleton className="h-32 w-full rounded-2xl" />
+      <Skeleton className="h-32 w-full rounded-2xl" />
+    </div>
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -31,33 +48,35 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          
-          {/* Protected Routes Wrapper */}
-          <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/videos" element={<Videos />} />
-            <Route path="/resources" element={<Resources />} />
-            <Route path="/evaluation" element={<Evaluation />} />
-            <Route path="/achievements" element={<Achievements />} />
-            <Route path="/certificates" element={<Certificates />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/classes" element={<Classes />} />
-            <Route path="/classes/:id" element={<ClassDetails />} />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<Login />} />
             
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-            <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
-            <Route path="/admin/content" element={<AdminRoute><ContentManagement /></AdminRoute>} />
-            <Route path="/admin/analytics" element={<AdminRoute><Analytics /></AdminRoute>} />
-            <Route path="/admin/schools" element={<AdminRoute><SchoolManagement /></AdminRoute>} />
-          </Route>
-
-          <Route path="/test-dashboard" element={<TestDashboard />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* Protected Routes Wrapper */}
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/videos" element={<Videos />} />
+              <Route path="/resources" element={<Resources />} />
+              <Route path="/evaluation" element={<Evaluation />} />
+              <Route path="/achievements" element={<Achievements />} />
+              <Route path="/certificates" element={<Certificates />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/classes" element={<Classes />} />
+              <Route path="/classes/:id" element={<ClassDetails />} />
+              
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+              <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+              <Route path="/admin/content" element={<AdminRoute><ContentManagement /></AdminRoute>} />
+              <Route path="/admin/analytics" element={<AdminRoute><Analytics /></AdminRoute>} />
+              <Route path="/admin/schools" element={<AdminRoute><SchoolManagement /></AdminRoute>} />
+            </Route>
+  
+            <Route path="/test-dashboard" element={<TestDashboard />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

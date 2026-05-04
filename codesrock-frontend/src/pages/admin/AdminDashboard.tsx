@@ -1,37 +1,25 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Shield, Users, TrendingUp, BookOpen, AlertCircle, Activity, ArrowRight, Settings, PlusCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { adminService, type AnalyticsOverview } from "@/services/admin.service";
+import { adminService } from "@/services/admin.service";
 import { toast } from "sonner";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<AnalyticsOverview | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const overview = await adminService.getAnalyticsOverview();
-        setData(overview);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load dashboard');
-        toast.error('Failed to load admin dashboard');
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Use TanStack Query for high-performance analytics
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['admin-analytics'],
+    queryFn: () => adminService.getAnalyticsOverview(),
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    gcTime: 15 * 60 * 1000, // 15 minutes garbage collection
+    retry: 3
+  });
 
-    loadDashboard();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6 animate-fade-in-up">
         <Skeleton className="h-48 w-full rounded-3xl" />
@@ -45,6 +33,7 @@ export default function AdminDashboard() {
   }
 
   if (error || !data) {
+    const errorMsg = error instanceof Error ? error.message : "Failed to load dashboard";
     return (
       <div className="space-y-6 animate-fade-in">
         <Card className="border-destructive glass-panel">
@@ -56,7 +45,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              {error || 'Unable to load admin dashboard. Please try again.'}
+              {errorMsg || 'Unable to load admin dashboard. Please try again.'}
             </p>
             <Button onClick={() => window.location.reload()} variant="default">
               Retry
@@ -83,7 +72,7 @@ export default function AdminDashboard() {
             <div className="relative shrink-0 animate-float">
               <div className="absolute -inset-4 bg-white/10 rounded-full blur-2xl" />
               <img 
-                src="/assets/rocky/idea-transparent.png" 
+                src="/assets/rocky/idea-transparent.webp" 
                 alt="Rocky System Guide" 
                 className="w-40 h-40 md:w-48 md:h-48 object-contain relative z-10 drop-shadow-2xl brightness-110"
               />
