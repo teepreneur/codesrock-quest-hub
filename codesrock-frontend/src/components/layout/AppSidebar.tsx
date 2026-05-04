@@ -74,21 +74,19 @@ export function AppSidebar() {
             <SidebarMenu className="gap-2">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-12 rounded-xl transition-all duration-300">
-                    <NavLink
-                      to={item.url}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-300 ${
-                          isActive
-                            ? "bg-primary text-white shadow-lg shadow-primary/30 font-bold scale-[1.02]"
-                            : "text-deep-purple/70 hover:bg-primary/10 hover:text-primary font-bold"
-                        }`
-                      }
-                    >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      <span className="text-sm tracking-tight">{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
+                  <NavLink
+                    to={item.url}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-300 group relative z-20 ${
+                        isActive
+                          ? "bg-primary text-white shadow-lg shadow-primary/30 font-black scale-[1.02]"
+                          : "text-deep-purple hover:bg-primary/10 hover:text-primary font-bold"
+                      }`
+                    }
+                  >
+                    <item.icon className={`h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-110`} />
+                    <span className="text-sm tracking-tight">{item.title}</span>
+                  </NavLink>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
