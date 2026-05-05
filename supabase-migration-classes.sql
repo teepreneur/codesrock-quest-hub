@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS classes (
 CREATE TABLE IF NOT EXISTS class_students (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   class_id UUID REFERENCES classes(id) ON DELETE CASCADE NOT NULL,
-  student_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  student_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   enrolled_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(class_id, student_id)
 );

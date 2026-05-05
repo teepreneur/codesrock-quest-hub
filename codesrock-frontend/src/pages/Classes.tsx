@@ -19,6 +19,7 @@ export default function Classes() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   
   // Form state
@@ -32,6 +33,7 @@ export default function Classes() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const user = authService.getStoredUser();
       if (!user?.id) return;
 
@@ -42,8 +44,9 @@ export default function Classes() {
 
       setClasses(classesData);
       setCourses(coursesData);
-    } catch (error) {
-      console.error('Failed to load classes or courses:', error);
+    } catch (err: any) {
+      console.error('Failed to load classes or courses:', err);
+      setError(err.message || 'Failed to load class data. Please check your connection or contact an administrator.');
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
@@ -76,6 +79,27 @@ export default function Classes() {
       toast.error('Failed to create class');
     }
   };
+
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Card className="border-destructive/20 bg-destructive/5 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-destructive flex items-center gap-2">
+              <Plus className="rotate-45 h-5 w-5" />
+              Failed to load Classes
+            </CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={loadData} variant="outline" className="border-destructive/20 text-destructive hover:bg-destructive/10">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
