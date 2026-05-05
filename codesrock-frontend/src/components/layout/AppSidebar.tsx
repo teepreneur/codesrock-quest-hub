@@ -47,7 +47,7 @@ export function AppSidebar() {
   const menuItems = isAdmin ? filteredAdminItems : teacherMenuItems;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-muted/50 bg-white/50 backdrop-blur-xl">
+    <Sidebar collapsible="icon" data-version="v2-0-force-refresh-101" className="border-r border-muted/50 bg-white/50 backdrop-blur-xl">
       <SidebarContent>
         <div className="p-6 border-b border-muted/30">
           <div className="flex items-center gap-4">
@@ -86,8 +86,9 @@ export function AppSidebar() {
                       }`
                     }
                   >
-                    <Users className="h-5.5 w-5.5 animate-pulse" />
-                    <span className="text-sm tracking-tight">My Classes</span>
+                    <Users className="h-5.5 w-5.5 animate-pulse text-secondary" />
+                    <span className="text-sm tracking-tight flex-1">My Classes</span>
+                    <Badge className="bg-secondary text-[8px] px-1 py-0 h-4 animate-bounce">NEW</Badge>
                   </NavLink>
                 </SidebarMenuItem>
               )}
