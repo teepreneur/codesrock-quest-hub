@@ -109,8 +109,6 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      </div>
-      
       {/* School Progress Highlights */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
