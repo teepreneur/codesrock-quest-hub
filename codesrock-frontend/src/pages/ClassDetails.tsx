@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, UserPlus, BookOpen, ArrowLeft, Mail, Search, Trash2, CheckCircle } from "lucide-react";
+import { Users, UserPlus, BookOpen, ArrowLeft, Mail, Search, Trash2, CheckCircle, BarChart, Trophy, Award } from "lucide-react";
 import { toast } from "sonner";
 
 import { classService, type Class, type ClassEnrollment, type ClassAnalytics } from "@/services/class.service";
