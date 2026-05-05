@@ -28,6 +28,25 @@ export default function Dashboard() {
     retry: 2
   });
 
+  // Memoize heavy calculations - MUST BE AT TOP LEVEL
+  const { levelProgress, nextLevelXP, xpToNextLevel, completionPercentage } = useMemo(() => {
+    if (!data) return { levelProgress: 0, nextLevelXP: 0, xpToNextLevel: 0, completionPercentage: 0 };
+    
+    const lp = data.progress.levelDetails?.progressToNextLevel || 0;
+    const nXP = data.progress.levelDetails?.next?.minXP || 0;
+    const xTN = nXP - data.progress.currentXP;
+    const cp = data.stats.totalCourses > 0
+      ? Math.round((data.stats.completedCourses / data.stats.totalCourses) * 100)
+      : 0;
+
+    return {
+      levelProgress: lp,
+      nextLevelXP: nXP,
+      xpToNextLevel: xTN,
+      completionPercentage: cp
+    };
+  }, [data]);
+
   // Handle redirect if not logged in
   if (!user?.id && !isLoading) {
     navigate('/login');
@@ -78,23 +97,6 @@ export default function Dashboard() {
   }
 
   const { user: dashboardUser, progress, stats, recentActivities, courseProgress, recommendedCourses } = data;
-
-  // Memoize heavy calculations to prevent redundant processing on re-renders
-  const { levelProgress, nextLevelXP, xpToNextLevel, completionPercentage } = useMemo(() => {
-    const lp = progress.levelDetails?.progressToNextLevel || 0;
-    const nXP = progress.levelDetails?.next?.minXP || 0;
-    const xTN = nXP - progress.currentXP;
-    const cp = stats.totalCourses > 0
-      ? Math.round((stats.completedCourses / stats.totalCourses) * 100)
-      : 0;
-
-    return {
-      levelProgress: lp,
-      nextLevelXP: nXP,
-      xpToNextLevel: xTN,
-      completionPercentage: cp
-    };
-  }, [progress, stats]);
 
   return (
     <div className="space-y-8 animate-fade-in-up pb-10">
