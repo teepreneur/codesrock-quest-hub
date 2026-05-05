@@ -61,7 +61,7 @@ export function AppSidebar() {
               <div className="animate-fade-in">
                 <h2 className="font-heading font-black text-xl text-deep-purple leading-tight tracking-tight italic">CodesRock</h2>
                 <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-80">
-                  {isAdmin ? 'Admin Console' : 'Teacher Hub'} • <span className="text-red-500 animate-bounce">V2 SYSTEM</span>
+                  {isAdmin ? 'Admin Console' : 'Teacher Hub'}
                 </p>
               </div>
             )}
@@ -74,27 +74,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
-              {/* Force My Classes at the top for verification */}
-              {!isAdmin && (
-                <SidebarMenuItem>
-                  <NavLink
-                    to="/classes"
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-300 group relative z-20 ${
-                        isActive
-                          ? "bg-primary text-white shadow-lg shadow-primary/30 font-black scale-[1.02]"
-                          : "text-deep-purple bg-primary/5 border border-primary/10 hover:bg-primary/10 hover:text-primary font-black"
-                      }`
-                    }
-                  >
-                    <Users className="h-5.5 w-5.5 animate-pulse text-secondary" />
-                    <span className="text-sm tracking-tight flex-1">My Classes</span>
-                    <Badge className="bg-secondary text-[8px] px-1 py-0 h-4 animate-bounce">NEW</Badge>
-                  </NavLink>
-                </SidebarMenuItem>
-              )}
-
-              {menuItems.filter(item => item.title !== "My Classes").map((item) => (
+              {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <NavLink
                     to={item.url}
@@ -106,7 +86,7 @@ export function AppSidebar() {
                       }`
                     }
                   >
-                    <item.icon className={`h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-110`} />
+                    <item.icon className={`h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-110 ${item.title === 'My Classes' ? 'text-secondary' : ''}`} />
                     <span className="text-sm tracking-tight">{item.title}</span>
                   </NavLink>
                 </SidebarMenuItem>
