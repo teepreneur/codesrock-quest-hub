@@ -129,7 +129,11 @@ export default function AdminDashboard() {
             { name: "Westside Academy", progress: 62, active: 89, trend: "up" },
             { name: "East Village Tech", progress: 45, active: 210, trend: "down" }
           ].map((school, i) => (
-            <Card key={i} className="glass-panel overflow-hidden group hover:border-primary/40 transition-colors">
+            <Card 
+              key={i} 
+              className="glass-panel overflow-hidden group hover:border-primary/40 transition-all cursor-pointer active:scale-95"
+              onClick={() => navigate('/admin/schools')}
+            >
               <CardContent className="p-6 space-y-4">
                 <div className="flex justify-between items-start">
                   <div>

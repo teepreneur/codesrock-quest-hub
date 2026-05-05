@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Building2, Search, Plus, Edit, Trash2, RefreshCw, Copy, AlertCircle, Users, CheckCircle } from "lucide-react";
+import { Building2, Search, Plus, Edit, Trash2, RefreshCw, Copy, AlertCircle, Users, CheckCircle, TrendingUp } from "lucide-react";
 import { adminService, type School, type CreateSchoolData, type UpdateSchoolData } from "@/services/admin.service";
 import { toast } from "sonner";
 
 export default function SchoolManagement() {
+  const navigate = useNavigate();
   const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -344,6 +346,15 @@ export default function SchoolManagement() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/admin/schools/${school.id}/performance`)}
+                              className="text-primary hover:text-primary hover:bg-primary/10"
+                              title="View Performance"
+                            >
+                              <TrendingUp className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"

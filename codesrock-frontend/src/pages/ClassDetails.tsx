@@ -10,6 +10,7 @@ import { Users, UserPlus, BookOpen, ArrowLeft, Mail, Search, Trash2, CheckCircle
 import { toast } from "sonner";
 
 import { classService, type Class, type ClassEnrollment, type ClassAnalytics } from "@/services/class.service";
+import { authService } from "@/services/auth.service";
 
 export default function ClassDetails() {
   const { id: classId } = useParams<{ id: string }>();
@@ -112,138 +113,174 @@ export default function ClassDetails() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Student Management */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Roster
-            </CardTitle>
-            <div className="relative mt-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search students..." 
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border overflow-hidden">
-              <div className="grid grid-cols-5 p-3 bg-muted/50 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">
-                <span className="col-span-2">Student</span>
-                <span className="text-center">Level/XP</span>
-                <span className="text-center">Completion</span>
-                <span className="text-right">Activity</span>
-              </div>
-              <div className="divide-y">
-                {filteredStudents.length > 0 ? (
-                  filteredStudents.map((enrollment) => (
-                    <div key={enrollment.id} className="grid grid-cols-5 p-4 items-center text-sm hover:bg-muted/30 transition-colors">
-                      <div className="col-span-2 space-y-1">
-                        <div className="font-bold text-deep-purple">
-                          {enrollment.student?.first_name} {enrollment.student?.last_name}
-                        </div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {enrollment.student?.email}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-black text-primary">LVL {enrollment.progress?.level || 1}</div>
-                        <div className="text-[10px] text-muted-foreground font-bold">{enrollment.progress?.xp || 0} XP</div>
-                      </div>
-                      <div className="px-4">
-                        <div className="flex items-center justify-between text-[10px] font-bold mb-1">
-                          <span>{enrollment.progress?.completion_percentage || 0}%</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-accent" 
-                            style={{ width: `${enrollment.progress?.completion_percentage || 0}%` }} 
-                          />
-                        </div>
-                      </div>
-                      <div className="text-right space-y-1">
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase">
-                          {enrollment.progress?.last_active ? new Date(enrollment.progress.last_active).toLocaleDateString() : 'Never'}
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive/50 hover:text-destructive hover:bg-destructive/10">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-12 text-center text-muted-foreground italic">
-                    <Users className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                    No students enrolled yet.
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="roster" className="w-full">
+        <TabsList className="bg-muted/50 p-1 rounded-xl mb-6">
+          <TabsTrigger value="roster" className="rounded-lg font-black uppercase text-[10px] tracking-widest px-8">Roster</TabsTrigger>
+          <TabsTrigger value="activity" className="rounded-lg font-black uppercase text-[10px] tracking-widest px-8">Live Activity</TabsTrigger>
+        </TabsList>
 
-        {/* Enrollment Side Info */}
-        <div className="space-y-6">
+        <TabsContent value="roster">
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Student Management */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  Class Roster
+                </CardTitle>
+                <div className="relative mt-4">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search students..." 
+                    className="pl-9"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border overflow-hidden">
+                  <div className="grid grid-cols-5 p-3 bg-muted/50 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <span className="col-span-2">Student</span>
+                    <span className="text-center">Level/XP</span>
+                    <span className="text-center">Completion</span>
+                    <span className="text-right">Activity</span>
+                  </div>
+                  <div className="divide-y">
+                    {filteredStudents.length > 0 ? (
+                      filteredStudents.map((enrollment) => (
+                        <div key={enrollment.id} className="grid grid-cols-5 p-4 items-center text-sm hover:bg-muted/30 transition-colors">
+                          <div className="col-span-2 space-y-1">
+                            <div className="font-bold text-deep-purple">
+                              {enrollment.student?.first_name} {enrollment.student?.last_name}
+                            </div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              {enrollment.student?.email}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-black text-primary">LVL {enrollment.progress?.level || 1}</div>
+                            <div className="text-[10px] text-muted-foreground font-bold">{enrollment.progress?.xp || 0} XP</div>
+                          </div>
+                          <div className="px-4">
+                            <div className="flex items-center justify-between text-[10px] font-bold mb-1">
+                              <span>{enrollment.progress?.completion_percentage || 0}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-accent" 
+                                style={{ width: `${enrollment.progress?.completion_percentage || 0}%` }} 
+                              />
+                            </div>
+                          </div>
+                          <div className="text-right space-y-1">
+                            <div className="text-[10px] font-bold text-muted-foreground uppercase">
+                              {enrollment.progress?.last_active ? new Date(enrollment.progress.last_active).toLocaleDateString() : 'Never'}
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive/50 hover:text-destructive hover:bg-destructive/10">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-12 text-center text-muted-foreground italic">
+                        <Users className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                        No students enrolled yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Side Info */}
+            <div className="space-y-6">
+              <Card className="glass-panel">
+                <CardHeader>
+                  <CardTitle className="text-lg font-black text-deep-purple">Quick Enroll</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Student Email</label>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="student@email.com" 
+                        className="rounded-xl border-muted"
+                        value={newStudentEmail}
+                        onChange={(e) => setNewStudentEmail(e.target.value)}
+                      />
+                      <Button size="icon" className="rounded-xl shrink-0" onClick={handleAddStudent}>
+                        <UserPlus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-panel border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-lg font-black text-deep-purple">Class Health</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-end mb-1">
+                    <span className="text-xs font-black text-muted-foreground uppercase tracking-wider">Avg Completion</span>
+                    <span className="text-3xl font-black text-primary">{analytics?.average_completion || 0}%</span>
+                  </div>
+                  <div className="h-3 w-full bg-muted rounded-full overflow-hidden shadow-inner">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000" 
+                      style={{ width: `${analytics?.average_completion || 0}%` }} 
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="activity">
           <Card className="glass-panel">
             <CardHeader>
-              <CardTitle className="text-lg font-black text-deep-purple">Quick Enroll</CardTitle>
-              <CardDescription className="font-medium">Add a student by their email address.</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart className="h-5 w-5 text-secondary" />
+                Live Student Tracking
+              </CardTitle>
+              <CardDescription>Real-time view of student milestones and activity.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Student Email</label>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="student@email.com" 
-                    className="rounded-xl border-muted"
-                    value={newStudentEmail}
-                    onChange={(e) => setNewStudentEmail(e.target.value)}
-                  />
-                  <Button size="icon" className="rounded-xl shrink-0" onClick={handleAddStudent}>
-                    <UserPlus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                <p className="text-[10px] text-primary font-black mb-1 uppercase tracking-wider">PRO TIP</p>
-                <p className="text-xs text-muted-foreground font-medium">
-                  You can also share the Class ID with students so they can join themselves!
-                </p>
+            <CardContent>
+              <div className="space-y-6">
+                {[
+                  { student: "Alice Johnson", action: "Completed 'Intro to Logic'", time: "2 mins ago", type: "success" },
+                  { student: "Bob Smith", action: "Earned 'Code Cadet' Badge", time: "15 mins ago", type: "badge" },
+                  { student: "Charlie Davis", action: "Reached Level 5", time: "1 hour ago", type: "level" },
+                  { student: "Diana Prince", action: "Logged in", time: "2 hours ago", type: "login" }
+                ].map((log, i) => (
+                  <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-muted/20 border border-transparent hover:border-secondary/20 transition-all">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      log.type === 'success' ? 'bg-green-100 text-green-600' :
+                      log.type === 'badge' ? 'bg-amber-100 text-amber-600' :
+                      log.type === 'level' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                    }`}>
+                      {log.type === 'success' ? <CheckCircle className="h-5 w-5" /> :
+                       log.type === 'badge' ? <Trophy className="h-5 w-5" /> :
+                       log.type === 'level' ? <Award className="h-5 w-5" /> : <Mail className="h-5 w-5" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-bold text-deep-purple">{log.student}</h4>
+                        <span className="text-[10px] font-black text-muted-foreground uppercase">{log.time}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{log.action}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
-
-          <Card className="glass-panel border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-lg font-black text-deep-purple">Class Progress</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-end mb-1">
-                <span className="text-xs font-black text-muted-foreground uppercase tracking-wider">Average Completion</span>
-                <span className="text-3xl font-black text-primary">{analytics?.average_completion || 0}%</span>
-              </div>
-              <div className="h-3 w-full bg-muted rounded-full overflow-hidden shadow-inner">
-                <div 
-                  className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000" 
-                  style={{ width: `${analytics?.average_completion || 0}%` }} 
-                />
-              </div>
-              <div className="flex items-center justify-between text-[10px] font-black text-muted-foreground uppercase tracking-widest pt-2">
-                <div className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-secondary" />
-                  {analytics?.active_students || 0} Active
-                </div>
-                <div>{analytics?.total_xp || 0} Total XP</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
