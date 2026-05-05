@@ -60,7 +60,7 @@ export function AppSidebar() {
               <div className="animate-fade-in">
                 <h2 className="font-heading font-black text-xl text-deep-purple leading-tight tracking-tight italic">CodesRock</h2>
                 <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-80">
-                  {isAdmin ? 'Admin Console' : 'Teacher Hub'}
+                  {isAdmin ? 'Admin Console' : 'Teacher Hub'} • V2.0 - LIVE
                 </p>
               </div>
             )}
@@ -73,7 +73,26 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
-              {menuItems.map((item) => (
+              {/* Force My Classes at the top for verification */}
+              {!isAdmin && (
+                <SidebarMenuItem>
+                  <NavLink
+                    to="/classes"
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-300 group relative z-20 ${
+                        isActive
+                          ? "bg-primary text-white shadow-lg shadow-primary/30 font-black scale-[1.02]"
+                          : "text-deep-purple bg-primary/5 border border-primary/10 hover:bg-primary/10 hover:text-primary font-black"
+                      }`
+                    }
+                  >
+                    <Users className="h-5.5 w-5.5 animate-pulse" />
+                    <span className="text-sm tracking-tight">My Classes</span>
+                  </NavLink>
+                </SidebarMenuItem>
+              )}
+
+              {menuItems.filter(item => item.title !== "My Classes").map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <NavLink
                     to={item.url}
