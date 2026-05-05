@@ -30,7 +30,13 @@ export const getTeacherClasses = async (req: Request, res: Response): Promise<vo
 
     if (error) {
       console.error('Error getting teacher classes:', error);
-      res.status(500).json({ success: false, message: 'Failed to get classes', error: error.message });
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to get classes from database', 
+        error: error.message,
+        details: error.details,
+        hint: 'Ensure the "classes" table exists and you have run the migration script.'
+      });
       return;
     }
 
@@ -88,7 +94,13 @@ export const createClass = async (req: Request, res: Response): Promise<void> =>
 
     if (error) {
       console.error('Error creating class:', error);
-      res.status(500).json({ success: false, message: 'Failed to create class', error: error.message });
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to create class in database', 
+        error: error.message,
+        details: error.details,
+        hint: 'Ensure the "classes" table exists and migrations are up to date.'
+      });
       return;
     }
 
