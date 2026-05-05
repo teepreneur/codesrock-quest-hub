@@ -13,6 +13,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 
 const teacherMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
