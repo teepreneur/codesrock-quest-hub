@@ -22,40 +22,46 @@ export const getOverview = async (
 
     const [
       { count: totalTeachers },
+      { count: totalStudents },
       { count: activeToday },
       { count: totalCourses },
       { count: newUsersThisMonth },
       { count: totalActivities },
     ] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').eq('is_active', true),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student').eq('is_active', true),
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').gte('last_login', yesterday.toISOString()).eq('is_active', true),
       supabase.from('courses').select('*', { count: 'exact', head: true }).eq('is_published', true),
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').gte('created_at', thirtyDaysAgo.toISOString()),
       supabase.from('activities').select('*', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo.toISOString()),
     ]);
 
-    // Calculate average completion rate
+    // Calculate average teacher completion rate
     const { data: allProgress } = await supabase.from('video_progress').select('watched_seconds, total_seconds');
-    const avgCompletionRate = allProgress && allProgress.length > 0
+    const avgTeacherCompletion = allProgress && allProgress.length > 0
       ? allProgress.reduce((sum, p) => sum + (p.total_seconds > 0 ? (p.watched_seconds / p.total_seconds) * 100 : 0), 0) / allProgress.length
       : 0;
 
-    // Get engagement trend (last 7 days) - simplified
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const { data: recentActivities } = await supabase
-      .from('activities')
-      .select('timestamp')
-      .gte('timestamp', sevenDaysAgo.toISOString());
+    // Calculate average student completion rate (manual topic mastery)
+    const { data: studentMastery } = await supabase.from('student_topic_progress').select('id');
+    const { count: totalPossibleMastery } = await supabase.from('topics').select('*', { count: 'exact', head: true }).eq('is_active', true);
+    
+    // Simplified: Percentage of students who have completed at least one topic
+    const { data: studentsWithProgress } = await supabase.from('student_topic_progress').select('student_id', { count: 'exact', head: true });
+    const studentCompletionRate = totalStudents && totalStudents > 0 
+      ? (studentsWithProgress?.length || 0) / totalStudents * 100 
+      : 0;
 
     res.status(200).json({
       success: true,
       data: {
         stats: {
           totalTeachers: totalTeachers || 0,
+          totalStudents: totalStudents || 0,
           activeToday: activeToday || 0,
           totalCourses: totalCourses || 0,
-          avgCompletionRate: Math.round(avgCompletionRate),
+          avgTeacherCompletion: Math.round(avgTeacherCompletion),
+          studentCompletionRate: Math.round(studentCompletionRate),
         },
         trends: {
           newUsersThisMonth: newUsersThisMonth || 0,

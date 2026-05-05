@@ -21,4 +21,10 @@ router.post('/:classId/enroll-email', authorize('super_admin', 'school_admin', '
 router.get('/:classId/analytics', authorize('super_admin', 'school_admin', 'teacher'), classController.getClassAnalytics);
 router.post('/:classId/manual-enroll', authorize('super_admin', 'school_admin', 'teacher'), classController.manuallyCreateAndEnroll);
 
+router.route('/:classId/progress')
+  .get(authorize('super_admin', 'school_admin', 'teacher'), classController.getStudentProgress)
+  .post(authorize('super_admin', 'school_admin', 'teacher'), classController.updateStudentProgress);
+
+router.get('/:classId/students/:studentId/report', authorize('super_admin', 'school_admin', 'teacher'), classController.getStudentReport);
+
 export default router;

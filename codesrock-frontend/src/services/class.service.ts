@@ -119,6 +119,31 @@ class ClassService {
   async enrollManually(classId: string, firstName: string, lastName: string): Promise<any> {
     return apiService.post(`/classes/${classId}/manual-enroll`, { firstName, lastName });
   }
+
+  /**
+   * Get topic progress for a class
+   */
+  async getProgress(classId: string): Promise<{
+    students: { id: string, name: string }[],
+    topics: { id: string, title: string, order_index: number }[],
+    progress: { student_id: string, topic_id: string }[]
+  }> {
+    return apiService.get<any>(`/classes/${classId}/progress`);
+  }
+
+  /**
+   * Update student topic mastery
+   */
+  async updateProgress(classId: string, data: { studentId: string, topicId: string, completed: boolean }): Promise<any> {
+    return apiService.post(`/classes/${classId}/progress`, data);
+  }
+
+  /**
+   * Get student achievement report
+   */
+  async getStudentReport(classId: string, studentId: string): Promise<any> {
+    return apiService.get<any>(`/classes/${classId}/students/${studentId}/report`);
+  }
 }
 
 export const classService = new ClassService();

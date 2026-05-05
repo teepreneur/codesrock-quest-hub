@@ -489,3 +489,212 @@ export const manuallyCreateAndEnroll = async (req: Request, res: Response): Prom
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
+
+/**
+ * Get progress for all students in a class
+ * GET /api/classes/:classId/progress
+ */
+export const getStudentProgress = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { classId } = req.params;
+
+    // 1. Get the course assigned to this class to know which topics to track
+    const { data: cls, error: clsError } = await supabase
+      .from('classes')
+      .select('course_id, teacher_id')
+      .eq('id', classId)
+      .single();
+
+    if (clsError || !cls) {
+      res.status(404).json({ success: false, message: 'Class not found' });
+      return;
+    }
+
+    if (!cls.course_id) {
+      res.status(200).json({ success: true, data: { students: [], topics: [], progress: [] } });
+      return;
+    }
+
+    // 2. Get all topics for this course
+    const { data: topics, error: topicsError } = await supabase
+      .from('topics')
+      .select('id, title, order_index')
+      .eq('course_id', cls.course_id)
+      .eq('is_active', true)
+      .order('order_index');
+
+    if (topicsError) throw topicsError;
+
+    // 3. Get all students in the class
+    const { data: enrollments, error: enrollError } = await supabase
+      .from('class_students')
+      .select('student_id, profiles(first_name, last_name)')
+      .eq('class_id', classId);
+
+    if (enrollError) throw enrollError;
+
+    // 4. Get all progress records for these students and these topics
+    const studentIds = enrollments?.map(e => e.student_id) || [];
+    const topicIds = topics?.map(t => t.id) || [];
+
+    const { data: progress, error: progressError } = await supabase
+      .from('student_topic_progress')
+      .select('*')
+      .in('student_id', studentIds)
+      .in('topic_id', topicIds);
+
+    if (progressError) throw progressError;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        topics: topics || [],
+        students: enrollments?.map(e => ({
+          id: e.student_id,
+          name: `${(e.profiles as any)?.first_name} ${(e.profiles as any)?.last_name}`
+        })) || [],
+        progress: progress || []
+      }
+    });
+  } catch (error: any) {
+    console.error('Error in getStudentProgress:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+/**
+ * Update mastery for a student/topic
+ * POST /api/classes/:classId/progress
+ */
+export const updateStudentProgress = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { classId } = req.params;
+    const { studentId, topicId, completed } = req.body;
+
+    // Security Check: IDOR Protection
+    const { data: cls } = await supabase.from('classes').select('teacher_id').eq('id', classId).single();
+    if (!cls || (cls.teacher_id !== req.user?.userId && !['super_admin', 'school_admin'].includes(req.user?.role || ''))) {
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
+    if (completed) {
+      const { error } = await supabase
+        .from('student_topic_progress')
+        .upsert({
+          student_id: studentId,
+          topic_id: topicId,
+          teacher_id: req.user?.userId,
+          completed_at: new Date().toISOString()
+        }, { onConflict: 'student_id,topic_id' });
+      
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from('student_topic_progress')
+        .delete()
+        .eq('student_id', studentId)
+        .eq('topic_id', topicId);
+      
+      if (error) throw error;
+    }
+
+    res.status(200).json({ success: true, message: 'Progress updated successfully' });
+  } catch (error: any) {
+    console.error('Error in updateStudentProgress:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+/**
+ * Get a detailed report for a student
+ * GET /api/classes/:classId/students/:studentId/report
+ */
+export const getStudentReport = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { classId, studentId } = req.params;
+
+    // 1. Get Class and Course info
+    const { data: cls, error: clsError } = await supabase
+      .from('classes')
+      .select('*, courses(*), schools(name)')
+      .eq('id', classId)
+      .single();
+
+    if (clsError || !cls) {
+      res.status(404).json({ success: false, message: 'Class not found' });
+      return;
+    }
+
+    // 2. Get Student Profile
+    const { data: student, error: studentError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', studentId)
+      .single();
+
+    if (studentError || !student) {
+      res.status(404).json({ success: false, message: 'Student not found' });
+      return;
+    }
+
+    // 3. Get all topics for the course
+    const { data: topics, error: topicsError } = await supabase
+      .from('topics')
+      .select('*')
+      .eq('course_id', cls.course_id)
+      .eq('is_active', true)
+      .order('order_index');
+
+    if (topicsError) throw topicsError;
+
+    // 4. Get student mastery
+    const { data: mastery, error: masteryError } = await supabase
+      .from('student_topic_progress')
+      .select('*')
+      .eq('student_id', studentId);
+
+    if (masteryError) throw masteryError;
+
+    // 5. Compile report
+    const topicReports = (topics || []).map(topic => ({
+      id: topic.id,
+      title: topic.title,
+      description: topic.description,
+      completed: mastery?.some(m => m.topic_id === topic.id) || false,
+      completed_at: mastery?.find(m => m.topic_id === topic.id)?.completed_at
+    }));
+
+    const completedCount = topicReports.filter(t => t.completed).length;
+    const completionPercentage = topicReports.length > 0 ? (completedCount / topicReports.length) * 100 : 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        student: {
+          id: student.id,
+          name: `${student.first_name} ${student.last_name}`,
+          email: student.email
+        },
+        class: {
+          id: cls.id,
+          name: cls.name,
+          school: cls.schools?.name
+        },
+        course: {
+          title: cls.courses?.title,
+          description: cls.courses?.description
+        },
+        mastery: topicReports,
+        stats: {
+          completedCount,
+          totalTopics: topicReports.length,
+          completionPercentage: Math.round(completionPercentage)
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error('Error in getStudentReport:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};

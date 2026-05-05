@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { classService, type Class, type ClassEnrollment, type ClassAnalytics } from "@/services/class.service";
 import { authService } from "@/services/auth.service";
+import ProgressTracking from "@/components/classes/ProgressTracking";
 
 export default function ClassDetails() {
   const { id: classId } = useParams<{ id: string }>();
@@ -121,6 +122,10 @@ export default function ClassDetails() {
       <Tabs defaultValue="roster" className="w-full">
         <TabsList className="bg-muted/50 p-1 rounded-xl mb-6">
           <TabsTrigger value="roster" className="rounded-lg font-black uppercase text-[10px] tracking-widest px-8">Roster</TabsTrigger>
+          <TabsTrigger value="progress" className="rounded-lg font-black uppercase text-[10px] tracking-widest px-8">
+            <CheckCircle className="mr-2 h-3 w-3" />
+            Progress Tracking
+          </TabsTrigger>
           <TabsTrigger value="activity" className="rounded-lg font-black uppercase text-[10px] tracking-widest px-8">Live Activity</TabsTrigger>
         </TabsList>
 
@@ -185,13 +190,24 @@ export default function ClassDetails() {
                               />
                             </div>
                           </div>
-                          <div className="text-right space-y-1">
+                          <div className="text-right space-y-2">
                             <div className="text-[10px] font-bold text-muted-foreground uppercase">
                               {enrollment.progress?.last_active ? new Date(enrollment.progress.last_active).toLocaleDateString() : 'Never'}
                             </div>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive/50 hover:text-destructive hover:bg-destructive/10">
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
+                            <div className="flex justify-end gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-primary hover:bg-primary/10"
+                                onClick={() => navigate(`/classes/${classId}/students/${enrollment.student_id}/report`)}
+                                title="View Achievement Report"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/50 hover:text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))
@@ -260,6 +276,10 @@ export default function ClassDetails() {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="progress">
+           <ProgressTracking classId={classId!} />
         </TabsContent>
 
         <TabsContent value="activity">

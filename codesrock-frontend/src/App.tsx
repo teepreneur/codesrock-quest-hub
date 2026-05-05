@@ -27,6 +27,7 @@ const ContentManagement = lazy(() => import("./pages/admin/ContentManagement"));
 const Analytics = lazy(() => import("./pages/admin/Analytics"));
 const SchoolManagement = lazy(() => import("./pages/admin/SchoolManagement"));
 const SchoolPerformance = lazy(() => import("./pages/admin/SchoolPerformance"));
+const StudentReport = lazy(() => import("./pages/StudentReport"));
 
 // Loading fallback
 const PageLoader = () => (
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/classes" element={<Classes />} />
               <Route path="/classes/:id" element={<ClassDetails />} />
+              <Route path="/classes/:classId/students/:studentId/report" element={<StudentReport />} />
               
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
