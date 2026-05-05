@@ -20,7 +20,8 @@ export default function ClassDetails() {
   const [analytics, setAnalytics] = useState<ClassAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [newStudentEmail, setNewStudentEmail] = useState("");
+  const [newStudentFirstName, setNewStudentFirstName] = useState("");
+  const [newStudentLastName, setNewStudentLastName] = useState("");
 
   useEffect(() => {
     if (classId) loadClassData();
@@ -49,18 +50,22 @@ export default function ClassDetails() {
     }
   };
 
-  const handleAddStudent = async () => {
-    if (!newStudentEmail) return;
+  const handleManualAdd = async () => {
+    if (!newStudentFirstName || !newStudentLastName) {
+      toast.error("Please enter both first and last name");
+      return;
+    }
     
     try {
       setLoading(true);
-      await classService.enrollByEmail(classId!, newStudentEmail);
-      toast.success("Student enrolled successfully!");
-      setNewStudentEmail("");
-      loadClassData(); // Refresh list
+      await classService.enrollManually(classId!, newStudentFirstName, newStudentLastName);
+      toast.success("Student added successfully!");
+      setNewStudentFirstName("");
+      setNewStudentLastName("");
+      loadClassData();
     } catch (error: any) {
-      console.error('Enrollment error:', error);
-      toast.error(error.message || "Failed to enroll student. Make sure they are registered.");
+      console.error('Manual add error:', error);
+      toast.error(error.message || "Failed to add student.");
     } finally {
       setLoading(false);
     }
@@ -155,8 +160,14 @@ export default function ClassDetails() {
                               {enrollment.student?.first_name} {enrollment.student?.last_name}
                             </div>
                             <div className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {enrollment.student?.email}
+                              {enrollment.student?.email.includes('@codesrock.internal') ? (
+                                <Badge variant="outline" className="text-[9px] h-4 bg-muted/30 border-none px-1">Manual Entry</Badge>
+                              ) : (
+                                <>
+                                  <Mail className="h-3 w-3" />
+                                  {enrollment.student?.email}
+                                </>
+                              )}
                             </div>
                           </div>
                           <div className="text-center">
@@ -197,25 +208,36 @@ export default function ClassDetails() {
 
             {/* Side Info */}
             <div className="space-y-6">
-              <Card className="glass-panel">
+              <Card className="glass-panel border-primary/20 bg-primary/5">
                 <CardHeader>
-                  <CardTitle className="text-lg font-black text-deep-purple">Quick Enroll</CardTitle>
+                  <CardTitle className="text-lg font-black text-deep-purple flex items-center gap-2">
+                    <UserPlus className="h-5 w-5 text-primary" />
+                    Direct Student Add
+                  </CardTitle>
+                  <CardDescription className="text-[10px] font-bold uppercase">No email required for early grades</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Student Email</label>
-                    <div className="flex gap-2">
-                      <Input 
-                        placeholder="student@email.com" 
-                        className="rounded-xl border-muted"
-                        value={newStudentEmail}
-                        onChange={(e) => setNewStudentEmail(e.target.value)}
-                      />
-                      <Button size="icon" className="rounded-xl shrink-0" onClick={handleAddStudent}>
-                        <UserPlus className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">First Name</label>
+                    <Input 
+                      placeholder="e.g. John" 
+                      className="rounded-xl border-muted bg-background/50"
+                      value={newStudentFirstName}
+                      onChange={(e) => setNewStudentFirstName(e.target.value)}
+                    />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Last Name</label>
+                    <Input 
+                      placeholder="e.g. Doe" 
+                      className="rounded-xl border-muted bg-background/50"
+                      value={newStudentLastName}
+                      onChange={(e) => setNewStudentLastName(e.target.value)}
+                    />
+                  </div>
+                  <Button className="w-full rounded-xl font-bold" onClick={handleManualAdd}>
+                    Add to Roster
+                  </Button>
                 </CardContent>
               </Card>
 

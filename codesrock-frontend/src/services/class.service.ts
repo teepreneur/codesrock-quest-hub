@@ -112,6 +112,13 @@ class ClassService {
   async enrollByEmail(classId: string, email: string): Promise<ClassEnrollment> {
     return apiService.post<ClassEnrollment>(`/classes/${classId}/enroll-email`, { email });
   }
+
+  /**
+   * Manually create and enroll a student
+   */
+  async enrollManually(classId: string, firstName: string, lastName: string): Promise<any> {
+    return apiService.post(`/classes/${classId}/manual-enroll`, { firstName, lastName });
+  }
 }
 
 export const classService = new ClassService();

@@ -408,3 +408,84 @@ export const getClassAnalytics = async (req: Request, res: Response): Promise<vo
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
+
+/**
+ * Manually create a student and enroll them (for K-3 users without email)
+ * POST /api/classes/:classId/manual-enroll
+ */
+export const manuallyCreateAndEnroll = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { classId } = req.params;
+    const { firstName, lastName } = req.body;
+
+    if (!firstName || !lastName) {
+      res.status(400).json({ success: false, message: 'First name and last name are required' });
+      return;
+    }
+
+    // Security Check: IDOR Protection
+    const { data: cls } = await supabase.from('classes').select('teacher_id, school_id').eq('id', classId).single();
+    if (!cls || (cls.teacher_id !== req.user?.userId && !['super_admin', 'school_admin'].includes(req.user?.role || ''))) {
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
+    // 1. Create a placeholder email
+    const placeholderEmail = `student_${Date.now()}_${Math.floor(Math.random() * 1000)}@codesrock.internal`;
+    const tempPassword = Math.random().toString(36).slice(-12);
+
+    // 2. Create the auth user (using admin privileges)
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email: placeholderEmail,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: { first_name: firstName, last_name: lastName, role: 'student' }
+    });
+
+    if (authError) {
+      console.error('Error creating student auth:', authError);
+      throw authError;
+    }
+
+    // 3. Update the profile to ensure role and school_id are correct
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .update({ 
+        first_name: firstName, 
+        last_name: lastName, 
+        role: 'student',
+        school_id: cls.school_id 
+      })
+      .eq('id', authUser.user.id)
+      .select()
+      .single();
+
+    if (profileError) {
+      console.error('Error updating student profile:', profileError);
+    }
+
+    // 4. Enroll in class
+    const { data: enrollment, error: enrollError } = await supabase
+      .from('class_students')
+      .insert({
+        class_id: classId,
+        student_id: authUser.user.id
+      })
+      .select()
+      .single();
+
+    if (enrollError) throw enrollError;
+
+    res.status(201).json({
+      success: true,
+      message: 'Student created and enrolled successfully',
+      data: {
+        student: profile || { first_name: firstName, last_name: lastName, id: authUser.user.id },
+        enrollment
+      }
+    });
+  } catch (error: any) {
+    console.error('Error in manuallyCreateAndEnroll:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
