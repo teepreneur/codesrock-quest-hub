@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trophy, BookOpen, Clock, TrendingUp, Flame, Award, AlertCircle, Target, Star, LogIn, Sparkles, GraduationCap, ArrowRight } from "lucide-react";
+import { Trophy, BookOpen, Clock, TrendingUp, Flame, Award, AlertCircle, Target, Star, LogIn, Sparkles, GraduationCap, ArrowRight, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { dashboardService } from "@/services/dashboard.service";
 import { authService } from "@/services/auth.service";
