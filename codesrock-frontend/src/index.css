@@ -83,15 +83,23 @@
 @layer utilities {
   .glass-panel {
     @apply bg-white/70 backdrop-blur-md border border-white/40 shadow-xl;
+    transform: translateZ(0); /* Force GPU compositing layer for smoother blurs */
+    backface-visibility: hidden;
   }
   
   .dark .glass-panel {
     @apply bg-slate-900/70 backdrop-blur-md border-white/10 shadow-2xl;
+    transform: translateZ(0);
+  }
+  
+  .animate-float {
+    will-change: transform; /* Hint to GPU for upcoming motion */
   }
   
   .logic-spark-cloud {
     @apply relative p-6 bg-white rounded-[2rem] shadow-2xl border border-primary/20;
     filter: drop-shadow(0 10px 15px rgba(70, 197, 213, 0.1));
+    transform: translateZ(0);
   }
   
   .logic-spark-cloud::after {

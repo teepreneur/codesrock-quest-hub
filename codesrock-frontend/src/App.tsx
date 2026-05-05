@@ -40,7 +40,16 @@ const PageLoader = () => (
   </div>
 );
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 minute global stale time
+      gcTime: 15 * 60 * 1000, // 15 minutes garbage collection
+      refetchOnWindowFocus: false, // Prevent redundant background fetches on tab switch
+      retry: 1, // Fail faster on errors, specific queries can override
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

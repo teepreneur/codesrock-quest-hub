@@ -59,10 +59,14 @@ export interface ClassEnrollment {
 
 class ClassService {
   /**
-   * Get all classes for a teacher
+   * Get all classes for a teacher with optional pagination
    */
-  async getTeacherClasses(teacherId: string): Promise<Class[]> {
-    return apiService.get<Class[]>(`/classes?teacherId=${teacherId}`);
+  async getTeacherClasses(teacherId: string, params?: { page?: number; limit?: number }): Promise<Class[]> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    
+    return apiService.get<Class[]>(`/classes?teacherId=${teacherId}&${queryParams.toString()}`);
   }
 
   /**
@@ -78,10 +82,14 @@ class ClassService {
   }
 
   /**
-   * Get students in a class
+   * Get students in a class with optional pagination
    */
-  async getClassStudents(classId: string): Promise<ClassEnrollment[]> {
-    return apiService.get<ClassEnrollment[]>(`/classes/${classId}/students`);
+  async getClassStudents(classId: string, params?: { page?: number; limit?: number }): Promise<ClassEnrollment[]> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    return apiService.get<ClassEnrollment[]>(`/classes/${classId}/students?${queryParams.toString()}`);
   }
 
   /**

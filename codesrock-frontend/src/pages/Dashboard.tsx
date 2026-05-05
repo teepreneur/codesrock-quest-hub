@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -76,15 +77,24 @@ export default function Dashboard() {
     );
   }
 
-  const { user, progress, stats, recentActivities, courseProgress, recommendedCourses } = data;
+  const { user: dashboardUser, progress, stats, recentActivities, courseProgress, recommendedCourses } = data;
 
-  const levelProgress = progress.levelDetails?.progressToNextLevel || 0;
-  const nextLevelXP = progress.levelDetails?.next?.minXP || 0;
-  const xpToNextLevel = nextLevelXP - progress.currentXP;
+  // Memoize heavy calculations to prevent redundant processing on re-renders
+  const { levelProgress, nextLevelXP, xpToNextLevel, completionPercentage } = useMemo(() => {
+    const lp = progress.levelDetails?.progressToNextLevel || 0;
+    const nXP = progress.levelDetails?.next?.minXP || 0;
+    const xTN = nXP - progress.currentXP;
+    const cp = stats.totalCourses > 0
+      ? Math.round((stats.completedCourses / stats.totalCourses) * 100)
+      : 0;
 
-  const completionPercentage = stats.totalCourses > 0
-    ? Math.round((stats.completedCourses / stats.totalCourses) * 100)
-    : 0;
+    return {
+      levelProgress: lp,
+      nextLevelXP: nXP,
+      xpToNextLevel: xTN,
+      completionPercentage: cp
+    };
+  }, [progress, stats]);
 
   return (
     <div className="space-y-8 animate-fade-in-up pb-10">
@@ -110,7 +120,7 @@ export default function Dashboard() {
             <div className="flex-1 space-y-4 text-center md:text-left">
               <div className="logic-spark-cloud inline-block max-w-lg mb-4 animate-scale-in">
                 <p className="text-deep-purple font-heading text-lg font-semibold leading-relaxed">
-                  "Logic sparks flying! ✨ Welcome back, Teacher {user.firstName}! I'm so excited to continue our coding journey together. Ready to rock some code? 🤘"
+                  "Logic sparks flying! ✨ Welcome back, Teacher {dashboardUser.firstName}! I'm so excited to continue our coding journey together. Ready to rock some code? 🤘"
                 </p>
               </div>
               <h1 className="text-3xl md:text-5xl font-heading font-extrabold tracking-tight">
