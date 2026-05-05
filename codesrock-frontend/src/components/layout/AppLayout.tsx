@@ -3,6 +3,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
 
+// V2.0 Layout System - Live Update
 export function AppLayout() {
   return (
     <SidebarProvider>

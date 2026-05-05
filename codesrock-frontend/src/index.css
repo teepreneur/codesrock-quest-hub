@@ -107,3 +107,8 @@
     @apply absolute bottom-0 left-10 w-6 h-6 bg-white border-r border-b border-primary/20 rotate-45 translate-y-1/2;
   }
 }
+
+/* V2.0 Sidebar Force Update Marker */
+.sidebar-v2-marker {
+  animation: none !important;
+}
