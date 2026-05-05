@@ -319,3 +319,92 @@ export const enrollStudentByEmail = async (req: Request, res: Response): Promise
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 };
+
+/**
+ * Get analytics for a specific class
+ * GET /api/classes/:classId/analytics
+ */
+export const getClassAnalytics = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { classId } = req.params;
+
+    // Security Check: IDOR Protection
+    const { data: cls } = await supabase.from('classes').select('teacher_id').eq('id', classId).single();
+    if (!cls || (cls.teacher_id !== req.user?.userId && !['super_admin', 'school_admin'].includes(req.user?.role || ''))) {
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
+      return;
+    }
+
+    // 1. Get all students in the class
+    const { data: enrollments, error: enrollError } = await supabase
+      .from('class_students')
+      .select('student_id')
+      .eq('class_id', classId);
+
+    if (enrollError) throw enrollError;
+
+    if (!enrollments || enrollments.length === 0) {
+      res.status(200).json({
+        success: true,
+        data: {
+          class_id: classId,
+          average_completion: 0,
+          total_xp: 0,
+          active_students: 0,
+          student_progress: []
+        }
+      });
+      return;
+    }
+
+    const studentIds = enrollments.map(e => e.student_id);
+
+    // 2. Get detailed progress for all students
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, email')
+      .in('id', studentIds);
+
+    if (profileError) throw profileError;
+
+    const { data: progress, error: progressError } = await supabase
+      .from('user_progress')
+      .select('*')
+      .in('user_id', studentIds);
+
+    if (progressError) throw progressError;
+
+    // 3. Compile analytics
+    const studentProgress = profiles.map(p => {
+      const prog = progress?.find(pr => pr.user_id === p.id);
+      return {
+        student_id: p.id,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        email: p.email,
+        xp: prog?.current_xp || 0,
+        level: prog?.current_level || 1,
+        completion_percentage: 0, // Calculated dynamically in a real app based on courses
+        last_active: prog?.updated_at
+      };
+    });
+
+    const totalXP = studentProgress.reduce((sum, s) => sum + s.xp, 0);
+    const avgCompletion = studentProgress.length > 0 ? 
+      studentProgress.reduce((sum, s) => sum + s.completion_percentage, 0) / studentProgress.length : 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        class_id: classId,
+        average_completion: Math.round(avgCompletion),
+        total_xp: totalXP,
+        active_students: studentProgress.length,
+        student_progress: studentProgress
+      }
+    });
+  } catch (error: any) {
+    console.error('Error in getClassAnalytics:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};

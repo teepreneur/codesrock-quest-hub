@@ -18,5 +18,6 @@ router.route('/:classId/students')
 
 router.post('/:classId/batch-enroll', authorize('super_admin', 'school_admin', 'teacher'), classController.batchEnrollStudents);
 router.post('/:classId/enroll-email', authorize('super_admin', 'school_admin', 'teacher'), classController.enrollStudentByEmail);
+router.get('/:classId/analytics', authorize('super_admin', 'school_admin', 'teacher'), classController.getClassAnalytics);
 
 export default router;

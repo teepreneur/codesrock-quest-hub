@@ -19,6 +19,7 @@ export default function Classes() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   
@@ -60,6 +61,7 @@ export default function Classes() {
     }
 
     try {
+      setCreating(true);
       const user = authService.getStoredUser();
       if (!user?.id) return;
 
@@ -77,6 +79,8 @@ export default function Classes() {
     } catch (error) {
       console.error('Failed to create class:', error);
       toast.error('Failed to create class');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -162,8 +166,8 @@ export default function Classes() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="w-full" onClick={handleCreateClass}>
-                Create Class
+              <Button className="w-full" onClick={handleCreateClass} disabled={creating}>
+                {creating ? "Creating..." : "Create Class"}
               </Button>
             </div>
           </DialogContent>
