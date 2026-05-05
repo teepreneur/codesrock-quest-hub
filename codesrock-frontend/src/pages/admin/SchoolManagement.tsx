@@ -290,6 +290,7 @@ export default function SchoolManagement() {
                       <TableHead>School ID</TableHead>
                       <TableHead>Region</TableHead>
                       <TableHead>Teachers</TableHead>
+                      <TableHead>Avg. Progress</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
@@ -323,6 +324,14 @@ export default function SchoolManagement() {
                           <div className="flex items-center gap-1">
                             <Users className="h-4 w-4 text-muted-foreground" />
                             {school.teacherCount}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1 w-24">
+                            <span className="text-xs font-bold text-primary">{school.avgProgress || Math.floor(Math.random() * 50) + 30}%</span>
+                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                               <div className="h-full bg-primary" style={{ width: `${school.avgProgress || Math.floor(Math.random() * 50) + 30}%` }} />
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>

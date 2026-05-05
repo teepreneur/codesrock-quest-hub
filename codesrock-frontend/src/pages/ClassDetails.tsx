@@ -9,13 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, UserPlus, BookOpen, ArrowLeft, Mail, Search, Trash2, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
-import { classService, type Class, type ClassEnrollment } from "@/services/class.service";
+import { classService, type Class, type ClassEnrollment, type ClassAnalytics } from "@/services/class.service";
 
 export default function ClassDetails() {
   const { id: classId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [cls, setCls] = useState<Class | null>(null);
   const [students, setStudents] = useState<ClassEnrollment[]>([]);
+  const [analytics, setAnalytics] = useState<ClassAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [newStudentEmail, setNewStudentEmail] = useState("");
@@ -27,16 +28,18 @@ export default function ClassDetails() {
   const loadClassData = async () => {
     try {
       setLoading(true);
-      // For now we get all teacher classes and find this one, or we could add getById
-      // Since I didn't add getById to service, I'll use list filtered for now or just fetch students
-      const [allClasses, studentsData] = await Promise.all([
-        classService.getTeacherClasses(""), // Service handles fetching by teacher internally or we pass it
-        classService.getClassStudents(classId!)
+      const user = authService.getStoredUser();
+      
+      const [allClasses, studentsData, analyticsData] = await Promise.all([
+        classService.getTeacherClasses(user?.id || ""),
+        classService.getClassStudents(classId!),
+        classService.getClassAnalytics(classId!)
       ]);
 
       const foundClass = allClasses.find(c => c.id === classId);
       if (foundClass) setCls(foundClass);
       setStudents(studentsData);
+      setAnalytics(analyticsData);
     } catch (error) {
       console.error('Failed to load class data:', error);
       toast.error('Failed to load class details');
@@ -128,32 +131,54 @@ export default function ClassDetails() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <div className="grid grid-cols-3 p-3 bg-muted/50 font-medium text-xs uppercase tracking-wider">
-                <span>Student</span>
-                <span>Email</span>
-                <span className="text-right">Actions</span>
+            <div className="rounded-md border overflow-hidden">
+              <div className="grid grid-cols-5 p-3 bg-muted/50 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span className="col-span-2">Student</span>
+                <span className="text-center">Level/XP</span>
+                <span className="text-center">Completion</span>
+                <span className="text-right">Activity</span>
               </div>
               <div className="divide-y">
                 {filteredStudents.length > 0 ? (
                   filteredStudents.map((enrollment) => (
-                    <div key={enrollment.id} className="grid grid-cols-3 p-3 items-center text-sm">
-                      <div className="font-medium">
-                        {enrollment.student?.first_name} {enrollment.student?.last_name}
+                    <div key={enrollment.id} className="grid grid-cols-5 p-4 items-center text-sm hover:bg-muted/30 transition-colors">
+                      <div className="col-span-2 space-y-1">
+                        <div className="font-bold text-deep-purple">
+                          {enrollment.student?.first_name} {enrollment.student?.last_name}
+                        </div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Mail className="h-3 w-3" />
+                          {enrollment.student?.email}
+                        </div>
                       </div>
-                      <div className="text-muted-foreground flex items-center gap-1">
-                        <Mail className="h-3 w-3" />
-                        {enrollment.student?.email}
+                      <div className="text-center">
+                        <div className="font-black text-primary">LVL {enrollment.progress?.level || 1}</div>
+                        <div className="text-[10px] text-muted-foreground font-bold">{enrollment.progress?.xp || 0} XP</div>
                       </div>
-                      <div className="text-right">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                          <Trash2 className="h-4 w-4" />
+                      <div className="px-4">
+                        <div className="flex items-center justify-between text-[10px] font-bold mb-1">
+                          <span>{enrollment.progress?.completion_percentage || 0}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-accent" 
+                            style={{ width: `${enrollment.progress?.completion_percentage || 0}%` }} 
+                          />
+                        </div>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase">
+                          {enrollment.progress?.last_active ? new Date(enrollment.progress.last_active).toLocaleDateString() : 'Never'}
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive/50 hover:text-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="p-8 text-center text-muted-foreground italic">
+                  <div className="p-12 text-center text-muted-foreground italic">
+                    <Users className="h-8 w-8 mx-auto mb-2 opacity-20" />
                     No students enrolled yet.
                   </div>
                 )}
@@ -164,49 +189,56 @@ export default function ClassDetails() {
 
         {/* Enrollment Side Info */}
         <div className="space-y-6">
-          <Card>
+          <Card className="glass-panel">
             <CardHeader>
-              <CardTitle className="text-lg">Quick Enroll</CardTitle>
-              <CardDescription>Add a student by their email address.</CardDescription>
+              <CardTitle className="text-lg font-black text-deep-purple">Quick Enroll</CardTitle>
+              <CardDescription className="font-medium">Add a student by their email address.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase text-muted-foreground">Student Email</label>
+                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Student Email</label>
                 <div className="flex gap-2">
                   <Input 
                     placeholder="student@email.com" 
+                    className="rounded-xl border-muted"
                     value={newStudentEmail}
                     onChange={(e) => setNewStudentEmail(e.target.value)}
                   />
-                  <Button size="icon" onClick={handleAddStudent}>
+                  <Button size="icon" className="rounded-xl shrink-0" onClick={handleAddStudent}>
                     <UserPlus className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
-              <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                <p className="text-xs text-primary font-medium mb-1">PRO TIP</p>
-                <p className="text-xs text-muted-foreground">
+              <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                <p className="text-[10px] text-primary font-black mb-1 uppercase tracking-wider">PRO TIP</p>
+                <p className="text-xs text-muted-foreground font-medium">
                   You can also share the Class ID with students so they can join themselves!
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-panel border-primary/20">
             <CardHeader>
-              <CardTitle className="text-lg">Class Progress</CardTitle>
+              <CardTitle className="text-lg font-black text-deep-purple">Class Progress</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-end mb-1">
-                <span className="text-sm font-medium">Average Completion</span>
-                <span className="text-2xl font-bold text-primary">0%</span>
+                <span className="text-xs font-black text-muted-foreground uppercase tracking-wider">Average Completion</span>
+                <span className="text-3xl font-black text-primary">{analytics?.average_completion || 0}%</span>
               </div>
-              <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-primary" style={{ width: '0%' }} />
+              <div className="h-3 w-full bg-muted rounded-full overflow-hidden shadow-inner">
+                <div 
+                  className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000" 
+                  style={{ width: `${analytics?.average_completion || 0}%` }} 
+                />
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <CheckCircle className="h-3 w-3" />
-                No assignments completed yet
+              <div className="flex items-center justify-between text-[10px] font-black text-muted-foreground uppercase tracking-widest pt-2">
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3 text-secondary" />
+                  {analytics?.active_students || 0} Active
+                </div>
+                <div>{analytics?.total_xp || 0} Total XP</div>
               </div>
             </CardContent>
           </Card>

@@ -18,6 +18,26 @@ export interface Class {
   };
 }
 
+export interface StudentProgress {
+  student_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  xp: number;
+  level: number;
+  completion_percentage: number;
+  last_active?: string;
+  current_module?: string;
+}
+
+export interface ClassAnalytics {
+  class_id: string;
+  average_completion: number;
+  total_xp: number;
+  active_students: number;
+  student_progress: StudentProgress[];
+}
+
 export interface ClassEnrollment {
   id: string;
   class_id: string;
@@ -28,6 +48,12 @@ export interface ClassEnrollment {
     email: string;
     first_name: string;
     last_name: string;
+  };
+  progress?: {
+    xp: number;
+    level: number;
+    completion_percentage: number;
+    last_active: string;
   };
 }
 
@@ -63,6 +89,13 @@ class ClassService {
    */
   async batchEnroll(classId: string, studentIds: string[]): Promise<any> {
     return apiService.post(`/classes/${classId}/batch-enroll`, { studentIds });
+  }
+
+  /**
+   * Get analytics for a specific class
+   */
+  async getClassAnalytics(classId: string): Promise<ClassAnalytics> {
+    return apiService.get<ClassAnalytics>(`/classes/${classId}/analytics`);
   }
 
   /**

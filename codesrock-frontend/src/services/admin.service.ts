@@ -84,6 +84,7 @@ export interface School {
   district?: string;
   contactEmail?: string;
   teacherCount: number;
+  avgProgress?: number;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;

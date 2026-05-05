@@ -109,56 +109,55 @@ export default function AdminDashboard() {
         </div>
       </section>
 
-      {/* Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="glass-panel border-primary/20 hover:scale-105 transition-all duration-300 group overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -mr-10 -mt-10 blur-xl" />
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Total Teachers</CardTitle>
-            <Users className="h-5 w-5 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-black text-primary mb-1">{stats.totalTeachers}</div>
-            <p className="text-xs font-bold text-muted-foreground/70">+12% from last month</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-panel border-secondary/20 hover:scale-105 transition-all duration-300 group overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-secondary/5 rounded-full -mr-10 -mt-10 blur-xl" />
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Active Today</CardTitle>
-            <Activity className="h-5 w-5 text-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-black text-secondary mb-1">{stats.activeToday}</div>
-            <p className="text-xs font-bold text-muted-foreground/70">{Math.round((stats.activeToday / stats.totalTeachers) * 100)}% engagement rate</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-panel border-accent/20 hover:scale-105 transition-all duration-300 group overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-accent/5 rounded-full -mr-10 -mt-10 blur-xl" />
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Content Count</CardTitle>
-            <BookOpen className="h-5 w-5 text-accent" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-black text-accent mb-1">{stats.totalCourses}</div>
-            <p className="text-xs font-bold text-muted-foreground/70">Published modules</p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-panel border-deep-purple/20 hover:scale-105 transition-all duration-300 group overflow-hidden">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-deep-purple/5 rounded-full -mr-10 -mt-10 blur-xl" />
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Avg Progress</CardTitle>
-            <TrendingUp className="h-5 w-5 text-deep-purple" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-black text-deep-purple mb-1">{stats.avgCompletionRate}%</div>
-            <p className="text-xs font-bold text-muted-foreground/70">Global completion avg</p>
-          </CardContent>
-        </Card>
       </div>
+      
+      {/* School Progress Highlights */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-black text-deep-purple flex items-center gap-2">
+            <Shield className="h-6 w-6 text-primary" />
+            School Success Metrics
+          </h2>
+          <Button variant="outline" size="sm" onClick={() => navigate('/admin/schools')} className="rounded-xl font-bold">
+            View All Schools
+          </Button>
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-3">
+          {[
+            { name: "Lincoln Elementary", progress: 78, active: 124, trend: "up" },
+            { name: "Westside Academy", progress: 62, active: 89, trend: "up" },
+            { name: "East Village Tech", progress: 45, active: 210, trend: "down" }
+          ].map((school, i) => (
+            <Card key={i} className="glass-panel overflow-hidden group hover:border-primary/40 transition-colors">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-black text-deep-purple">{school.name}</h3>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{school.active} Students Active</p>
+                  </div>
+                  <Badge className={school.trend === 'up' ? 'bg-green-500' : 'bg-orange-500'}>
+                    {school.trend === 'up' ? '↑ Increasing' : '↓ Static'}
+                  </Badge>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span>Curriculum Completion</span>
+                    <span className="text-primary">{school.progress}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000" 
+                      style={{ width: `${school.progress}%` }} 
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
 
       {/* Analytics & Actions */}
       <div className="grid gap-8 lg:grid-cols-2">
