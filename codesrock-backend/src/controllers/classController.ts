@@ -86,8 +86,8 @@ export const createClass = async (req: Request, res: Response): Promise<void> =>
       .insert({
         name,
         teacher_id: teacherId,
-        course_id: courseId,
-        school_id: schoolId
+        course_id: courseId || null,
+        school_id: schoolId || null
       })
       .select()
       .single();
