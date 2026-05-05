@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "./AppSidebar";
+import { AppSidebar } from "./AppSidebarV2";
 import { AppHeader } from "./AppHeader";
 
 // V2.0 Layout System - Live Update

@@ -60,7 +60,7 @@ export function AppSidebar() {
               <div className="animate-fade-in">
                 <h2 className="font-heading font-black text-xl text-deep-purple leading-tight tracking-tight italic">CodesRock</h2>
                 <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-80">
-                  {isAdmin ? 'Admin Console' : 'Teacher Hub'} • V2.0 - LIVE
+                  {isAdmin ? 'Admin Console' : 'Teacher Hub'} • <span className="text-red-500 animate-bounce">V2 SYSTEM</span>
                 </p>
               </div>
             )}
