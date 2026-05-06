@@ -43,9 +43,13 @@ export const getAllCourses = async (
         const [
           { count: totalViews },
           { count: completions },
+          { count: topicCount },
+          { count: videoCount },
         ] = await Promise.all([
           supabase.from('video_progress').select('*', { count: 'exact', head: true }).eq('course_id', course.id),
           supabase.from('video_progress').select('*', { count: 'exact', head: true }).eq('course_id', course.id).eq('completed', true),
+          supabase.from('topics').select('*', { count: 'exact', head: true }).eq('course_id', course.id).eq('is_active', true),
+          supabase.from('videos').select('*', { count: 'exact', head: true }).eq('course_id', course.id).eq('is_active', true),
         ]);
 
         return {
@@ -54,6 +58,8 @@ export const getAllCourses = async (
             totalViews: totalViews || 0,
             completions: completions || 0,
             completionRate: totalViews && totalViews > 0 ? ((completions || 0) / totalViews) * 100 : 0,
+            topicCount: topicCount || 0,
+            videoCount: videoCount || 0,
           },
         };
       })
