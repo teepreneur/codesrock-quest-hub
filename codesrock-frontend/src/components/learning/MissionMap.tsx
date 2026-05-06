@@ -23,40 +23,40 @@ interface MissionMapProps {
 
 export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, moduleTitle }) => {
   return (
-    <div className="relative w-full h-full animate-fade-in flex flex-col">
-      {/* Header - Subtle & Integrated */}
-      <div className="mb-8 flex flex-col gap-1">
-        <h2 className="text-xl font-black text-deep-purple italic tracking-tight">Mission Map</h2>
-        <p className="text-sm text-muted-foreground font-bold tracking-tight">Level: {moduleTitle}</p>
+    <div className="relative w-full h-full animate-fade-in flex flex-col pr-4">
+      {/* Integrated Header */}
+      <div className="mb-6 flex flex-col">
+        <h2 className="text-lg font-black text-deep-purple tracking-tight italic opacity-80">Mission Map</h2>
+        <p className="text-xs text-muted-foreground font-bold tracking-widest uppercase opacity-60">{moduleTitle}</p>
       </div>
 
       {/* The Journey Path */}
-      <div className="relative flex-1 p-4 pb-20 overflow-y-auto custom-scrollbar overflow-x-hidden">
-        {/* The Connection SVG Line */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-10" preserveAspectRatio="none">
+      <div className="relative flex-1 pb-20 overflow-y-auto custom-scrollbar overflow-x-hidden px-4">
+        {/* Connection Path SVG - More fluid zig-zag */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.08]" preserveAspectRatio="none">
            <path 
-            d={`M ${nodes.length > 0 ? '50%' : '0'},100 ${nodes.map((_, i) => `Q ${i % 2 === 0 ? '80%' : '20%'},${i * 300 + 250} 50%,${i * 300 + 400}`).join(' ')}`}
+            d={`M 50%,50 ${nodes.map((_, i) => `C ${i % 2 === 0 ? '70%' : '30%'},${i * 220 + 100} ${i % 2 === 0 ? '70%' : '30%'},${i * 220 + 180} 50%,${i * 220 + 250}`).join(' ')}`}
             fill="none" 
             stroke="hsl(var(--primary))" 
-            strokeWidth="8" 
-            strokeDasharray="16 16"
+            strokeWidth="6" 
+            strokeDasharray="12 12"
           />
         </svg>
 
-        <div className="relative flex flex-col items-center gap-24 py-10">
+        <div className="relative flex flex-col items-center gap-12 py-4">
           {nodes.map((node, index) => {
             const isEven = index % 2 === 0;
             return (
               <div 
                 key={node.id} 
-                className={`flex items-center w-full max-w-4xl px-10 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}
+                className={`flex items-center w-full max-w-3xl ${isEven ? 'flex-row' : 'flex-row-reverse'}`}
               >
-                {/* Video Node Card */}
-                <div className="w-1/2 flex justify-center">
+                {/* Compact Mission Card */}
+                <div className="w-[45%] flex justify-center">
                   <Card 
                     className={`
-                      w-72 overflow-hidden rounded-[2rem] transition-all duration-500 cursor-pointer border-4 group
-                      ${node.status === 'active' ? 'border-primary shadow-2xl scale-105' : 'border-white hover:border-primary/50 shadow-lg hover:shadow-xl'}
+                      w-full max-w-[240px] overflow-hidden rounded-[1.5rem] transition-all duration-500 cursor-pointer border-2 group
+                      ${node.status === 'active' ? 'border-primary shadow-xl scale-105' : 'border-transparent bg-white/40 backdrop-blur-sm hover:border-primary/30 shadow-md hover:shadow-lg'}
                       ${node.status === 'watched' ? 'opacity-90' : ''}
                     `}
                     onClick={() => onNodeClick(node)}
@@ -67,51 +67,55 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                         {node.thumbnail ? (
                           <img src={node.thumbnail} alt={node.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                             <Play className="h-12 w-12 text-primary opacity-40 group-hover:scale-125 transition-transform" />
+                          <div className="w-full h-full bg-gradient-to-br from-primary/10 via-primary/5 to-white flex items-center justify-center">
+                             <div className="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center shadow-inner">
+                                <Play className="h-5 w-5 text-primary opacity-30 group-hover:opacity-100 transition-opacity ml-0.5" />
+                             </div>
                           </div>
                         )}
                         
-                        {/* Play Overlay */}
-                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                           <div className={`
-                              w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500
-                              ${node.status === 'active' ? 'bg-primary text-white scale-110' : 'bg-white text-primary group-hover:scale-110'}
-                           `}>
-                              {node.status === 'watched' ? (
-                                <CheckCircle className="h-8 w-8" />
-                              ) : (
-                                <Play className="h-8 w-8 fill-current ml-1" />
-                              )}
-                           </div>
+                        {/* Status Overlay */}
+                        <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors flex items-center justify-center">
+                           {node.status === 'active' && (
+                             <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg animate-pulse">
+                                <Play className="h-5 w-5 fill-current ml-0.5" />
+                             </div>
+                           )}
+                           {node.status === 'watched' && (
+                             <div className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center shadow-lg">
+                                <CheckCircle className="h-5 w-5" />
+                             </div>
+                           )}
                         </div>
 
-                        {/* Status Badge */}
-                        <div className="absolute top-4 left-4">
-                           <Badge className={`font-black uppercase text-[9px] ${node.status === 'watched' ? 'bg-green-500' : node.status === 'active' ? 'bg-primary animate-pulse' : 'bg-muted'}`}>
+                        {/* Top-Right Badge */}
+                        <div className="absolute top-2 right-2">
+                           <Badge className={`text-[8px] font-black uppercase px-2 py-0.5 tracking-tighter ${node.status === 'watched' ? 'bg-green-500' : node.status === 'active' ? 'bg-primary' : 'bg-muted text-muted-foreground'}`}>
                               {node.status}
                            </Badge>
                         </div>
                       </div>
 
-                      {/* Info Area */}
-                      <div className="p-5 bg-white space-y-2">
-                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {node.duration || 5} MINS</span>
-                           <span className="flex items-center gap-1 text-primary"><Star className="h-3 w-3 fill-primary" /> +{node.xpReward} XP</span>
+                      {/* Integrated Info Area */}
+                      <div className="p-4 space-y-2">
+                        <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest text-muted-foreground/60">
+                           <span className="flex items-center gap-1"><Clock className="h-2.5 w-2.5" /> {node.duration || 5}M</span>
+                           <span className="flex items-center gap-1 text-primary"><Star className="h-2.5 w-2.5 fill-primary" /> +{node.xpReward} XP</span>
                         </div>
-                        <h3 className="text-sm font-black text-deep-purple leading-tight line-clamp-2">{index + 1}. {node.title}</h3>
+                        <h3 className="text-xs font-black text-deep-purple leading-tight line-clamp-2">{index + 1}. {node.title}</h3>
                         
-                        <Button className={`w-full rounded-xl font-black h-9 text-xs transition-all ${node.status === 'active' ? 'bg-primary' : 'variant-outline border-muted-foreground/20'}`}>
-                           {node.status === 'watched' ? 'Watch Again' : node.status === 'active' ? 'Resume Mission' : 'Start Mission'}
+                        <Button 
+                          className={`w-full rounded-xl font-black h-8 text-[10px] transition-all shadow-sm ${node.status === 'active' ? 'bg-primary text-white' : 'bg-white border border-muted/20 text-muted-foreground hover:text-primary hover:border-primary/30'}`}
+                        >
+                           {node.status === 'watched' ? 'Review' : node.status === 'active' ? 'Resume' : 'Start'}
                         </Button>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
-                {/* Empty Half to create the Zig-Zag flow */}
-                <div className="w-1/2" />
+                {/* Zig-Zag Gap */}
+                <div className="w-[55%]" />
               </div>
             );
           })}
