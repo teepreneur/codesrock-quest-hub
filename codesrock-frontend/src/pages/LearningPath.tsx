@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play, CheckCircle, Clock, Star, Lock, ChevronRight, Layout, Map as MapIcon } from "lucide-react";
+import { Play, CheckCircle, Clock, Star, ChevronRight, Layout, Map as MapIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { courseService, type CourseWithProgress, type CourseDetail, type VideoItem } from "@/services/course.service";
@@ -109,9 +109,9 @@ export default function LearningPath() {
 
   if (loading) {
     return (
-      <div className="flex gap-8 animate-fade-in h-[calc(100vh-120px)]">
-        <Skeleton className="w-80 h-full rounded-[2.5rem]" />
-        <Skeleton className="flex-1 h-full rounded-[2.5rem]" />
+      <div className="flex gap-6 animate-fade-in h-[calc(100vh-140px)]">
+        <Skeleton className="w-72 h-full rounded-[2rem]" />
+        <Skeleton className="flex-1 h-full rounded-[2rem]" />
       </div>
     );
   }
@@ -120,7 +120,7 @@ export default function LearningPath() {
   const missionNodes: MissionNode[] = (currentTopic?.videos || []).map((v: any, idx: number) => ({
     id: v.id,
     title: v.title,
-    status: v.userProgress?.completed ? 'watched' : (idx === 0 || (currentTopic?.videos[idx-1]?.userProgress?.completed)) ? 'active' : 'locked',
+    status: v.userProgress?.completed ? 'watched' : (idx === 0 || (currentTopic?.videos[idx-1]?.userProgress?.completed)) ? 'active' : 'available',
     type: 'video',
     duration: v.duration,
     xpReward: v.xp_reward,
@@ -128,47 +128,45 @@ export default function LearningPath() {
   }));
 
   return (
-    <div className="flex gap-8 animate-fade-in pb-10 h-[calc(100vh-120px)] overflow-hidden">
+    <div className="flex gap-6 animate-fade-in pb-4 h-[calc(100vh-140px)] overflow-hidden">
       
       {/* LEFT COLUMN: MODULES SIDEBAR */}
-      <div className="w-80 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
-        <div className="px-2">
-           <h1 className="text-sm font-black text-primary uppercase tracking-[0.3em] mb-6">Learning Path</h1>
+      <div className="w-72 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar shrink-0">
+        <div className="px-1">
+           <h1 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-4">Learning Path</h1>
            
-           <div className="space-y-4">
+           <div className="space-y-3">
               {(courseDetail?.course?.topics || []).map((topic, idx) => {
                 const isActive = selectedTopicId === topic.id;
                 const isCompleted = (topic.videos || []).every((v: any) => v.userProgress?.completed);
-                const isLocked = idx > 0 && !(courseDetail?.course?.topics[idx-1]?.videos || []).every((v: any) => v.userProgress?.completed);
 
                 return (
                   <Card 
                     key={topic.id}
-                    onClick={() => !isLocked && setSelectedTopicId(topic.id)}
+                    onClick={() => setSelectedTopicId(topic.id)}
                     className={`
-                      relative group cursor-pointer transition-all duration-500 rounded-[1.5rem] border-2
-                      ${isActive ? 'bg-white border-primary shadow-xl scale-[1.02]' : 'bg-white/50 border-transparent hover:border-muted/50'}
-                      ${isLocked ? 'opacity-50 grayscale cursor-not-allowed' : ''}
+                      relative group cursor-pointer transition-all duration-300 rounded-[1.2rem] border-2
+                      ${isActive ? 'bg-white border-primary shadow-lg scale-[1.02]' : 'bg-white/50 border-transparent hover:border-muted/50'}
                     `}
                   >
-                    <CardContent className="p-5 flex items-center gap-4">
+                    <CardContent className="p-4 flex items-center gap-3">
                       <div className={`
-                        w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500
+                        w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shrink-0
                         ${isCompleted ? 'bg-green-100 text-green-600' : isActive ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}
                       `}>
-                        {isCompleted ? <CheckCircle className="h-6 w-6" /> : isLocked ? <Lock className="h-5 w-5" /> : <Play className="h-6 w-6" />}
+                        {isCompleted ? <CheckCircle className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
                       </div>
                       
-                      <div className="flex-1">
-                        <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[9px] font-black uppercase tracking-widest mb-0.5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
                            Module {idx} {isActive && '• ACTIVE'}
                         </p>
-                        <h3 className={`text-sm font-black leading-tight ${isActive ? 'text-deep-purple' : 'text-muted-foreground'}`}>
+                        <h3 className={`text-xs font-black leading-tight truncate ${isActive ? 'text-deep-purple' : 'text-muted-foreground'}`}>
                            {topic.title}
                         </h3>
                       </div>
 
-                      {isActive && <ChevronRight className="h-5 w-5 text-primary animate-pulse-slow" />}
+                      {isActive && <ChevronRight className="h-4 w-4 text-primary" />}
                     </CardContent>
                   </Card>
                 );
@@ -176,15 +174,15 @@ export default function LearningPath() {
            </div>
         </div>
 
-        {/* Course Switcher (if multiple courses exist) */}
+        {/* Course Switcher */}
         {courses.length > 1 && (
-           <div className="mt-auto px-2 pt-6 border-t border-muted/30">
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">Other Missions</p>
+           <div className="mt-auto px-1 pt-4 border-t border-muted/30">
+              <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-2">Other Missions</p>
               <div className="space-y-2">
                  {courses.filter(c => c.id !== selectedCourse?.id).map(c => (
-                    <Button key={c.id} variant="outline" className="w-full justify-start rounded-xl border-muted/30 text-xs font-bold py-5" onClick={() => handleCourseSelect(c)}>
-                       <Layout className="mr-2 h-4 w-4" />
-                       {c.title}
+                    <Button key={c.id} variant="outline" className="w-full justify-start rounded-xl border-muted/30 text-[10px] font-bold h-10 px-3" onClick={() => handleCourseSelect(c)}>
+                       <Layout className="mr-2 h-3.5 w-3.5" />
+                       <span className="truncate">{c.title}</span>
                     </Button>
                  ))}
               </div>
@@ -193,9 +191,9 @@ export default function LearningPath() {
       </div>
 
       {/* RIGHT COLUMN: MISSION MAP */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden h-full">
         {detailLoading ? (
-           <Skeleton className="w-full h-full rounded-[2.5rem]" />
+           <Skeleton className="w-full h-full rounded-[2rem]" />
         ) : currentTopic ? (
            <MissionMap 
               nodes={missionNodes} 
@@ -203,13 +201,13 @@ export default function LearningPath() {
               moduleTitle={currentTopic.title}
            />
         ) : (
-           <div className="w-full h-full bg-muted/20 rounded-[2.5rem] border border-dashed border-muted/50 flex flex-col items-center justify-center text-center p-20 gap-4">
-              <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center">
-                 <MapIcon className="h-10 w-10 text-muted-foreground/30" />
+           <div className="w-full h-full bg-muted/20 rounded-[2rem] border border-dashed border-muted/50 flex flex-col items-center justify-center text-center p-10 gap-4">
+              <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center">
+                 <MapIcon className="h-8 w-8 text-muted-foreground/30" />
               </div>
               <div>
-                 <h3 className="text-xl font-black text-deep-purple">No Module Selected</h3>
-                 <p className="text-muted-foreground max-w-sm">Please select a module from the sidebar to begin your mission!</p>
+                 <h3 className="text-lg font-black text-deep-purple">Select a Module</h3>
+                 <p className="text-xs text-muted-foreground max-w-xs">Pick a module from the sidebar to start your learning mission.</p>
               </div>
            </div>
         )}
