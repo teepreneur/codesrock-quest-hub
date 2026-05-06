@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Bell, Search, User, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,9 +14,15 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { authService } from "@/services";
 import { useNavigate } from "react-router-dom";
 
-export function AppHeader() {
-  const navigate = useNavigate();
-  const user = authService.getStoredUser();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/resources?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+    }
+  };
 
   const handleLogout = () => {
     authService.logout();
@@ -26,14 +33,16 @@ export function AppHeader() {
     <header className="sticky top-0 z-40 w-full border-b border-muted/30 bg-white/60 backdrop-blur-xl px-6 h-20 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <SidebarTrigger className="lg:hidden" />
-        <div className="relative hidden md:block group">
+        <form onSubmit={handleSearch} className="relative hidden md:block group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <input
             type="text"
             placeholder="Search resources..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 pr-4 py-2 bg-muted/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all w-64 lg:w-80"
           />
-        </div>
+        </form>
       </div>
 
       <div className="flex items-center gap-4">
