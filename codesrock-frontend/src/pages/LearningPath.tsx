@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play, CheckCircle, Clock, Star, ChevronRight, Layout, Map as MapIcon } from "lucide-react";
+import { Play, CheckCircle, Clock, Star, ChevronRight, Layout, Map as MapIcon, Info } from "lucide-react";
 import { toast } from "sonner";
 
 import { courseService, type CourseWithProgress, type CourseDetail, type VideoItem } from "@/services/course.service";
@@ -35,8 +35,6 @@ export default function LearningPath() {
       if (!user?.id) return;
       const data = await courseService.getCourses({ userId: user.id });
       setCourses(data);
-      
-      // Auto-select first course if available
       if (data.length > 0) {
         handleCourseSelect(data[0]);
       }
@@ -54,8 +52,6 @@ export default function LearningPath() {
       const user = authService.getStoredUser();
       const detail = await courseService.getCourseById(course.id, user?.id);
       setCourseDetail(detail);
-      
-      // Auto-select first topic
       if (detail.course?.topics?.length > 0) {
         setSelectedTopicId(detail.course.topics[0].id);
       }
@@ -76,15 +72,12 @@ export default function LearningPath() {
   const handleWatchVideo = (node: MissionNode) => {
     const topic = courseDetail?.course?.topics?.find(t => t.id === selectedTopicId);
     const video = topic?.videos?.find((v: any) => v.id === node.id);
-    
     if (!video) {
       toast.error("Video data not found");
       return;
     }
-
     const videoId = extractYouTubeVideoId(video.video_url || "");
     if (!videoId) { toast.error("Video not available"); return; }
-    
     setWatchingVideo(video);
     setIsPlayerOpen(true);
   };
@@ -117,8 +110,8 @@ export default function LearningPath() {
   if (loading) {
     return (
       <div className="flex gap-6 animate-fade-in h-[calc(100vh-140px)]">
-        <Skeleton className="w-64 h-full rounded-[1.5rem]" />
-        <Skeleton className="flex-1 h-full rounded-[1.5rem]" />
+        <Skeleton className="w-80 h-full rounded-[2rem]" />
+        <Skeleton className="flex-1 h-full rounded-[2rem]" />
       </div>
     );
   }
@@ -135,14 +128,19 @@ export default function LearningPath() {
   }));
 
   return (
-    <div className="flex gap-6 animate-fade-in pb-4 h-[calc(100vh-120px)] overflow-hidden">
+    <div className="flex gap-8 animate-fade-in pb-4 h-[calc(100vh-120px)] overflow-hidden">
       
-      {/* LEFT COLUMN: MODULES SIDEBAR - More Compact */}
-      <div className="w-72 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar shrink-0">
-        <div className="px-1">
-           <h1 className="text-[9px] font-black text-primary uppercase tracking-[0.4em] mb-4 opacity-50">Track</h1>
+      {/* LEFT COLUMN: MISSION BRIEFING SIDEBAR */}
+      <div className="w-80 flex flex-col gap-6 bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-muted/20 p-6 shadow-sm overflow-hidden shrink-0">
+        <div className="flex flex-col h-full overflow-hidden">
+           <div className="flex items-center gap-2 mb-6 px-2">
+              <div className="w-8 h-8 rounded-lg bg-deep-purple/10 flex items-center justify-center">
+                 <Info className="h-4 w-4 text-deep-purple" />
+              </div>
+              <h1 className="text-[10px] font-black text-deep-purple uppercase tracking-[0.4em] opacity-80">Mission Briefing</h1>
+           </div>
            
-           <div className="space-y-2">
+           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3 pb-6">
               {(courseDetail?.course?.topics || []).map((topic, idx) => {
                 const isActive = selectedTopicId === topic.id;
                 const isCompleted = (topic.videos || []).every((v: any) => v.userProgress?.completed);
@@ -152,55 +150,54 @@ export default function LearningPath() {
                     key={topic.id}
                     onClick={() => setSelectedTopicId(topic.id)}
                     className={`
-                      relative group cursor-pointer transition-all duration-300 rounded-[1.2rem] border-2
-                      ${isActive ? 'bg-white border-primary shadow-md scale-[1.02]' : 'bg-white/40 border-transparent hover:border-primary/20'}
+                      relative group cursor-pointer transition-all duration-300 rounded-[1.5rem] border-2
+                      ${isActive ? 'bg-white border-primary shadow-xl scale-[1.02]' : 'bg-white/50 border-transparent hover:border-primary/20'}
                     `}
                   >
-                    <CardContent className="p-4 flex items-center gap-3">
+                    <CardContent className="p-4 flex items-center gap-4">
                       <div className={`
-                        w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 shrink-0
-                        ${isCompleted ? 'bg-green-100 text-green-600' : isActive ? 'bg-primary text-white shadow-md' : 'bg-muted text-muted-foreground'}
+                        w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shrink-0
+                        ${isCompleted ? 'bg-green-100 text-green-600 shadow-sm' : isActive ? 'bg-primary text-white shadow-lg' : 'bg-muted/50 text-muted-foreground'}
                       `}>
                         {isCompleted ? <CheckCircle className="h-5 w-5" /> : <Play className="h-4 w-4 ml-0.5" />}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-0.5 ${isActive ? 'text-primary' : 'text-muted-foreground/50'}`}>
-                           Mod {idx} {isActive && '• ON'}
+                        <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${isActive ? 'text-primary' : 'text-muted-foreground/60'}`}>
+                           Region {idx} {isActive && '• SCANNING'}
                         </p>
                         <h3 className={`text-xs font-black leading-tight truncate ${isActive ? 'text-deep-purple' : 'text-muted-foreground'}`}>
                            {topic.title}
                         </h3>
                       </div>
-
-                      {isActive && <ChevronRight className="h-4 w-4 text-primary" />}
+                      {isActive && <ChevronRight className="h-5 w-5 text-primary animate-pulse-slow" />}
                     </CardContent>
                   </Card>
                 );
               })}
            </div>
-        </div>
 
-        {/* Course Switcher */}
-        {courses.length > 1 && (
-           <div className="mt-auto px-1 pt-4 border-t border-muted/20">
-              <p className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-widest mb-2">Switch</p>
-              <div className="grid gap-2">
-                 {courses.filter(c => c.id !== selectedCourse?.id).map(c => (
-                    <Button key={c.id} variant="outline" className="w-full justify-start rounded-xl border-muted/10 text-[9px] font-bold h-10 px-3 hover:border-primary/20" onClick={() => handleCourseSelect(c)}>
-                       <Layout className="mr-2 h-3.5 w-3.5 text-primary opacity-60" />
-                       <span className="truncate opacity-80">{c.title}</span>
-                    </Button>
-                 ))}
+           {/* Track Switcher Integrated into Sidebar */}
+           {courses.length > 1 && (
+              <div className="pt-6 border-t border-muted/20">
+                 <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest mb-3">Expedition Track</p>
+                 <div className="grid gap-2">
+                    {courses.filter(c => c.id !== selectedCourse?.id).map(c => (
+                       <Button key={c.id} variant="outline" className="w-full justify-start rounded-2xl border-muted/20 text-[10px] font-bold h-12 px-4 hover:border-primary/40 bg-white/30" onClick={() => handleCourseSelect(c)}>
+                          <Layout className="mr-2 h-4 w-4 text-primary opacity-60" />
+                          <span className="truncate">{c.title}</span>
+                       </Button>
+                    ))}
+                 </div>
               </div>
-           </div>
-        )}
+           )}
+        </div>
       </div>
 
-      {/* RIGHT COLUMN: MISSION MAP */}
+      {/* RIGHT COLUMN: EXPEDITION MAP */}
       <div className="flex-1 h-full">
         {detailLoading ? (
-           <Skeleton className="w-full h-full rounded-[2rem]" />
+           <Skeleton className="w-full h-full rounded-[3rem]" />
         ) : currentTopic ? (
            <MissionMap 
               nodes={missionNodes} 
@@ -208,36 +205,36 @@ export default function LearningPath() {
               moduleTitle={currentTopic.title}
            />
         ) : (
-           <div className="w-full h-full bg-muted/5 rounded-[2rem] border-4 border-dashed border-muted/10 flex flex-col items-center justify-center text-center p-10 gap-4">
-              <div className="w-16 h-16 rounded-full bg-muted/10 flex items-center justify-center">
-                 <MapIcon className="h-8 w-8 text-muted-foreground/20" />
+           <div className="w-full h-full bg-muted/5 rounded-[3rem] border-4 border-dashed border-muted/10 flex flex-col items-center justify-center text-center p-10 gap-4">
+              <div className="w-20 h-20 rounded-full bg-muted/10 flex items-center justify-center">
+                 <MapIcon className="h-10 w-10 text-muted-foreground/20" />
               </div>
               <div className="space-y-1">
-                 <h3 className="text-lg font-black text-deep-purple italic">Begin Mission</h3>
-                 <p className="text-[10px] text-muted-foreground max-w-xs font-bold">Select a module to start your journey.</p>
+                 <h3 className="text-xl font-black text-deep-purple italic">Ready for Expedition?</h3>
+                 <p className="text-sm text-muted-foreground max-w-xs font-bold">Select a mission region from the briefing to begin.</p>
               </div>
            </div>
         )}
       </div>
 
-      {/* Video Player Dialog */}
+      {/* Video Expedition Player */}
       <Dialog open={isPlayerOpen} onOpenChange={setIsPlayerOpen}>
-        <DialogContent className="max-w-5xl rounded-[2.5rem] overflow-hidden border-none p-0 bg-transparent shadow-none">
+        <DialogContent className="max-w-5xl rounded-[3.5rem] overflow-hidden border-none p-0 bg-transparent shadow-none">
           {watchingVideo && (
-            <div className="bg-white rounded-[2.5rem] overflow-hidden border-8 border-white shadow-2xl">
-              <div className="p-6 bg-deep-purple text-white flex justify-between items-center">
+            <div className="bg-white rounded-[3.5rem] overflow-hidden border-[12px] border-white shadow-2xl">
+              <div className="p-10 bg-deep-purple text-white flex justify-between items-center">
                 <div className="space-y-1">
-                   <p className="text-[9px] font-black uppercase tracking-[0.3em] opacity-50">Viewing</p>
-                   <DialogTitle className="text-xl font-black italic">{watchingVideo.title}</DialogTitle>
+                   <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60">Expedition Playback</p>
+                   <DialogTitle className="text-3xl font-black italic tracking-tight">{watchingVideo.title}</DialogTitle>
                 </div>
-                <div className="flex gap-4">
-                   <div className="bg-white/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
-                      <Clock className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-[10px] font-black">{watchingVideo.duration}m</span>
+                <div className="flex gap-6">
+                   <div className="bg-white/10 px-5 py-2.5 rounded-2xl flex items-center gap-3">
+                      <Clock className="h-5 w-5 text-primary" />
+                      <span className="text-xs font-black">{watchingVideo.duration}m</span>
                    </div>
-                   <div className="bg-white/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
-                      <Star className="h-3.5 w-3.5 text-primary fill-primary" />
-                      <span className="text-[10px] font-black">+{watchingVideo.xp_reward} XP</span>
+                   <div className="bg-white/10 px-5 py-2.5 rounded-2xl flex items-center gap-3">
+                      <Star className="h-5 w-5 text-primary fill-primary" />
+                      <span className="text-xs font-black">+{watchingVideo.xp_reward} XP</span>
                    </div>
                 </div>
               </div>
@@ -250,9 +247,9 @@ export default function LearningPath() {
                   showControls={true} 
                 />
               </div>
-              <div className="p-6 flex items-center justify-center">
-                <Button className="rounded-2xl font-black px-10 h-12 text-base shadow-lg shadow-primary/10" onClick={() => setIsPlayerOpen(false)}>
-                  Mission Complete
+              <div className="p-10 flex items-center justify-center">
+                <Button className="rounded-2xl font-black px-16 h-16 text-xl shadow-2xl shadow-primary/30" onClick={() => setIsPlayerOpen(false)}>
+                  Mission Complete 🤘
                 </Button>
               </div>
             </div>
