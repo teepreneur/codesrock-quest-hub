@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play, CheckCircle, Clock, Star, ChevronRight, Layout, Map as MapIcon, Info } from "lucide-react";
+import { Play, CheckCircle, Clock, Star, ChevronRight, Layout, Map as MapIcon, Info, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { courseService, type CourseWithProgress, type CourseDetail, type VideoItem } from "@/services/course.service";
@@ -222,40 +222,53 @@ export default function LearningPath() {
         )}
       </div>
 
-      {/* Video Expedition Player */}
+      {/* Video Expedition Player - Perfectly Framed */}
       <Dialog open={isPlayerOpen} onOpenChange={setIsPlayerOpen}>
-        <DialogContent className="max-w-5xl rounded-[3.5rem] overflow-hidden border-none p-0 bg-transparent shadow-none">
+        <DialogContent className="max-w-4xl max-h-[95vh] w-[95vw] rounded-[2.5rem] overflow-hidden border-none p-0 bg-transparent shadow-none flex flex-col">
           {watchingVideo && (
-            <div className="bg-white rounded-[3.5rem] overflow-hidden border-[12px] border-white shadow-2xl">
-              <div className="p-10 bg-deep-purple text-white flex justify-between items-center">
-                <div className="space-y-1">
-                   <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60">Expedition Playback</p>
-                   <DialogTitle className="text-3xl font-black italic tracking-tight">{watchingVideo.title}</DialogTitle>
+            <div className="bg-white rounded-[2.5rem] overflow-hidden border-8 border-white shadow-2xl flex flex-col h-full">
+              {/* Header - More Compact */}
+              <div className="px-8 py-5 bg-deep-purple text-white flex justify-between items-center shrink-0 relative">
+                <div className="space-y-0.5">
+                   <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-60">Expedition Playback</p>
+                   <DialogTitle className="text-xl font-black italic tracking-tight truncate max-w-md">{watchingVideo.title}</DialogTitle>
                 </div>
-                <div className="flex gap-6">
-                   <div className="bg-white/10 px-5 py-2.5 rounded-2xl flex items-center gap-3">
-                      <Clock className="h-5 w-5 text-primary" />
-                      <span className="text-xs font-black">{watchingVideo.duration}m</span>
+                <div className="flex gap-4 items-center pr-10">
+                   <div className="bg-white/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <span className="text-[10px] font-black">{watchingVideo.duration}m</span>
                    </div>
-                   <div className="bg-white/10 px-5 py-2.5 rounded-2xl flex items-center gap-3">
-                      <Star className="h-5 w-5 text-primary fill-primary" />
-                      <span className="text-xs font-black">+{watchingVideo.xp_reward} XP</span>
+                   <div className="bg-white/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                      <Star className="h-4 w-4 text-primary fill-primary" />
+                      <span className="text-[10px] font-black">+{watchingVideo.xp_reward} XP</span>
                    </div>
                 </div>
-              </div>
-              <div className="p-1 bg-muted/5">
-                <YouTubePlayer 
-                  videoId={extractYouTubeVideoId(watchingVideo.video_url || "") || ""} 
-                  title={watchingVideo.title} 
-                  onProgressUpdate={handleProgressUpdate} 
-                  onComplete={handleVideoComplete} 
-                  showControls={true} 
-                />
-              </div>
-              <div className="p-10 flex items-center justify-center">
-                <Button className="rounded-2xl font-black px-16 h-16 text-xl shadow-2xl shadow-primary/30" onClick={() => setIsPlayerOpen(false)}>
-                  Mission Complete 🤘
+                <Button variant="ghost" size="icon" className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white hover:bg-white/10 rounded-full" onClick={() => setIsPlayerOpen(false)}>
+                   <X className="h-5 w-5" />
                 </Button>
+              </div>
+
+              {/* Player Area - Scrollable for safety */}
+              <div className="flex-1 overflow-y-auto bg-muted/5 custom-scrollbar">
+                <div className="p-1">
+                  <YouTubePlayer 
+                    videoId={extractYouTubeVideoId(watchingVideo.video_url || "") || ""} 
+                    title={watchingVideo.title} 
+                    onProgressUpdate={handleProgressUpdate} 
+                    onComplete={handleVideoComplete} 
+                    showControls={true} 
+                  />
+                </div>
+                
+                {/* Footer - More Compact */}
+                <div className="p-6 flex items-center justify-center">
+                  <Button 
+                    className="rounded-2xl font-black px-12 h-14 text-lg shadow-xl shadow-primary/20 hover:scale-105 transition-transform" 
+                    onClick={() => setIsPlayerOpen(false)}
+                  >
+                    Mission Complete 🤘
+                  </Button>
+                </div>
               </div>
             </div>
           )}
