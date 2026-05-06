@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Bell, Search, User, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,9 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { authService } from "@/services";
 import { useNavigate } from "react-router-dom";
 
+export function AppHeader() {
+  const navigate = useNavigate();
+  const user = authService.getStoredUser();
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
