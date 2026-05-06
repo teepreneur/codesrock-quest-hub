@@ -23,6 +23,7 @@ export function CourseFormDialog({ open, onOpenChange, course, onSuccess }: Cour
     title: "",
     description: "",
     thumbnail: "",
+    category: "Computer Science" as any,
     difficulty: "Beginner" as CourseDifficulty,
     xpReward: 100,
     order: 0,
@@ -35,13 +36,14 @@ export function CourseFormDialog({ open, onOpenChange, course, onSuccess }: Cour
         title: course.title || "",
         description: course.description || "",
         thumbnail: course.thumbnail || "",
+        category: (course as any).category || "Computer Science",
         difficulty: course.difficulty || "Beginner",
         xpReward: course.xpReward || (course as any).xp_reward || 100,
         order: course.order || (course as any).order_index || 0,
         isActive: course.isActive !== undefined ? course.isActive : (course as any).is_active !== undefined ? (course as any).is_active : true,
       });
     } else if (open && !course) {
-      setFormData({ title: "", description: "", thumbnail: "", difficulty: "Beginner", xpReward: 100, order: 0, isActive: true });
+      setFormData({ title: "", description: "", thumbnail: "", category: "Computer Science", difficulty: "Beginner", xpReward: 100, order: 0, isActive: true });
     }
   }, [open, course]);
 
@@ -58,12 +60,14 @@ export function CourseFormDialog({ open, onOpenChange, course, onSuccess }: Cour
         title: formData.title,
         description: formData.description,
         thumbnail: formData.thumbnail || "https://via.placeholder.com/400x225?text=Course+Thumbnail",
+        category: formData.category,
         difficulty: formData.difficulty,
         xpReward: formData.xpReward,
+        isActive: formData.isActive,
       };
 
       if (course) {
-        await adminService.updateCourse(course.id || (course as any)._id, courseData);
+        await adminService.updateCourse(course.id || (course as any)._id || (course as any).id, courseData);
         toast.success("Course updated successfully");
       } else {
         await adminService.createCourse(courseData);
@@ -97,6 +101,18 @@ export function CourseFormDialog({ open, onOpenChange, course, onSuccess }: Cour
             <div className="grid gap-2">
               <Label htmlFor="description">Description *</Label>
               <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="What will students learn in this course?" rows={3} required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="category">Category *</Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <SelectTrigger id="category"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="HTML/CSS">HTML/CSS</SelectItem>
+                  <SelectItem value="JavaScript">JavaScript</SelectItem>
+                  <SelectItem value="Computer Science">Computer Science</SelectItem>
+                  <SelectItem value="Creative Coding">Creative Coding</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="difficulty">Difficulty</Label>
