@@ -28,6 +28,7 @@ const Analytics = lazy(() => import("./pages/admin/Analytics"));
 const SchoolManagement = lazy(() => import("./pages/admin/SchoolManagement"));
 const SchoolPerformance = lazy(() => import("./pages/admin/SchoolPerformance"));
 const StudentReport = lazy(() => import("./pages/StudentReport"));
+const SearchResults = lazy(() => import("./pages/SearchResults"));
 
 // Loading fallback
 const PageLoader = () => (
@@ -76,6 +77,7 @@ const App = () => (
               <Route path="/classes" element={<Classes />} />
               <Route path="/classes/:id" element={<ClassDetails />} />
               <Route path="/classes/:classId/students/:studentId/report" element={<StudentReport />} />
+              <Route path="/search" element={<SearchResults />} />
               
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
