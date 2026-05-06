@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -74,9 +73,19 @@ export default function LearningPath() {
     return match ? (match[1] || match[2] || match[3]) : url.length === 11 ? url : null;
   };
 
-  const handleWatchVideo = (video: any) => {
+  const handleWatchVideo = (node: MissionNode) => {
+    // Find the actual video object from the current topic
+    const topic = courseDetail?.course?.topics?.find(t => t.id === selectedTopicId);
+    const video = topic?.videos?.find((v: any) => v.id === node.id);
+    
+    if (!video) {
+      toast.error("Video data not found");
+      return;
+    }
+
     const videoId = extractYouTubeVideoId(video.video_url || "");
     if (!videoId) { toast.error("Video not available"); return; }
+    
     setWatchingVideo(video);
     setIsPlayerOpen(true);
   };
@@ -128,12 +137,12 @@ export default function LearningPath() {
   }));
 
   return (
-    <div className="flex gap-6 animate-fade-in pb-4 h-[calc(100vh-140px)] overflow-hidden">
+    <div className="flex gap-8 animate-fade-in pb-4 h-[calc(100vh-120px)] overflow-hidden pr-4">
       
       {/* LEFT COLUMN: MODULES SIDEBAR */}
-      <div className="w-72 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar shrink-0">
+      <div className="w-80 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar shrink-0">
         <div className="px-1">
-           <h1 className="text-xs font-black text-primary uppercase tracking-[0.3em] mb-4">Learning Path</h1>
+           <h1 className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-6 opacity-60">Learning Path</h1>
            
            <div className="space-y-3">
               {(courseDetail?.course?.topics || []).map((topic, idx) => {
@@ -145,28 +154,28 @@ export default function LearningPath() {
                     key={topic.id}
                     onClick={() => setSelectedTopicId(topic.id)}
                     className={`
-                      relative group cursor-pointer transition-all duration-300 rounded-[1.2rem] border-2
-                      ${isActive ? 'bg-white border-primary shadow-lg scale-[1.02]' : 'bg-white/50 border-transparent hover:border-muted/50'}
+                      relative group cursor-pointer transition-all duration-300 rounded-[1.5rem] border-2
+                      ${isActive ? 'bg-white border-primary shadow-xl scale-[1.02]' : 'bg-white/40 border-transparent hover:border-primary/20'}
                     `}
                   >
-                    <CardContent className="p-4 flex items-center gap-3">
+                    <CardContent className="p-5 flex items-center gap-4">
                       <div className={`
-                        w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shrink-0
-                        ${isCompleted ? 'bg-green-100 text-green-600' : isActive ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}
+                        w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 shrink-0
+                        ${isCompleted ? 'bg-green-100 text-green-600 shadow-sm' : isActive ? 'bg-primary text-white shadow-lg' : 'bg-muted text-muted-foreground'}
                       `}>
-                        {isCompleted ? <CheckCircle className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+                        {isCompleted ? <CheckCircle className="h-6 w-6" /> : <Play className="h-5 w-5 ml-0.5" />}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <p className={`text-[9px] font-black uppercase tracking-widest mb-0.5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
+                        <p className={`text-[9px] font-black uppercase tracking-[0.2em] mb-1 ${isActive ? 'text-primary' : 'text-muted-foreground/60'}`}>
                            Module {idx} {isActive && '• ACTIVE'}
                         </p>
-                        <h3 className={`text-xs font-black leading-tight truncate ${isActive ? 'text-deep-purple' : 'text-muted-foreground'}`}>
+                        <h3 className={`text-sm font-black leading-tight truncate ${isActive ? 'text-deep-purple' : 'text-muted-foreground'}`}>
                            {topic.title}
                         </h3>
                       </div>
 
-                      {isActive && <ChevronRight className="h-4 w-4 text-primary" />}
+                      {isActive && <ChevronRight className="h-5 w-5 text-primary animate-pulse-slow" />}
                     </CardContent>
                   </Card>
                 );
@@ -176,12 +185,12 @@ export default function LearningPath() {
 
         {/* Course Switcher */}
         {courses.length > 1 && (
-           <div className="mt-auto px-1 pt-4 border-t border-muted/30">
-              <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-2">Other Missions</p>
-              <div className="space-y-2">
+           <div className="mt-auto px-1 pt-6 border-t border-muted/20">
+              <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest mb-3">Switch Track</p>
+              <div className="grid gap-2">
                  {courses.filter(c => c.id !== selectedCourse?.id).map(c => (
-                    <Button key={c.id} variant="outline" className="w-full justify-start rounded-xl border-muted/30 text-[10px] font-bold h-10 px-3" onClick={() => handleCourseSelect(c)}>
-                       <Layout className="mr-2 h-3.5 w-3.5" />
+                    <Button key={c.id} variant="outline" className="w-full justify-start rounded-xl border-muted/20 text-[10px] font-bold h-11 px-4 hover:border-primary/30" onClick={() => handleCourseSelect(c)}>
+                       <Layout className="mr-2 h-4 w-4 text-primary" />
                        <span className="truncate">{c.title}</span>
                     </Button>
                  ))}
@@ -191,9 +200,9 @@ export default function LearningPath() {
       </div>
 
       {/* RIGHT COLUMN: MISSION MAP */}
-      <div className="flex-1 overflow-hidden h-full">
+      <div className="flex-1 h-full">
         {detailLoading ? (
-           <Skeleton className="w-full h-full rounded-[2rem]" />
+           <Skeleton className="w-full h-full rounded-[2.5rem]" />
         ) : currentTopic ? (
            <MissionMap 
               nodes={missionNodes} 
@@ -201,13 +210,13 @@ export default function LearningPath() {
               moduleTitle={currentTopic.title}
            />
         ) : (
-           <div className="w-full h-full bg-muted/20 rounded-[2rem] border border-dashed border-muted/50 flex flex-col items-center justify-center text-center p-10 gap-4">
-              <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center">
-                 <MapIcon className="h-8 w-8 text-muted-foreground/30" />
+           <div className="w-full h-full bg-muted/5 rounded-[2.5rem] border-4 border-dashed border-muted/10 flex flex-col items-center justify-center text-center p-10 gap-4">
+              <div className="w-20 h-20 rounded-full bg-muted/10 flex items-center justify-center">
+                 <MapIcon className="h-10 w-10 text-muted-foreground/20" />
               </div>
-              <div>
-                 <h3 className="text-lg font-black text-deep-purple">Select a Module</h3>
-                 <p className="text-xs text-muted-foreground max-w-xs">Pick a module from the sidebar to start your learning mission.</p>
+              <div className="space-y-1">
+                 <h3 className="text-xl font-black text-deep-purple italic">Begin Your Mission</h3>
+                 <p className="text-sm text-muted-foreground max-w-xs font-bold">Select a module from the track to start your learning journey.</p>
               </div>
            </div>
         )}
@@ -215,13 +224,26 @@ export default function LearningPath() {
 
       {/* Video Player Dialog */}
       <Dialog open={isPlayerOpen} onOpenChange={setIsPlayerOpen}>
-        <DialogContent className="max-w-5xl rounded-[2.5rem] overflow-hidden border-none p-0 bg-transparent shadow-none">
+        <DialogContent className="max-w-5xl rounded-[3rem] overflow-hidden border-none p-0 bg-transparent shadow-none">
           {watchingVideo && (
-            <div className="bg-white rounded-[2.5rem] overflow-hidden border-8 border-white shadow-2xl">
-              <DialogHeader className="p-6 bg-deep-purple text-white">
-                <DialogTitle className="text-xl font-black">{watchingVideo.title}</DialogTitle>
-              </DialogHeader>
-              <div className="p-1">
+            <div className="bg-white rounded-[3rem] overflow-hidden border-8 border-white shadow-2xl">
+              <div className="p-8 bg-deep-purple text-white flex justify-between items-center">
+                <div className="space-y-1">
+                   <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">Currently Viewing</p>
+                   <DialogTitle className="text-2xl font-black italic">{watchingVideo.title}</DialogTitle>
+                </div>
+                <div className="flex gap-4">
+                   <div className="bg-white/10 px-4 py-2 rounded-xl flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-black">{watchingVideo.duration}m</span>
+                   </div>
+                   <div className="bg-white/10 px-4 py-2 rounded-xl flex items-center gap-2">
+                      <Star className="h-4 w-4 text-primary fill-primary" />
+                      <span className="text-xs font-black">+{watchingVideo.xp_reward} XP</span>
+                   </div>
+                </div>
+              </div>
+              <div className="p-2 bg-muted/5">
                 <YouTubePlayer 
                   videoId={extractYouTubeVideoId(watchingVideo.video_url || "") || ""} 
                   title={watchingVideo.title} 
@@ -230,19 +252,9 @@ export default function LearningPath() {
                   showControls={true} 
                 />
               </div>
-              <div className="p-6 flex items-center justify-between bg-muted/20">
-                <div className="flex items-center gap-6">
-                  <span className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
-                    <Clock className="h-4 w-4 text-primary" />
-                    {watchingVideo.duration} mins
-                  </span>
-                  <span className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
-                    <Star className="h-4 w-4 text-primary fill-primary" />
-                    +{watchingVideo.xp_reward} XP Reward
-                  </span>
-                </div>
-                <Button className="rounded-xl font-black px-8" onClick={() => setIsPlayerOpen(false)}>
-                  Close Mission
+              <div className="p-8 flex items-center justify-center">
+                <Button className="rounded-2xl font-black px-12 h-14 text-lg shadow-xl shadow-primary/20" onClick={() => setIsPlayerOpen(false)}>
+                  Complete Mission
                 </Button>
               </div>
             </div>
