@@ -104,15 +104,13 @@ export function CourseFormDialog({ open, onOpenChange, course, onSuccess }: Cour
             </div>
             <div className="grid gap-2">
               <Label htmlFor="category">Category *</Label>
-              <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                <SelectTrigger id="category"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="HTML/CSS">HTML/CSS</SelectItem>
-                  <SelectItem value="JavaScript">JavaScript</SelectItem>
-                  <SelectItem value="Computer Science">Computer Science</SelectItem>
-                  <SelectItem value="Creative Coding">Creative Coding</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input 
+                id="category" 
+                value={formData.category} 
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })} 
+                placeholder="e.g. Robotics, AI, Logic" 
+                required 
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="difficulty">Difficulty</Label>
