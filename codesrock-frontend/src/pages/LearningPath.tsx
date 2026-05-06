@@ -69,6 +69,12 @@ export default function LearningPath() {
     return match ? (match[1] || match[2] || match[3]) : url.length === 11 ? url : null;
   };
 
+  const getYouTubeThumbnail = (url: string | undefined): string | undefined => {
+    const videoId = extractYouTubeVideoId(url);
+    if (!videoId) return undefined;
+    return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  };
+
   const handleWatchVideo = (node: MissionNode) => {
     const topic = courseDetail?.course?.topics?.find(t => t.id === selectedTopicId);
     const video = topic?.videos?.find((v: any) => v.id === node.id);
@@ -124,7 +130,7 @@ export default function LearningPath() {
     type: 'video',
     duration: v.duration,
     xpReward: v.xp_reward,
-    thumbnail: v.thumbnail
+    thumbnail: v.thumbnail || getYouTubeThumbnail(v.video_url)
   }));
 
   return (
@@ -177,7 +183,6 @@ export default function LearningPath() {
               })}
            </div>
 
-           {/* Track Switcher Integrated into Sidebar */}
            {courses.length > 1 && (
               <div className="pt-6 border-t border-muted/20">
                  <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest mb-3">Expedition Track</p>
