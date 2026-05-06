@@ -22,9 +22,24 @@ interface MissionMapProps {
 }
 
 export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, moduleTitle }) => {
+  // SVG coordinates based on a 1000x2000 viewbox for consistent pathing
+  const getPathData = () => {
+    if (nodes.length === 0) return "";
+    let d = "M 500,50"; // Start at top center
+    nodes.forEach((_, i) => {
+      const yBase = i * 240 + 50;
+      const xControl = i % 2 === 0 ? 800 : 200;
+      const yControl1 = yBase + 80;
+      const yControl2 = yBase + 160;
+      const yEnd = yBase + 240;
+      d += ` C ${xControl},${yControl1} ${xControl},${yControl2} 500,${yEnd}`;
+    });
+    return d;
+  };
+
   return (
     <div className="relative w-full h-full animate-fade-in flex flex-col pr-4">
-      {/* Map Header - Legend Style */}
+      {/* Map Header */}
       <div className="mb-6 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
            <MapPin className="h-6 w-6 text-primary" />
@@ -37,10 +52,10 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
 
       {/* The Journey Map Surface */}
       <div className="relative flex-1 pb-24 overflow-y-auto custom-scrollbar overflow-x-hidden px-8 rounded-[3rem] bg-[#FAFAFA] border border-muted/20 shadow-inner">
-        {/* Connection Path SVG */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.15]" preserveAspectRatio="none">
+        {/* Connection Path SVG - Fixed numeric coordinates */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.15]" viewBox="0 0 1000 2500" preserveAspectRatio="none">
            <path 
-            d={`M 50%,100 ${nodes.map((_, i) => `C ${i % 2 === 0 ? '75%' : '25%'},${i * 240 + 150} ${i % 2 === 0 ? '75%' : '25%'},${i * 240 + 220} 50%,${i * 240 + 300}`).join(' ')}`}
+            d={getPathData()}
             fill="none" 
             stroke="hsl(var(--primary))" 
             strokeWidth="4" 
@@ -51,7 +66,6 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
         <div className="relative flex flex-col items-center gap-16 py-12">
           {nodes.map((node, index) => {
             const isEven = index % 2 === 0;
-            const isLast = index === nodes.length - 1;
             
             return (
               <div 
@@ -66,8 +80,8 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                       alt="Rocky" 
                       className="w-16 h-16 object-contain drop-shadow-xl"
                     />
-                    <div className="bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-primary/20 text-[8px] font-black text-primary uppercase shadow-sm mt-1">
-                       {node.status === 'watched' ? 'Mission Cleared!' : 'Scouting Mission...'}
+                    <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full border border-primary/20 text-[8px] font-black text-primary uppercase shadow-sm mt-1 whitespace-nowrap">
+                       {node.status === 'watched' ? 'Mission Cleared! 🤘' : 'Scouting Mission...'}
                     </div>
                   </div>
                 )}
@@ -82,12 +96,12 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                     onClick={() => onNodeClick(node)}
                   >
                     <CardContent className="p-0">
-                      {/* Video Thumbnail */}
+                      {/* Video Thumbnail Area */}
                       <div className="relative aspect-video bg-muted overflow-hidden">
-                        {node.thumbnail ? (
+                        {node.thumbnail && !node.thumbnail.includes('placeholder') ? (
                           <img src={node.thumbnail} alt={node.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-primary/10 via-white to-primary/5 flex items-center justify-center">
+                          <div className="w-full h-full bg-gradient-to-br from-primary/20 via-white to-primary/5 flex items-center justify-center">
                              <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg border-2 border-primary/10">
                                 <Play className="h-6 w-6 text-primary opacity-30 group-hover:opacity-100 transition-opacity ml-1" />
                              </div>
@@ -134,11 +148,6 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
               </div>
             );
           })}
-        </div>
-
-        {/* Floating Rocky Decorative Element at Bottom */}
-        <div className="absolute bottom-10 right-10 opacity-30 pointer-events-none group-hover:opacity-100 transition-opacity">
-           <img src="/assets/rocky/idea-transparent.webp" alt="Rocky" className="w-24 h-24 grayscale brightness-150 rotate-12" />
         </div>
       </div>
     </div>
