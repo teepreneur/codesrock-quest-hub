@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const TestDashboard = lazy(() => import("./pages/TestDashboard"));
-const Videos = lazy(() => import("./pages/Videos"));
+const LearningPath = lazy(() => import("./pages/LearningPath"));
 const Resources = lazy(() => import("./pages/Resources"));
 const Evaluation = lazy(() => import("./pages/Evaluation"));
 const Achievements = lazy(() => import("./pages/Achievements"));
@@ -68,7 +68,7 @@ const App = () => (
             {/* Protected Routes Wrapper */}
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/videos" element={<Videos />} />
+              <Route path="/videos" element={<LearningPath />} />
               <Route path="/resources" element={<Resources />} />
               <Route path="/evaluation" element={<Evaluation />} />
               <Route path="/achievements" element={<Achievements />} />

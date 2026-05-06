@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 const teacherMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
   { title: "My Classes", url: "/classes", icon: Users },
-  { title: "Video Library", url: "/videos", icon: Play },
+  { title: "Learning Path", url: "/videos", icon: Play },
   { title: "Resources", url: "/resources", icon: BookOpen },
   { title: "Evaluation", url: "/evaluation", icon: CheckSquare },
   { title: "Achievements", url: "/achievements", icon: Trophy },
