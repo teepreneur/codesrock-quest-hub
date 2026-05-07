@@ -38,17 +38,17 @@ export const getAllCourses = async (req: Request, res: Response): Promise<void> 
 
     // 2. Create lookup maps for fast access
     const topicCountMap = new Map();
-    (allTopics || []).forEach(t => {
+    (allTopics || []).forEach((t: any) => {
       topicCountMap.set(t.course_id, (topicCountMap.get(t.course_id) || 0) + 1);
     });
 
     const videoCountMap = new Map();
-    (allVideos || []).forEach(v => {
+    (allVideos || []).forEach((v: any) => {
       videoCountMap.set(v.course_id, (videoCountMap.get(v.course_id) || 0) + 1);
     });
 
     const completedMap = new Map();
-    (allUserProgress?.data || []).forEach(p => {
+    (allUserProgress || []).forEach((p: any) => {
       completedMap.set(p.course_id, (completedMap.get(p.course_id) || 0) + 1);
     });
 
@@ -164,8 +164,8 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
           .in('evaluation_id', evalIds.length > 0 ? evalIds : ['__none__'])
       ]);
 
-      videoProgressMap = new Map(videoProgress?.map(p => [p.video_id, p]) || []);
-      evalProgressMap = new Map(evalProgress?.map(p => [p.evaluation_id, p]) || []);
+      videoProgressMap = new Map(videoProgress?.map((p: any) => [p.video_id, p]) || []);
+      evalProgressMap = new Map(evalProgress?.map((p: any) => [p.evaluation_id, p]) || []);
     }
 
     // 5. Assemble the hierarchy in memory
