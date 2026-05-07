@@ -73,49 +73,49 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
 
       {/* The Journey Map Surface */}
       <div className="relative flex-1 pb-64 overflow-y-auto custom-scrollbar overflow-x-hidden px-8 rounded-[3rem] bg-[#FAFAFA] border border-muted/20 shadow-inner">
-        {/* Connection Path SVG - Realistic Winding Road */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 4000" preserveAspectRatio="xMidYMin meet">
-           {/* Shadow/Outline Path */}
-           <path 
-            d={completed + " " + locked}
-            fill="none" 
-            stroke="rgba(0,0,0,0.03)" 
-            strokeWidth="24" 
-            strokeLinecap="round"
-          />
-          
-          {/* Completed/Active Path (Colored) */}
-          <path 
-            d={completed}
-            fill="none" 
-            stroke="hsl(var(--primary))" 
-            strokeWidth="14" 
-            strokeDasharray="1 25"
-            strokeLinecap="round"
-            className="opacity-60"
-          />
-          <path 
-            d={completed}
-            fill="none" 
-            stroke="hsl(var(--primary))" 
-            strokeWidth="6" 
-            strokeLinecap="round"
-            className="opacity-20"
-          />
+        <div className="relative flex flex-col gap-0 py-20 max-w-4xl mx-auto">
+          {/* Connection Path SVG - Now perfectly aligned inside the container */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 4000" preserveAspectRatio="none">
+             {/* Shadow/Outline Path */}
+             <path 
+              d={completed + " " + locked}
+              fill="none" 
+              stroke="rgba(0,0,0,0.03)" 
+              strokeWidth="24" 
+              strokeLinecap="round"
+            />
+            
+            {/* Completed/Active Path (Colored) */}
+            <path 
+              d={completed}
+              fill="none" 
+              stroke="hsl(var(--primary))" 
+              strokeWidth="14" 
+              strokeDasharray="1 25"
+              strokeLinecap="round"
+              className="opacity-60"
+            />
+            <path 
+              d={completed}
+              fill="none" 
+              stroke="hsl(var(--primary))" 
+              strokeWidth="6" 
+              strokeLinecap="round"
+              className="opacity-20"
+            />
 
-          {/* Locked Path (Gray) */}
-          <path 
-            d={locked}
-            fill="none" 
-            stroke="#CBD5E1" 
-            strokeWidth="14" 
-            strokeDasharray="1 25"
-            strokeLinecap="round"
-            className="opacity-40"
-          />
-        </svg>
+            {/* Locked Path (Gray) */}
+            <path 
+              d={locked}
+              fill="none" 
+              stroke="#CBD5E1" 
+              strokeWidth="14" 
+              strokeDasharray="1 25"
+              strokeLinecap="round"
+              className="opacity-40"
+            />
+          </svg>
 
-        <div className="relative flex flex-col gap-0 py-20">
           {nodes.map((node, index) => {
             const isEven = index % 2 === 0;
             const isLast = index === nodes.length - 1;
@@ -124,7 +124,7 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
               <div 
                 key={node.id} 
                 style={{ height: '400px' }}
-                className={`flex items-center w-full max-w-4xl mx-auto relative ${isEven ? 'flex-row' : 'flex-row-reverse'}`}
+                className={`flex items-center w-full relative ${isEven ? 'flex-row' : 'flex-row-reverse'}`}
               >
                 {/* Rocky Flags as Destinations - Guide Rocky */}
                 {node.status === 'active' && (
