@@ -30,6 +30,7 @@ export const getAllCourses = async (
     const skip = (Number(page) - 1) * Number(limit);
 
     const { data: courses, error, count } = await query
+      .order('order_index', { ascending: true })
       .order('created_at', { ascending: false })
       .range(skip, skip + Number(limit) - 1);
 
@@ -102,6 +103,7 @@ export const createCourse = async (
       duration,
       difficulty,
       xpReward,
+      orderIndex,
     } = req.body;
 
     const { data: course, error } = await supabase
@@ -115,10 +117,12 @@ export const createCourse = async (
         duration: duration || 0,
         difficulty: difficulty || 'Beginner',
         xp_reward: xpReward || 100,
+        order_index: orderIndex || 0,
         is_active: true,
       })
       .select()
       .single();
+// ... (omitted lines for brevity, actually I'll just do the whole block)
 
     if (error) {
       throw error;
@@ -155,6 +159,7 @@ export const updateCourse = async (
       difficulty,
       xpReward,
       isActive,
+      orderIndex,
     } = req.body;
 
     const updateData: any = {};
@@ -167,6 +172,7 @@ export const updateCourse = async (
     if (difficulty) updateData.difficulty = difficulty;
     if (xpReward !== undefined) updateData.xp_reward = xpReward;
     if (isActive !== undefined) updateData.is_active = isActive;
+    if (orderIndex !== undefined) updateData.order_index = orderIndex;
 
     const { data: course, error } = await supabase
       .from('courses')

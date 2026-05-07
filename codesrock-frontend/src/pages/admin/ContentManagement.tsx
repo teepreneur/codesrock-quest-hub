@@ -182,15 +182,16 @@ export default function ContentManagement() {
         <div className="rounded-md border">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Course</TableHead><TableHead>Topics</TableHead><TableHead>Videos</TableHead><TableHead>Views</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-16">Order</TableHead><TableHead>Course</TableHead><TableHead>Topics</TableHead><TableHead>Videos</TableHead><TableHead>Views</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {coursesLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8">Loading...</TableCell></TableRow>
               ) : courses.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No courses found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No courses found</TableCell></TableRow>
               ) : courses.map((course: any) => (
                 <TableRow key={course.id || course._id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigateToTopics(course)}>
+                  <TableCell className="font-mono text-center">{course.order_index ?? 0}</TableCell>
                   <TableCell className="font-medium"><div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" />{course.title}</div></TableCell>
                   <TableCell><Badge variant="outline"><Layers className="h-3 w-3 mr-1" />{course.stats?.topicCount ?? "—"}</Badge></TableCell>
                   <TableCell><Badge variant="outline"><Video className="h-3 w-3 mr-1" />{course.stats?.videoCount ?? "—"}</Badge></TableCell>

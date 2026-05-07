@@ -64,6 +64,7 @@ export function CourseFormDialog({ open, onOpenChange, course, onSuccess }: Cour
         difficulty: formData.difficulty,
         xpReward: formData.xpReward,
         isActive: formData.isActive,
+        orderIndex: formData.order,
       };
 
       if (course) {
@@ -93,7 +94,7 @@ export function CourseFormDialog({ open, onOpenChange, course, onSuccess }: Cour
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
             <div className="grid gap-2">
               <Label htmlFor="title">Course Name *</Label>
               <Input id="title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. CodesRock 1 - Computational Thinking" required />
@@ -102,15 +103,15 @@ export function CourseFormDialog({ open, onOpenChange, course, onSuccess }: Cour
               <Label htmlFor="description">Description *</Label>
               <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="What will students learn in this course?" rows={3} required />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="category">Category *</Label>
-              <Input 
-                id="category" 
-                value={formData.category} 
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })} 
-                placeholder="e.g. Robotics, AI, Logic" 
-                required 
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="category">Category *</Label>
+                <Input id="category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} placeholder="Robotics, AI" required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="order">Display Order</Label>
+                <Input id="order" type="number" value={formData.order} onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })} placeholder="0" />
+              </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="difficulty">Difficulty</Label>
