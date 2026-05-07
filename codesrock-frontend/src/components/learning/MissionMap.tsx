@@ -201,7 +201,7 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                       style={{ 
                         bottom: '-850px',
                         opacity: 1,
-                        filter: 'none',
+                        filter: isEvaluationPassed ? 'none' : 'grayscale(100%) contrast(1.1)',
                         transform: `translateX(-50%) scale(${isEvaluationPassed ? 1.1 : 1})`
                       }}
                     >
