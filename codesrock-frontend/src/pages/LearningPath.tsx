@@ -146,20 +146,20 @@ export default function LearningPath() {
               <h1 className="text-[10px] font-black text-deep-purple uppercase tracking-[0.4em] opacity-80">Course Modules</h1>
            </div>
            
-           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3 pb-6">
+           <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar space-y-4 pb-6 overflow-x-visible">
               {(courseDetail?.course?.topics || []).map((topic, idx) => {
                 const isActive = selectedTopicId === topic.id;
                 const isCompleted = (topic.videos || []).every((v: any) => v.userProgress?.completed);
 
                 return (
-                  <Card 
-                    key={topic.id}
-                    onClick={() => setSelectedTopicId(topic.id)}
-                    className={`
-                      relative group cursor-pointer transition-all duration-300 rounded-[1.5rem] border-2
-                      ${isActive ? 'bg-white border-primary shadow-xl scale-[1.02]' : 'bg-white/50 border-transparent hover:border-primary/20'}
-                    `}
-                  >
+                  <div key={topic.id} className="px-1">
+                    <Card 
+                      onClick={() => setSelectedTopicId(topic.id)}
+                      className={`
+                        relative group cursor-pointer transition-all duration-300 rounded-[1.5rem] border-2
+                        ${isActive ? 'bg-white border-primary shadow-xl scale-[1.02] z-10' : 'bg-white/50 border-transparent hover:border-primary/20 hover:scale-[1.01]'}
+                      `}
+                    >
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className={`
                         w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shrink-0
@@ -179,6 +179,7 @@ export default function LearningPath() {
                       {isActive && <ChevronRight className="h-5 w-5 text-primary animate-pulse-slow" />}
                     </CardContent>
                   </Card>
+                </div>
                 );
               })}
            </div>

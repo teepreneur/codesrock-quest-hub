@@ -15,7 +15,9 @@ export const getAllCourses = async (req: Request, res: Response): Promise<void> 
       .from('courses')
       .select('*')
       .eq('is_active', true)
-      .order('order_index');
+      .order('order_index', { ascending: true })
+      .order('title', { ascending: true })
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error getting courses:', error);
