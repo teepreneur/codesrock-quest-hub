@@ -22,24 +22,45 @@ interface MissionMapProps {
 }
 
 export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, moduleTitle }) => {
-  // SVG coordinates based on a 1000x2500 viewbox
-  const getPathData = () => {
-    if (nodes.length === 0) return "";
-    let d = "M 500,50";
-    nodes.forEach((_, i) => {
-      const yBase = i * 240 + 50;
-      const xControl = i % 2 === 0 ? 800 : 200;
-      const yControl1 = yBase + 80;
-      const yControl2 = yBase + 160;
-      const yEnd = yBase + 240;
-      d += ` C ${xControl},${yControl1} ${xControl},${yControl2} 500,${yEnd}`;
-    });
-    return d;
+  // SVG coordinates: Nodes are positioned at X=280 (even) and X=720 (odd)
+  // Y coordinates are index * 400 + 200
+  const getPathSegments = () => {
+    if (nodes.length <= 1) return { completed: "", locked: "" };
+    
+    let completedPath = "";
+    let lockedPath = "";
+    
+    // Find the index of the first non-watched node (the active one)
+    const activeIndex = nodes.findIndex(n => n.status === 'active' || n.status === 'available');
+    const lastWatchedIndex = activeIndex === -1 ? nodes.length - 1 : activeIndex;
+
+    const getNodeX = (i: number) => (i % 2 === 0 ? 300 : 700);
+    const getNodeY = (i: number) => i * 400 + 200;
+
+    for (let i = 0; i < nodes.length - 1; i++) {
+      const x1 = getNodeX(i);
+      const y1 = getNodeY(i);
+      const x2 = getNodeX(i + 1);
+      const y2 = getNodeY(i + 1);
+      
+      const midY = (y1 + y2) / 2;
+      const segment = `M ${x1},${y1} C ${x1},${midY} ${x2},${midY} ${x2},${y2}`;
+      
+      if (i < lastWatchedIndex) {
+        completedPath += " " + segment;
+      } else {
+        lockedPath += " " + segment;
+      }
+    }
+    
+    return { completed: completedPath, locked: lockedPath };
   };
+
+  const { completed, locked } = getPathSegments();
 
   return (
     <div className="relative w-full h-full animate-fade-in flex flex-col pr-4">
-      {/* Map Header - Legend Style */}
+      {/* Map Header */}
       <div className="mb-6 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
            <MapPin className="h-6 w-6 text-primary" />
@@ -51,21 +72,50 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
       </div>
 
       {/* The Journey Map Surface */}
-      <div className="relative flex-1 pb-48 overflow-y-auto custom-scrollbar overflow-x-hidden px-8 rounded-[3rem] bg-[#FAFAFA] border border-muted/20 shadow-inner">
-        {/* Connection Path SVG - High Visibility Trail */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.35]" viewBox="0 0 1000 2500" preserveAspectRatio="none">
+      <div className="relative flex-1 pb-64 overflow-y-auto custom-scrollbar overflow-x-hidden px-8 rounded-[3rem] bg-[#FAFAFA] border border-muted/20 shadow-inner">
+        {/* Connection Path SVG - Realistic Winding Road */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 4000" preserveAspectRatio="xMidYMin meet">
+           {/* Shadow/Outline Path */}
            <path 
-            d={getPathData()}
+            d={completed + " " + locked}
+            fill="none" 
+            stroke="rgba(0,0,0,0.03)" 
+            strokeWidth="24" 
+            strokeLinecap="round"
+          />
+          
+          {/* Completed/Active Path (Colored) */}
+          <path 
+            d={completed}
             fill="none" 
             stroke="hsl(var(--primary))" 
-            strokeWidth="16" 
-            strokeDasharray="25 45"
+            strokeWidth="14" 
+            strokeDasharray="1 25"
             strokeLinecap="round"
-            className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
+            className="opacity-60"
+          />
+          <path 
+            d={completed}
+            fill="none" 
+            stroke="hsl(var(--primary))" 
+            strokeWidth="6" 
+            strokeLinecap="round"
+            className="opacity-20"
+          />
+
+          {/* Locked Path (Gray) */}
+          <path 
+            d={locked}
+            fill="none" 
+            stroke="#CBD5E1" 
+            strokeWidth="14" 
+            strokeDasharray="1 25"
+            strokeLinecap="round"
+            className="opacity-40"
           />
         </svg>
 
-        <div className="relative flex flex-col items-center gap-16 py-12">
+        <div className="relative flex flex-col gap-0 py-20">
           {nodes.map((node, index) => {
             const isEven = index % 2 === 0;
             const isLast = index === nodes.length - 1;
@@ -73,44 +123,45 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
             return (
               <div 
                 key={node.id} 
-                className={`flex items-center w-full max-w-2xl relative ${isEven ? 'flex-row' : 'flex-row-reverse'}`}
+                style={{ height: '400px' }}
+                className={`flex items-center w-full max-w-4xl mx-auto relative ${isEven ? 'flex-row' : 'flex-row-reverse'}`}
               >
                 {/* Rocky Flags as Destinations - Guide Rocky */}
                 {node.status === 'active' && (
-                  <div className={`absolute -top-12 ${isEven ? 'right-0' : 'left-0'} z-20 animate-bounce-subtle`}>
+                  <div className={`absolute -top-16 ${isEven ? 'left-[22%]' : 'right-[22%]'} z-30 animate-bounce-subtle`}>
                     <img 
                       src="/assets/rocky/idea-transparent.webp" 
                       alt="Rocky" 
-                      className="w-16 h-16 object-contain drop-shadow-xl"
+                      className="w-20 h-20 object-contain drop-shadow-xl"
                     />
-                    <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full border border-primary/20 text-[8px] font-black text-primary uppercase shadow-sm mt-1 whitespace-nowrap">
-                       Next Lesson Here!
+                    <div className="bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full border-2 border-primary/30 text-[10px] font-black text-primary uppercase shadow-lg mt-1 whitespace-nowrap">
+                       You are here! 📍
                     </div>
                   </div>
                 )}
 
                 {/* Final Destination Celebration Rocky - Ghost Mode till completed */}
                 {isLast && (
-                  <div className={`absolute -bottom-36 left-1/2 -translate-x-1/2 z-30 transition-all duration-1000 ${node.status === 'watched' ? 'animate-pulse-slow scale-110' : 'opacity-40 grayscale blur-[1px]'}`}>
+                  <div className={`absolute -bottom-48 left-1/2 -translate-x-1/2 z-40 transition-all duration-1000 ${node.status === 'watched' ? 'animate-pulse-slow scale-125' : 'opacity-40 grayscale blur-[1px]'}`}>
                     <img 
                       src="/assets/rocky/rocky-celebration-final.png" 
                       alt="Celebration Rocky" 
-                      className={`w-36 h-36 object-contain drop-shadow-2xl transition-all duration-1000 ${node.status !== 'watched' ? 'brightness-50' : ''}`}
+                      className={`w-44 h-44 object-contain drop-shadow-2xl transition-all duration-1000 ${node.status !== 'watched' ? 'brightness-50' : ''}`}
                     />
                     <div className="text-center mt-2">
-                       <p className={`text-[10px] font-black uppercase tracking-widest bg-white/80 backdrop-blur-sm px-4 py-1 rounded-full shadow-lg border transition-all duration-1000 ${node.status === 'watched' ? 'text-deep-purple border-primary/20' : 'text-muted-foreground border-transparent'}`}>
-                          {node.status === 'watched' ? 'Journey Complete! 🏆' : 'Unlock Destination'}
+                       <p className={`text-xs font-black uppercase tracking-[0.2em] bg-white/90 backdrop-blur-sm px-6 py-2 rounded-full shadow-2xl border-2 transition-all duration-1000 ${node.status === 'watched' ? 'text-deep-purple border-primary/30' : 'text-muted-foreground border-transparent'}`}>
+                          {node.status === 'watched' ? 'Module Mastered! 🏆' : 'The Finish Line'}
                        </p>
                     </div>
                   </div>
                 )}
 
-                {/* The Destination Node */}
-                <div className="w-[48%] flex justify-center">
+                {/* The Destination Node (Station) */}
+                <div className="w-[45%] flex justify-center z-20">
                   <Card 
                     className={`
-                      w-full overflow-hidden rounded-[2rem] transition-all duration-500 cursor-pointer border-4 group relative
-                      ${node.status === 'active' ? 'border-primary shadow-2xl scale-105' : 'border-white hover:border-primary/50 shadow-xl'}
+                      w-full overflow-hidden rounded-[2.5rem] transition-all duration-500 cursor-pointer border-8 group relative
+                      ${node.status === 'active' ? 'border-primary shadow-[0_20px_50px_rgba(0,0,0,0.15)] scale-105' : 'border-white hover:border-primary/40 shadow-xl'}
                     `}
                     onClick={() => onNodeClick(node)}
                   >
@@ -120,49 +171,49 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                         <img 
                           src={node.thumbnail || "/assets/images/course-placeholder.jpg"} 
                           alt={node.title} 
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${node.status === 'available' ? 'saturate-50 opacity-80' : ''}`}
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60";
                           }}
                         />
                         
                         {/* Status Layers */}
-                        <div className="absolute inset-0 bg-black/10 flex items-center justify-center group-hover:bg-transparent transition-colors">
+                        <div className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ${node.status === 'active' ? 'bg-black/5' : 'bg-black/20 group-hover:bg-black/10'}`}>
                            <div className={`
-                              w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500
+                              w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500
                               ${node.status === 'active' ? 'bg-primary text-white scale-110' : 'bg-white text-primary group-hover:scale-110'}
                            `}>
-                              {node.status === 'watched' ? <CheckCircle className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current ml-1" />}
+                              {node.status === 'watched' ? <CheckCircle className="h-8 w-8" /> : <Play className="h-8 w-8 fill-current ml-1" />}
                            </div>
                         </div>
 
-                        <div className="absolute top-3 left-3">
-                           <Badge className={`text-[9px] font-black uppercase px-2.5 py-1 ${node.status === 'watched' ? 'bg-green-500' : node.status === 'active' ? 'bg-primary' : 'bg-muted text-muted-foreground'}`}>
-                              {node.status === 'watched' ? 'Completed' : node.status === 'active' ? 'Current' : 'Locked'}
+                        <div className="absolute top-4 left-4">
+                           <Badge className={`text-[10px] font-black uppercase px-3 py-1.5 rounded-full ${node.status === 'watched' ? 'bg-green-500' : node.status === 'active' ? 'bg-primary animate-pulse' : 'bg-slate-500 text-white'}`}>
+                              {node.status === 'watched' ? 'Mastered' : node.status === 'active' ? 'Learning' : 'Upcoming'}
                            </Badge>
                         </div>
                       </div>
 
                       {/* Lesson Details */}
-                      <div className="p-5 bg-white space-y-3">
-                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-muted-foreground/80">
-                           <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {node.duration || 5} MINS</span>
-                           <span className="flex items-center gap-1.5 text-primary"><Star className="h-3 w-3 fill-primary" /> +{node.xpReward} XP</span>
+                      <div className="p-6 bg-white space-y-4">
+                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
+                           <span className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary/60" /> {node.duration || 5} MINS</span>
+                           <span className="flex items-center gap-2 text-primary"><Star className="h-4 w-4 fill-primary" /> +{node.xpReward} XP</span>
                         </div>
-                        <h3 className="text-sm font-black text-deep-purple leading-tight line-clamp-2 italic">{index + 1}. {node.title}</h3>
+                        <h3 className="text-base font-black text-deep-purple leading-tight line-clamp-2 italic">{index + 1}. {node.title}</h3>
                         
                         <Button 
-                          className={`w-full rounded-xl font-black h-10 text-xs transition-all shadow-md ${node.status === 'active' ? 'bg-primary' : 'bg-muted/10 text-muted-foreground hover:bg-primary/5 hover:text-primary hover:border-primary/20 border-2 border-transparent'}`}
+                          className={`w-full rounded-2xl font-black h-12 text-sm transition-all shadow-lg ${node.status === 'active' ? 'bg-primary hover:scale-[1.02]' : 'bg-muted/10 text-muted-foreground hover:bg-primary/5 hover:text-primary hover:border-primary/20 border-2 border-transparent'}`}
                         >
-                           {node.status === 'watched' ? 'Watch Again' : node.status === 'active' ? 'Resume Lesson' : 'Start Lesson'}
+                           {node.status === 'watched' ? 'Review Lesson' : node.status === 'active' ? 'Continue Journey' : 'View Lesson'}
                         </Button>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
-                {/* Path Gap */}
-                <div className="w-[52%]" />
+                {/* Path Space */}
+                <div className="w-[55%]" />
               </div>
             );
           })}
