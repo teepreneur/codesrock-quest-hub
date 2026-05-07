@@ -4,7 +4,13 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase environment variables');
+  const missing = [];
+  if (!supabaseUrl) missing.push('SUPABASE_URL');
+  if (!supabaseServiceKey) missing.push('SUPABASE_SERVICE_KEY');
+  
+  console.error(`❌ CRITICAL ERROR: Missing Supabase environment variables: ${missing.join(', ')}`);
+  console.error('Please check your Render environment settings.');
+  throw new Error(`Missing Supabase environment variables: ${missing.join(', ')}`);
 }
 
 // Create Supabase client with service key for backend operations
