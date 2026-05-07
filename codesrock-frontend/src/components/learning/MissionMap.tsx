@@ -52,11 +52,30 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
         lockedPath += " " + segment;
       }
     }
+
+    // FINAL STRETCH: Connect last node to the final destination (Rocky)
+    if (nodes.length > 0) {
+      const lastIdx = nodes.length - 1;
+      const x1 = getNodeX(lastIdx);
+      const y1 = getNodeY(lastIdx);
+      const x2 = 500; // Center destination
+      const y2 = y1 + 320; // Reaching toward Rocky
+      const midY = (y1 + y2) / 2;
+      
+      const finalSegment = `M ${x1},${y1} C ${x1},${midY} ${x2},${midY} ${x2},${y2}`;
+      
+      if (nodes[lastIdx].status === 'watched') {
+        completedPath += " " + finalSegment;
+      } else {
+        lockedPath += " " + finalSegment;
+      }
+    }
     
     return { completed: completedPath, locked: lockedPath };
   };
 
   const { completed, locked } = getPathSegments();
+  const mapHeight = nodes.length * 400 + 400;
 
   return (
     <div className="relative w-full h-full animate-fade-in flex flex-col pr-4">
@@ -74,8 +93,8 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
       {/* The Journey Map Surface */}
       <div className="relative flex-1 pb-64 overflow-y-auto custom-scrollbar overflow-x-hidden px-8 rounded-[3rem] bg-[#FAFAFA] border border-muted/20 shadow-inner">
         <div className="relative flex flex-col gap-0 py-20 max-w-4xl mx-auto">
-          {/* Connection Path SVG - Now perfectly aligned inside the container */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 4000" preserveAspectRatio="none">
+          {/* Connection Path SVG - Now perfectly aligned and adaptive */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox={`0 0 1000 ${mapHeight}`} preserveAspectRatio="none">
              {/* Shadow/Outline Path */}
              <path 
               d={completed + " " + locked}
