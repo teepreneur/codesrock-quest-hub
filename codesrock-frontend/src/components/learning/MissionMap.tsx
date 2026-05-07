@@ -74,22 +74,22 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                 key={node.id} 
                 className={`flex items-center w-full max-w-2xl relative ${isEven ? 'flex-row' : 'flex-row-reverse'}`}
               >
-                {/* Rocky Flags as Destinations */}
-                {(node.status === 'active' || node.status === 'watched') && (
+                {/* Rocky Flags as Destinations - Only show on the ACTIVE node to keep it clean */}
+                {node.status === 'active' && (
                   <div className={`absolute -top-12 ${isEven ? 'right-0' : 'left-0'} z-20 animate-bounce-subtle`}>
                     <img 
-                      src={node.status === 'watched' ? "/assets/rocky/celebration-transparent.webp" : "/assets/rocky/idea-transparent.webp"} 
+                      src="/assets/rocky/idea-transparent.webp" 
                       alt="Rocky" 
                       className="w-16 h-16 object-contain drop-shadow-xl"
                     />
                     <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full border border-primary/20 text-[8px] font-black text-primary uppercase shadow-sm mt-1 whitespace-nowrap">
-                       {node.status === 'watched' ? 'Lesson Mastered!' : 'Currently Learning...'}
+                       Currently Learning...
                     </div>
                   </div>
                 )}
 
-                {/* Final Destination Celebration Rocky */}
-                {isLast && (
+                {/* Final Destination Celebration Rocky - ONLY show if the last node is watched */}
+                {isLast && node.status === 'watched' && (
                   <div className={`absolute -bottom-32 left-1/2 -translate-x-1/2 z-30 animate-pulse-slow`}>
                     <img 
                       src="/assets/rocky/rocky-celebration-final.png" 
@@ -97,7 +97,7 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                       className="w-32 h-32 object-contain drop-shadow-2xl"
                     />
                     <div className="text-center mt-2">
-                       <p className="text-[10px] font-black text-deep-purple uppercase tracking-widest bg-white/80 backdrop-blur-sm px-4 py-1 rounded-full shadow-lg border border-primary/10">Destination Reached!</p>
+                       <p className="text-[10px] font-black text-deep-purple uppercase tracking-widest bg-white/80 backdrop-blur-sm px-4 py-1 rounded-full shadow-lg border border-primary/10">Journey Complete! 🏆</p>
                     </div>
                   </div>
                 )}
@@ -114,15 +114,14 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                     <CardContent className="p-0">
                       {/* Video Thumbnail Area */}
                       <div className="relative aspect-video bg-muted overflow-hidden">
-                        {node.thumbnail ? (
-                          <img src={node.thumbnail} alt={node.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-primary/20 via-white to-primary/5 flex items-center justify-center">
-                             <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-lg border-2 border-primary/10">
-                                <Play className="h-6 w-6 text-primary opacity-30 group-hover:opacity-100 transition-opacity ml-1" />
-                             </div>
-                          </div>
-                        )}
+                        <img 
+                          src={node.thumbnail || "/assets/images/course-placeholder.jpg"} 
+                          alt={node.title} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60";
+                          }}
+                        />
                         
                         {/* Status Layers */}
                         <div className="absolute inset-0 bg-black/10 flex items-center justify-center group-hover:bg-transparent transition-colors">
