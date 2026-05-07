@@ -163,48 +163,54 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                     <div className="absolute -bottom-[400px] left-1/2 -translate-x-1/2 z-40 w-full flex justify-center">
                       <Card 
                         className={`w-[45%] overflow-hidden rounded-[2.5rem] transition-all duration-700 cursor-pointer border-8 group relative
-                          ${node.status === 'watched' ? 'border-orange-400 shadow-[0_0_40px_rgba(251,146,60,0.3)] scale-105' : 'border-white opacity-40 grayscale blur-[1px]'}`}
+                          ${node.status === 'watched' ? 'border-orange-400 shadow-[0_0_40px_rgba(251,146,60,0.3)] scale-105' : 'border-white shadow-xl opacity-90'}`}
                         onClick={() => { if (node.status === 'watched') window.location.href = `/evaluation/${node.topic_id}`; else toast.info("Complete all lessons first! 🔒"); }}
                       >
                         <CardContent className="p-0 relative">
-                          <div className="relative aspect-video bg-gradient-to-br from-orange-400/30 to-primary/20 overflow-hidden flex items-center justify-center">
-                            <img src="/assets/rocky/rocky_3D_idea.png" alt="Evaluation" className="h-32 w-auto object-contain drop-shadow-2xl group-hover:scale-110 transition-all z-20" />
+                          <div className="h-48 bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-6 overflow-hidden relative">
+                            <img src="/rocky_3D_idea.png" alt="Evaluation" className="h-32 w-auto object-contain drop-shadow-2xl group-hover:scale-110 transition-all z-20" />
                             <div className="absolute top-4 right-4 bg-orange-500 text-white text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg z-30">Module Finale</div>
-                            {node.status !== 'watched' && <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-40"><Lock className="h-12 w-12 text-white/70" /></div>}
+                            {node.status !== 'watched' && <div className="absolute inset-0 bg-black/5 flex items-center justify-center z-40"><Lock className="h-12 w-12 text-white/70" /></div>}
                           </div>
                           <div className="p-8 bg-white space-y-4">
                             <div className="flex items-center justify-between text-[11px] font-black uppercase text-orange-600 tracking-widest">
-                              <span className="flex items-center gap-2">
-                                {isEvaluationPassed ? <CheckCircle className="h-5 w-5 text-green-500" /> : <HelpCircle className="h-5 w-5" />}
-                                {isEvaluationPassed ? 'Module Mastered!' : 'Mastery Quiz'}
-                              </span>
-                              <Badge className={isEvaluationPassed ? "bg-green-500" : "bg-orange-500"}>
-                                {isEvaluationPassed ? 'Completed' : '+500 XP'}
-                              </Badge>
+                              <span>Mastery Quiz</span>
+                              <span className="bg-orange-100 px-3 py-1 rounded-full text-orange-700">+500 XP</span>
                             </div>
-                            <h3 className="text-2xl font-black text-deep-purple italic">{moduleTitle} Finale</h3>
+                            <h3 className="text-xl font-black text-slate-800 leading-tight">
+                              {moduleTitle} <span className="text-orange-500">Finale</span>
+                            </h3>
+                            <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                              <Clock className="h-3 w-3" /> 5-10 MINS
+                              <span className="mx-1">•</span>
+                              <Award className="h-3 w-3" /> CERTIFICATE
+                            </div>
                             <Button 
-                              className={`w-full rounded-[1.25rem] font-black h-14 text-base uppercase tracking-widest shadow-xl transition-all
-                                ${isEvaluationPassed 
-                                  ? 'bg-green-500 hover:bg-green-600' 
-                                  : node.status === 'watched' 
-                                    ? 'bg-orange-500 hover:bg-orange-600 hover:scale-[1.02]' 
-                                    : 'bg-muted/20 text-muted-foreground'}`}
+                              className={`w-full h-12 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all
+                                ${node.status === 'watched' ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-200' : 'bg-slate-100 text-slate-400'}`}
                             >
-                               {isEvaluationPassed ? 'Review Results' : node.status === 'watched' ? 'Start Challenge 🚀' : 'Locked'}
+                              {node.status === 'watched' ? 'Start Finale 🚀' : 'Locked'}
                             </Button>
                           </div>
                         </CardContent>
                       </Card>
                     </div>
 
-                    <div className={`absolute -bottom-[850px] left-1/2 -translate-x-1/2 z-40 transition-all duration-1000 ${isEvaluationPassed ? 'animate-pulse-slow scale-125' : 'opacity-40 grayscale blur-[1px]'}`}>
+                    <div 
+                      className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 transition-all duration-700"
+                      style={{ 
+                        bottom: '-850px',
+                        opacity: 1,
+                        filter: 'none',
+                        transform: `translateX(-50%) scale(${isEvaluationPassed ? 1.1 : 1})`
+                      }}
+                    >
                       <img 
-                        src="/assets/rocky/rocky_celebration_pose.png" 
+                        src="/rocky_celebration_pose.png" 
                         alt="Celebration" 
-                        className={`w-44 h-44 object-contain drop-shadow-2xl transition-all duration-1000 ${!isEvaluationPassed ? 'brightness-50' : ''}`} 
+                        className={`w-44 h-44 object-contain drop-shadow-2xl transition-all duration-1000`} 
                       />
-                      <div className="text-center mt-2">
+                      <div className="text-center">
                         <p className={`text-xs font-black uppercase tracking-[0.2em] bg-white/90 backdrop-blur-sm px-6 py-2 rounded-full shadow-2xl border-2 transition-all duration-1000 ${isEvaluationPassed ? 'text-deep-purple border-primary/30' : 'text-muted-foreground border-transparent'}`}>
                           {isEvaluationPassed ? 'Module Complete! 🏆' : 'The Finish Line'}
                         </p>
