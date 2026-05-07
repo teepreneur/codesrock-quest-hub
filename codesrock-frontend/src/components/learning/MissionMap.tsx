@@ -52,15 +52,16 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
 
       {/* The Journey Map Surface */}
       <div className="relative flex-1 pb-48 overflow-y-auto custom-scrollbar overflow-x-hidden px-8 rounded-[3rem] bg-[#FAFAFA] border border-muted/20 shadow-inner">
-        {/* Connection Path SVG - Footsteps/Dots Style */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.2]" viewBox="0 0 1000 2500" preserveAspectRatio="none">
+        {/* Connection Path SVG - High Visibility Trail */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.35]" viewBox="0 0 1000 2500" preserveAspectRatio="none">
            <path 
             d={getPathData()}
             fill="none" 
             stroke="hsl(var(--primary))" 
-            strokeWidth="8" 
-            strokeDasharray="2 20"
+            strokeWidth="16" 
+            strokeDasharray="25 45"
             strokeLinecap="round"
+            className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
           />
         </svg>
 
@@ -74,7 +75,7 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                 key={node.id} 
                 className={`flex items-center w-full max-w-2xl relative ${isEven ? 'flex-row' : 'flex-row-reverse'}`}
               >
-                {/* Rocky Flags as Destinations - Only show on the ACTIVE node to keep it clean */}
+                {/* Rocky Flags as Destinations - Guide Rocky */}
                 {node.status === 'active' && (
                   <div className={`absolute -top-12 ${isEven ? 'right-0' : 'left-0'} z-20 animate-bounce-subtle`}>
                     <img 
@@ -83,21 +84,23 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                       className="w-16 h-16 object-contain drop-shadow-xl"
                     />
                     <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full border border-primary/20 text-[8px] font-black text-primary uppercase shadow-sm mt-1 whitespace-nowrap">
-                       Currently Learning...
+                       Next Lesson Here!
                     </div>
                   </div>
                 )}
 
-                {/* Final Destination Celebration Rocky - ONLY show if the last node is watched */}
-                {isLast && node.status === 'watched' && (
-                  <div className={`absolute -bottom-32 left-1/2 -translate-x-1/2 z-30 animate-pulse-slow`}>
+                {/* Final Destination Celebration Rocky - Ghost Mode till completed */}
+                {isLast && (
+                  <div className={`absolute -bottom-36 left-1/2 -translate-x-1/2 z-30 transition-all duration-1000 ${node.status === 'watched' ? 'animate-pulse-slow scale-110' : 'opacity-40 grayscale blur-[1px]'}`}>
                     <img 
                       src="/assets/rocky/rocky-celebration-final.png" 
                       alt="Celebration Rocky" 
-                      className="w-32 h-32 object-contain drop-shadow-2xl"
+                      className={`w-36 h-36 object-contain drop-shadow-2xl transition-all duration-1000 ${node.status !== 'watched' ? 'brightness-50' : ''}`}
                     />
                     <div className="text-center mt-2">
-                       <p className="text-[10px] font-black text-deep-purple uppercase tracking-widest bg-white/80 backdrop-blur-sm px-4 py-1 rounded-full shadow-lg border border-primary/10">Journey Complete! 🏆</p>
+                       <p className={`text-[10px] font-black uppercase tracking-widest bg-white/80 backdrop-blur-sm px-4 py-1 rounded-full shadow-lg border transition-all duration-1000 ${node.status === 'watched' ? 'text-deep-purple border-primary/20' : 'text-muted-foreground border-transparent'}`}>
+                          {node.status === 'watched' ? 'Journey Complete! 🏆' : 'Unlock Destination'}
+                       </p>
                     </div>
                   </div>
                 )}
