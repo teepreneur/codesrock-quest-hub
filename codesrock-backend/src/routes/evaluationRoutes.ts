@@ -11,6 +11,10 @@ import {
   verifyCertificate,
   getUserCertificates,
 } from '../controllers/evaluationController';
+import {
+  getEvaluationByTopic,
+  submitEvaluation as submitNewEvaluation,
+} from '../controllers/admin/evaluationController';
 import { protect } from '../middleware/auth';
 import { validate } from '../middleware/validator';
 
@@ -110,6 +114,10 @@ router.post('/evaluations/start', validate(startEvaluationValidation), startEval
 router.put('/evaluations/progress', validate(updateProgressValidation), updateEvaluationProgress);
 router.post('/evaluations/submit', validate(submitEvaluationValidation), submitEvaluation);
 router.post('/evaluations/review', validate(reviewEvaluationValidation), reviewEvaluation);
+
+// New dynamic evaluation routes
+router.get('/evaluations/topic/:topicId', getEvaluationByTopic);
+router.post('/evaluations/submit-mastery', submitNewEvaluation);
 router.get('/evaluations/user/:userId', validate(userIdParamValidation), getUserEvaluations);
 
 // Certificate routes

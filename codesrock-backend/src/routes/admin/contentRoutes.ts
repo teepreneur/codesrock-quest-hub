@@ -11,6 +11,11 @@ import {
   getContentStats,
 } from '../../controllers/admin/contentController';
 import {
+  getEvaluationByTopic,
+  saveEvaluation,
+  submitEvaluation,
+} from '../../controllers/admin/evaluationController';
+import {
   getTopicsByCourse,
   createTopic,
   updateTopic,
@@ -50,5 +55,9 @@ router.route('/videos/:videoId').put(updateVideo).delete(deleteVideo);
 // Resource routes
 router.route('/resources').get(getAllResources).post(createResource);
 router.route('/resources/:id').put(updateResource).delete(deleteResource);
+
+// Evaluation routes
+router.get('/evaluations/topic/:topicId', getEvaluationByTopic);
+router.post('/evaluations/save', saveEvaluation);
 
 export default router;

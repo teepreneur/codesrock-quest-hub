@@ -14,7 +14,9 @@ import { CourseFormDialog } from "@/components/admin/CourseFormDialog";
 import { TopicFormDialog } from "@/components/admin/TopicFormDialog";
 import { VideoFormDialog } from "@/components/admin/VideoFormDialog";
 import { ResourceFormDialog } from "@/components/admin/ResourceFormDialog";
+import { EvaluationFormDialog } from "@/components/admin/EvaluationFormDialog";
 import type { Course, Resource } from "@/types/content.types";
+import { HelpCircle } from "lucide-react";
 
 type ViewLevel = "courses" | "topics" | "videos";
 
@@ -43,6 +45,10 @@ export default function ContentManagement() {
   const [videosLoading, setVideosLoading] = useState(false);
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<any>(null);
+
+  // Evaluations
+  const [evaluationDialogOpen, setEvaluationDialogOpen] = useState(false);
+  const [selectedTopicForEval, setSelectedTopicForEval] = useState<any>(null);
 
   // Resources
   const [resources, setResources] = useState<Resource[]>([]);
@@ -244,6 +250,9 @@ export default function ContentManagement() {
                   <TableCell>{topic.is_active ? <Badge className="bg-green-500">Active</Badge> : <Badge variant="secondary">Inactive</Badge>}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="sm" title="Manage Evaluation" onClick={() => { setSelectedTopicForEval(topic); setEvaluationDialogOpen(true); }}>
+                        <HelpCircle className="h-4 w-4 text-orange-500" />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => navigateToVideos(topic)}><ChevronRight className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="sm" onClick={() => { setEditingTopic(topic); setTopicDialogOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="sm" onClick={() => setDeleteTarget({ type: "topic", item: topic })}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -372,6 +381,15 @@ export default function ContentManagement() {
       {selectedCourse && <TopicFormDialog open={topicDialogOpen} onOpenChange={setTopicDialogOpen} courseId={selectedCourse.id || selectedCourse._id} topic={editingTopic} onSuccess={() => loadTopics(selectedCourse.id || selectedCourse._id)} />}
       {selectedTopic && <VideoFormDialog open={videoDialogOpen} onOpenChange={setVideoDialogOpen} topicId={selectedTopic.id || selectedTopic._id} video={editingVideo} onSuccess={() => loadVideos(selectedTopic.id || selectedTopic._id)} />}
       <ResourceFormDialog open={resourceDialogOpen} onOpenChange={setResourceDialogOpen} resource={editingResource} onSuccess={() => { loadResources(); loadStats(); }} />
+
+      {selectedTopicForEval && (
+        <EvaluationFormDialog 
+          open={evaluationDialogOpen} 
+          onOpenChange={setEvaluationDialogOpen}
+          topicId={selectedTopicForEval.id || selectedTopicForEval._id}
+          topicTitle={selectedTopicForEval.title}
+        />
+      )}
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>

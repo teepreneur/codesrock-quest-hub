@@ -125,6 +125,7 @@ export default function LearningPath() {
   const currentTopic = courseDetail?.course?.topics?.find(t => t.id === selectedTopicId);
   const missionNodes: MissionNode[] = (currentTopic?.videos || []).map((v: any, idx: number) => ({
     id: v.id,
+    topic_id: currentTopic.id,
     title: v.title,
     status: v.userProgress?.completed ? 'watched' : (idx === 0 || (currentTopic?.videos[idx-1]?.userProgress?.completed)) ? 'active' : 'available',
     type: 'video',
@@ -210,6 +211,7 @@ export default function LearningPath() {
               nodes={missionNodes} 
               onNodeClick={handleWatchVideo}
               moduleTitle={currentTopic.title}
+              isEvaluationPassed={!!currentTopic.evaluation?.evaluation_progress?.passed}
            />
         ) : (
            <div className="w-full h-full bg-muted/5 rounded-[3rem] border-4 border-dashed border-muted/10 flex flex-col items-center justify-center text-center p-10 gap-4">

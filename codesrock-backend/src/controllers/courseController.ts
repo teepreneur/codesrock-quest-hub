@@ -25,55 +25,59 @@ export const getAllCourses = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Enrich each course with topic count, video count, and user progress
-    const enrichedCourses = await Promise.all(
-      (courses || []).map(async (course) => {
-        // Get topic and video counts
-        const [
-          { count: topicCount },
-          { count: videoCount },
-        ] = await Promise.all([
-          supabase.from('topics').select('*', { count: 'exact', head: true }).eq('course_id', course.id).eq('is_active', true),
-          supabase.from('videos').select('*', { count: 'exact', head: true }).eq('course_id', course.id).eq('is_active', true),
-        ]);
+    // 1. Get all topics and videos to count them (faster than individual count queries)
+    const [
+      { data: allTopics },
+      { data: allVideos },
+      { data: allUserProgress }
+    ] = await Promise.all([
+      supabase.from('topics').select('course_id').eq('is_active', true),
+      supabase.from('videos').select('course_id').eq('is_active', true),
+      userId ? supabase.from('video_progress').select('course_id').eq('user_id', userId as string).eq('completed', true) : Promise.resolve({ data: [] })
+    ]);
 
-        let userProgress = null;
-        if (userId) {
-          // Security Check: IDOR Protection
-          if (userId !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
-            logger.warn(`IDOR attempt: User ${req.user?.userId} tried to access course progress of ${userId}`);
-            res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
-            return;
-          }
+    // 2. Create lookup maps for fast access
+    const topicCountMap = new Map();
+    (allTopics || []).forEach(t => {
+      topicCountMap.set(t.course_id, (topicCountMap.get(t.course_id) || 0) + 1);
+    });
 
-          // Calculate progress: completed videos / total videos in this course
-          const { count: completedVideos } = await supabase
-            .from('video_progress')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId as string)
-            .eq('course_id', course.id)
-            .not('video_id', 'is', null)
-            .eq('completed', true);
+    const videoCountMap = new Map();
+    (allVideos || []).forEach(v => {
+      videoCountMap.set(v.course_id, (videoCountMap.get(v.course_id) || 0) + 1);
+    });
 
-          const totalVideos = videoCount || 0;
-          const progressPercentage = totalVideos > 0 ? Math.round(((completedVideos || 0) / totalVideos) * 100) : 0;
+    const completedMap = new Map();
+    (allUserProgress?.data || []).forEach(p => {
+      completedMap.set(p.course_id, (completedMap.get(p.course_id) || 0) + 1);
+    });
 
-          userProgress = {
-            completedVideos: completedVideos || 0,
-            totalVideos,
-            progressPercentage,
-            isCompleted: progressPercentage >= 100,
-          };
-        }
+    // 3. Enrich courses from memory
+    const enrichedCourses = (courses || []).map(course => {
+      const topicCount = topicCountMap.get(course.id) || 0;
+      const videoCount = videoCountMap.get(course.id) || 0;
+      
+      let userProgress = null;
+      if (userId) {
+        const completedVideos = completedMap.get(course.id) || 0;
+        const totalVideos = videoCount;
+        const progressPercentage = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
 
-        return {
-          ...course,
-          topicCount: topicCount || 0,
-          videoCount: videoCount || 0,
-          userProgress,
+        userProgress = {
+          completedVideos,
+          totalVideos,
+          progressPercentage,
+          isCompleted: progressPercentage >= 100,
         };
-      })
-    );
+      }
+
+      return {
+        ...course,
+        topicCount,
+        videoCount,
+        userProgress,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -113,7 +117,7 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Get topics with their videos
+    // 1. Get topics
     const { data: topics } = await supabase
       .from('topics')
       .select('*')
@@ -121,51 +125,87 @@ export const getCourseById = async (req: Request, res: Response): Promise<void> 
       .eq('is_active', true)
       .order('order_index');
 
-    const topicsWithVideos = await Promise.all(
-      (topics || []).map(async (topic) => {
-        const { data: videos } = await supabase
-          .from('videos')
+    const topicIds = (topics || []).map(t => t.id);
+
+    // 2. Fetch all videos for these topics in one go
+    const { data: allVideos } = await supabase
+      .from('videos')
+      .select('*')
+      .in('topic_id', topicIds.length > 0 ? topicIds : ['__none__'])
+      .eq('is_active', true)
+      .order('order_index');
+
+    // 3. Fetch all evaluations for these topics in one go
+    const { data: allEvaluations } = await supabase
+      .from('evaluations')
+      .select('*')
+      .in('topic_id', topicIds.length > 0 ? topicIds : ['__none__']);
+
+    const evalIds = (allEvaluations || []).map(e => e.id);
+
+    // 4. Fetch all progress records if userId provided
+    let videoProgressMap = new Map();
+    let evalProgressMap = new Map();
+
+    if (userId) {
+      const [
+        { data: videoProgress },
+        { data: evalProgress }
+      ] = await Promise.all([
+        supabase
+          .from('video_progress')
           .select('*')
-          .eq('topic_id', topic.id)
-          .eq('is_active', true)
-          .order('order_index');
+          .eq('user_id', userId as string)
+          .eq('course_id', courseId),
+        supabase
+          .from('evaluation_progress')
+          .select('*')
+          .eq('user_id', userId as string)
+          .in('evaluation_id', evalIds.length > 0 ? evalIds : ['__none__'])
+      ]);
 
-        // Get per-video progress if userId provided
-        let videosWithProgress = videos || [];
-        if (userId) {
-          const videoIds = (videos || []).map((v) => v.id);
-          const { data: progressRecords } = await supabase
-            .from('video_progress')
-            .select('*')
-            .eq('user_id', userId as string)
-            .in('video_id', videoIds.length > 0 ? videoIds : ['__none__']);
+      videoProgressMap = new Map(videoProgress?.map(p => [p.video_id, p]) || []);
+      evalProgressMap = new Map(evalProgress?.map(p => [p.evaluation_id, p]) || []);
+    }
 
-          const progressMap = new Map(
-            progressRecords?.map((p) => [p.video_id, p]) || []
-          );
+    // 5. Assemble the hierarchy in memory
+    const topicsWithVideos = (topics || []).map(topic => {
+      const topicVideos = (allVideos || [])
+        .filter(v => v.topic_id === topic.id)
+        .map(video => {
+          const progress = videoProgressMap.get(video.id);
+          return {
+            ...video,
+            userProgress: progress ? {
+              completed: progress.completed,
+              watchPercentage: progress.watch_percentage || 0,
+              lastWatchedAt: progress.last_watched_at,
+            } : null
+          };
+        });
 
-          videosWithProgress = (videos || []).map((video) => {
-            const progress = progressMap.get(video.id);
-            return {
-              ...video,
-              userProgress: progress
-                ? {
-                    completed: progress.completed,
-                    watchPercentage: progress.watch_percentage || 0,
-                    lastWatchedAt: progress.last_watched_at,
-                  }
-                : null,
-            };
-          });
-        }
-
-        return {
-          ...topic,
-          videos: videosWithProgress,
-          videoCount: videosWithProgress.length,
+      const evaluation = (allEvaluations || []).find(e => e.topic_id === topic.id);
+      let evaluationWithProgress = evaluation || null;
+      
+      if (evaluation) {
+        const progress = evalProgressMap.get(evaluation.id);
+        evaluationWithProgress = {
+          ...evaluation,
+          evaluation_progress: progress ? {
+            passed: progress.passed,
+            score: progress.score,
+            completed_at: progress.completed_at
+          } : null
         };
-      })
-    );
+      }
+
+      return {
+        ...topic,
+        videos: topicVideos,
+        videoCount: topicVideos.length,
+        evaluation: evaluationWithProgress
+      };
+    });
 
     // Calculate overall course progress
     let courseProgress = null;

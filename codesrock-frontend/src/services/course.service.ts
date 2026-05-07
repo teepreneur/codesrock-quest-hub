@@ -43,6 +43,16 @@ export interface TopicWithVideos {
   is_active: boolean;
   videoCount: number;
   videos: VideoItem[];
+  evaluation: {
+    id: string;
+    title: string;
+    xp_reward: number;
+    evaluation_progress: {
+      passed: boolean;
+      score: number;
+      completed_at: string;
+    } | null;
+  } | null;
 }
 
 export interface VideoItem {

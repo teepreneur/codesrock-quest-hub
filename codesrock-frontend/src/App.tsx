@@ -70,7 +70,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/videos" element={<LearningPath />} />
               <Route path="/resources" element={<Resources />} />
-              <Route path="/evaluation" element={<Evaluation />} />
+              <Route path="/evaluation/:id" element={<Evaluation />} />
               <Route path="/achievements" element={<Achievements />} />
               <Route path="/certificates" element={<Certificates />} />
               <Route path="/calendar" element={<Calendar />} />

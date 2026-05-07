@@ -333,6 +333,31 @@ class AdminService {
   async deactivateSchool(schoolId: string): Promise<void> {
     return apiService.delete(`/admin/schools/${schoolId}`);
   }
+
+  // ==================== Evaluation Management ====================
+
+  async getEvaluation(topicId: string): Promise<any> {
+    return apiService.get(`/evaluations/topic/${topicId}`);
+  }
+
+  async saveEvaluation(data: {
+    topicId: string;
+    title: string;
+    description: string;
+    xpReward: number;
+    questions: any[];
+  }): Promise<any> {
+    return apiService.post('/admin/content/evaluations/save', data);
+  }
+
+  async submitEvaluation(data: {
+    userId: string;
+    evaluationId: string;
+    score: number;
+    passed: boolean;
+  }): Promise<any> {
+    return apiService.post('/evaluations/submit-mastery', data);
+  }
 }
 
 // Export singleton instance
