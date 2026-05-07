@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play, CheckCircle, Clock, Star, ChevronRight, Layout, Map as MapIcon, Info, X } from "lucide-react";
+import { Play, CheckCircle, Clock, Star, ChevronRight, Layout, Map as MapIcon, BookOpen, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { courseService, type CourseWithProgress, type CourseDetail, type VideoItem } from "@/services/course.service";
@@ -106,11 +106,11 @@ export default function LearningPath() {
     try {
       const result = await courseService.updateVideoProgress(user.id, watchingVideo.id, selectedCourse.id, totalSeconds, totalSeconds);
       if (result.justCompleted) {
-        toast.success(`🎉 Mission Accomplished! +${watchingVideo.xp_reward} XP`, { description: `You've mastered "${watchingVideo.title}"!` });
+        toast.success(`🎉 Lesson Completed! +${watchingVideo.xp_reward} XP`, { description: `You've mastered "${watchingVideo.title}"!` });
       }
       const detail = await courseService.getCourseById(selectedCourse.id, user.id);
       setCourseDetail(detail);
-    } catch (error: any) { toast.error("Failed to save mission progress"); }
+    } catch (error: any) { toast.error("Failed to save progress"); }
   };
 
   if (loading) {
@@ -136,14 +136,14 @@ export default function LearningPath() {
   return (
     <div className="flex gap-8 animate-fade-in pb-4 h-[calc(100vh-120px)] overflow-hidden">
       
-      {/* LEFT COLUMN: MISSION BRIEFING SIDEBAR */}
+      {/* LEFT COLUMN: COURSE MODULES SIDEBAR */}
       <div className="w-80 flex flex-col gap-6 bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-muted/20 p-6 shadow-sm overflow-hidden shrink-0">
         <div className="flex flex-col h-full overflow-hidden">
            <div className="flex items-center gap-2 mb-6 px-2">
               <div className="w-8 h-8 rounded-lg bg-deep-purple/10 flex items-center justify-center">
-                 <Info className="h-4 w-4 text-deep-purple" />
+                 <BookOpen className="h-4 w-4 text-deep-purple" />
               </div>
-              <h1 className="text-[10px] font-black text-deep-purple uppercase tracking-[0.4em] opacity-80">Mission Briefing</h1>
+              <h1 className="text-[10px] font-black text-deep-purple uppercase tracking-[0.4em] opacity-80">Course Modules</h1>
            </div>
            
            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3 pb-6">
@@ -170,7 +170,7 @@ export default function LearningPath() {
                       
                       <div className="flex-1 min-w-0">
                         <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${isActive ? 'text-primary' : 'text-muted-foreground/60'}`}>
-                           Region {idx} {isActive && '• SCANNING'}
+                           Module {idx + 1} {isActive && '• CURRENT'}
                         </p>
                         <h3 className={`text-xs font-black leading-tight truncate ${isActive ? 'text-deep-purple' : 'text-muted-foreground'}`}>
                            {topic.title}
@@ -183,9 +183,10 @@ export default function LearningPath() {
               })}
            </div>
 
+           {/* Learning Paths Integrated into Sidebar */}
            {courses.length > 1 && (
               <div className="pt-6 border-t border-muted/20">
-                 <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest mb-3">Expedition Track</p>
+                 <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest mb-3">My Learning Paths</p>
                  <div className="grid gap-2">
                     {courses.filter(c => c.id !== selectedCourse?.id).map(c => (
                        <Button key={c.id} variant="outline" className="w-full justify-start rounded-2xl border-muted/20 text-[10px] font-bold h-12 px-4 hover:border-primary/40 bg-white/30" onClick={() => handleCourseSelect(c)}>
@@ -199,7 +200,7 @@ export default function LearningPath() {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: EXPEDITION MAP */}
+      {/* RIGHT COLUMN: LEARNING JOURNEY MAP */}
       <div className="flex-1 h-full">
         {detailLoading ? (
            <Skeleton className="w-full h-full rounded-[3rem]" />
@@ -215,22 +216,22 @@ export default function LearningPath() {
                  <MapIcon className="h-10 w-10 text-muted-foreground/20" />
               </div>
               <div className="space-y-1">
-                 <h3 className="text-xl font-black text-deep-purple italic">Ready for Expedition?</h3>
-                 <p className="text-sm text-muted-foreground max-w-xs font-bold">Select a mission region from the briefing to begin.</p>
+                 <h3 className="text-xl font-black text-deep-purple italic">Ready to learn?</h3>
+                 <p className="text-sm text-muted-foreground max-w-xs font-bold">Select a module from the sidebar to begin your journey.</p>
               </div>
            </div>
         )}
       </div>
 
-      {/* Video Expedition Player - Perfectly Framed */}
+      {/* Lesson Player - Perfectly Framed */}
       <Dialog open={isPlayerOpen} onOpenChange={setIsPlayerOpen}>
         <DialogContent className="max-w-4xl max-h-[95vh] w-[95vw] rounded-[2.5rem] overflow-hidden border-none p-0 bg-transparent shadow-none flex flex-col">
           {watchingVideo && (
             <div className="bg-white rounded-[2.5rem] overflow-hidden border-8 border-white shadow-2xl flex flex-col h-full">
-              {/* Header - More Compact */}
+              {/* Header */}
               <div className="px-8 py-5 bg-deep-purple text-white flex justify-between items-center shrink-0 relative">
                 <div className="space-y-0.5">
-                   <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-60">Expedition Playback</p>
+                   <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-60">Lesson Video</p>
                    <DialogTitle className="text-xl font-black italic tracking-tight truncate max-w-md">{watchingVideo.title}</DialogTitle>
                 </div>
                 <div className="flex gap-4 items-center pr-10">
@@ -248,7 +249,7 @@ export default function LearningPath() {
                 </Button>
               </div>
 
-              {/* Player Area - Scrollable for safety */}
+              {/* Player Area */}
               <div className="flex-1 overflow-y-auto bg-muted/5 custom-scrollbar">
                 <div className="p-1">
                   <YouTubePlayer 
@@ -260,13 +261,13 @@ export default function LearningPath() {
                   />
                 </div>
                 
-                {/* Footer - More Compact */}
+                {/* Footer */}
                 <div className="p-6 flex items-center justify-center">
                   <Button 
                     className="rounded-2xl font-black px-12 h-14 text-lg shadow-xl shadow-primary/20 hover:scale-105 transition-transform" 
                     onClick={() => setIsPlayerOpen(false)}
                   >
-                    Mission Complete 🤘
+                    Lesson Completed! 🤘
                   </Button>
                 </div>
               </div>
