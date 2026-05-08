@@ -252,7 +252,7 @@ export default function LearningPath() {
           {watchingVideo && (
             <div className="bg-white rounded-[2.5rem] overflow-hidden border-8 border-white shadow-2xl flex flex-col h-full">
               {/* Header */}
-              <div className="px-8 py-5 bg-deep-purple text-white flex justify-between items-center shrink-0 relative">
+              <div className="px-8 py-5 bg-deep-purple text-white flex justify-between items-center shrink-0 relative" data-tour="video-player-header">
                 <div className="space-y-0.5">
                    <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-60">Lesson Video</p>
                    <DialogTitle className="text-xl font-black italic tracking-tight truncate max-w-md">{watchingVideo.title}</DialogTitle>
@@ -274,7 +274,7 @@ export default function LearningPath() {
 
               {/* Player Area */}
               <div className="flex-1 overflow-y-auto bg-muted/5 custom-scrollbar">
-                <div className="p-1" data-tour="video-player">
+                <div className="p-1">
                   <YouTubePlayer 
                     videoId={extractYouTubeVideoId(watchingVideo.video_url || "") || ""} 
                     title={watchingVideo.title} 

@@ -74,7 +74,7 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
             disableBeacon: true,
           },
           {
-            target: '[data-tour="video-player"]',
+            target: '[data-tour="video-player-header"]',
             content: <RockyTourGuide message="Rock on! Watch this video to master the skill. When you're done, I'll help you with the next one!" />,
             disableBeacon: true,
           }
@@ -157,7 +157,7 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
       styles={{
         options: {
           primaryColor: '#6366f1',
-          zIndex: 10000,
+          zIndex: 20000,
         },
         tooltipContainer: {
           textAlign: 'left',
