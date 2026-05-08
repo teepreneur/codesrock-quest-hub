@@ -23,7 +23,7 @@ export const getEvaluationByTopic = async (req: Request, res: Response): Promise
       data: evaluation || null
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({ success: false, message: error.message || 'Server error', error: error });
   }
 };
 
@@ -72,7 +72,7 @@ export const saveEvaluation = async (req: Request, res: Response): Promise<void>
       data: evaluation
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({ success: false, message: error.message || 'Server error', error: error });
   }
 };
 
@@ -139,6 +139,6 @@ export const submitEvaluation = async (req: Request, res: Response): Promise<voi
       data: { passed, score }
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({ success: false, message: error.message || 'Server error', error: error });
   }
 };

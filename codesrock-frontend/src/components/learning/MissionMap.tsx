@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Play, Star, Clock, MapPin, Lock, HelpCircle, Award } from "lucide-react";
@@ -22,9 +23,11 @@ interface MissionMapProps {
   onNodeClick: (node: MissionNode) => void;
   moduleTitle: string;
   isEvaluationPassed: boolean;
+  currentTopicId?: string;
 }
 
-export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, moduleTitle, isEvaluationPassed }) => {
+export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, moduleTitle, isEvaluationPassed, currentTopicId }) => {
+  const navigate = useNavigate();
   const getPathSegments = () => {
     if (nodes.length <= 0) return { completed: "", locked: "" };
     
@@ -164,7 +167,15 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                       <Card 
                         className={`w-[45%] overflow-hidden rounded-[2.5rem] transition-all duration-700 cursor-pointer border-8 group relative
                           ${node.status === 'watched' ? 'border-orange-400 shadow-[0_0_40px_rgba(251,146,60,0.3)] scale-105' : 'border-white shadow-xl opacity-90'}`}
-                        onClick={() => { if (node.status === 'watched') window.location.href = `/evaluation/${node.topic_id}`; else toast.info("Complete all lessons first! 🔒"); }}
+                        onClick={() => { 
+                          if (node.status === 'watched') {
+                            const tid = node.topic_id || currentTopicId;
+                            if (tid) navigate(`/evaluation/${tid}`);
+                            else toast.error("Module ID not found. Please refresh.");
+                          } else {
+                            toast.info("Complete all lessons first! 🔒"); 
+                          }
+                        }}
                       >
                         <CardContent className="p-0 relative">
                           <div className="h-48 bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-6 overflow-hidden relative">

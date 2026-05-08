@@ -229,7 +229,8 @@ export default function LearningPath() {
               nodes={missionNodes} 
               onNodeClick={handleWatchVideo}
               moduleTitle={currentTopic.title}
-              isEvaluationPassed={!!currentTopic.evaluation?.evaluation_progress?.passed}
+              isEvaluationPassed={!!courseDetail?.userProgress?.some((p: any) => p.topic_id === currentTopic.id && p.completed)}
+              currentTopicId={currentTopic.id}
            />
         ) : (
            <div className="w-full h-full bg-muted/5 rounded-[3rem] border-4 border-dashed border-muted/10 flex flex-col items-center justify-center text-center p-10 gap-4">

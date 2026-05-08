@@ -94,6 +94,7 @@ export function EvaluationFormDialog({ open, onOpenChange, topicId, topicTitle }
   };
 
   const handleSave = async () => {
+    if (!topicId) return toast.error("Topic ID is missing. Please close and try again.");
     if (!title) return toast.error("Title is required");
     if (questions.length === 0) return toast.error("At least one question is required");
     
