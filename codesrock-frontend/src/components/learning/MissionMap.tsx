@@ -168,6 +168,14 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                       >
                         <CardContent className="p-0 relative">
                           <div className="h-48 bg-gradient-to-br from-orange-50 to-white flex items-center justify-center p-6 overflow-hidden relative">
+                            {node.status === 'watched' && !isEvaluationPassed && (
+                              <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-50 animate-bounce-subtle">
+                                <img src="/rocky_3D_idea.png" alt="Rocky" className="w-20 h-20 object-contain drop-shadow-xl" />
+                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest whitespace-nowrap shadow-xl border-2 border-white/20">
+                                  Final Challenge!
+                                </div>
+                              </div>
+                            )}
                             <img src="/rocky_3D_idea.png" alt="Evaluation" className="h-32 w-auto object-contain drop-shadow-2xl group-hover:scale-110 transition-all z-20" />
                             <div className="absolute top-4 right-4 bg-orange-500 text-white text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg z-30">Module Finale</div>
                             {node.status !== 'watched' && <div className="absolute inset-0 bg-black/5 flex items-center justify-center z-40"><Lock className="h-12 w-12 text-white/70" /></div>}

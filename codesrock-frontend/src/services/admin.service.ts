@@ -350,12 +350,7 @@ class AdminService {
     return apiService.post('/admin/content/evaluations/save', data);
   }
 
-  async submitEvaluation(data: {
-    userId: string;
-    evaluationId: string;
-    score: number;
-    passed: boolean;
-  }): Promise<any> {
+  async submitEvaluation(data: { userId: string, evaluationId: string, score: number, passed: boolean }) {
     return apiService.post('/evaluations/submit-mastery', data);
   }
 }
