@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { BarChart as BarChartIcon, TrendingUp, Users, BookOpen, Activity, Calendar } from "lucide-react";
+import { BarChart as BarChartIcon, TrendingUp, Users, BookOpen, Activity, Calendar, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { adminService } from "@/services/admin.service";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -13,6 +14,7 @@ interface OverviewStats {
     totalCourses: number;
     avgTeacherCompletion: number;
     studentCompletionRate: number;
+    evaluationSuccessRate?: number;
   };
   trends: {
     newUsersThisMonth: number;
@@ -27,6 +29,7 @@ export default function Analytics() {
   const [overview, setOverview] = useState<OverviewStats | null>(null);
   const [courseAnalytics, setCourseAnalytics] = useState<any>(null);
   const [engagementMetrics, setEngagementMetrics] = useState<any>(null);
+  const [schoolAnalytics, setSchoolAnalytics] = useState<any>(null);
 
   // Helper function to safely render values
   const safeValue = (value: any, fallback: string | number = 0): string | number => {
@@ -51,6 +54,10 @@ export default function Analytics() {
       // Load engagement metrics
       const engagementData = await adminService.getEngagementMetrics(parseInt(dateRange));
       setEngagementMetrics(engagementData);
+
+      // Load school analytics
+      const schoolData = await adminService.getSchoolAnalytics();
+      setSchoolAnalytics(schoolData);
     } catch (error: any) {
       console.error('Error loading analytics:', error);
     } finally {
@@ -196,19 +203,57 @@ export default function Analytics() {
 
         <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Teacher Mastery</CardTitle>
+            <CardTitle className="text-sm font-medium">Quiz Success</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-500">
-              {Math.round(Number(safeValue(overview?.stats?.avgTeacherCompletion, 0)))}%
+              {safeValue(overview?.stats?.evaluationSuccessRate, 0)}%
             </div>
             <p className="text-xs text-muted-foreground">
-              Curriculum training
+              Mastery achievement
             </p>
           </CardContent>
         </Card>
       </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* School Performance Section */}
+        <Card className="col-span-1">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>School Leaderboard</CardTitle>
+                <CardDescription>Top performing schools by engagement and XP</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => window.location.href='/admin/schools'}>View All</Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {schoolAnalytics?.schools?.slice(0, 5).map((school: any, idx: number) => (
+                <div key={school.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm">
+                      #{idx + 1}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">{school.name}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-black">{school.schoolCode}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black text-primary text-sm">{school.totalXP.toLocaleString()} XP</p>
+                    <p className="text-[10px] text-muted-foreground font-bold">{school.studentCount} Students • {school.teacherCount} Teachers</p>
+                  </div>
+                </div>
+              ))}
+              {(!schoolAnalytics?.schools || schoolAnalytics.schools.length === 0) && (
+                <div className="text-center py-8 text-muted-foreground">No school data available</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
       {/* Charts Grid */}
       <div className="grid gap-6 lg:grid-cols-2">

@@ -198,6 +198,10 @@ class AdminService {
     return apiService.get(`/admin/analytics/engagement?days=${days}`);
   }
 
+  async getSchoolAnalytics(): Promise<any> {
+    return apiService.get('/admin/analytics/schools');
+  }
+
   // ==================== Course Management ====================
 
   async getAllCourses(params?: {

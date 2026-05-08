@@ -60,6 +60,12 @@ export const getOverview = async (
       .select('created_at')
       .gte('created_at', sevenDaysAgo.toISOString());
 
+    // Get evaluation success rate
+    const { data: allAttempts } = await supabase.from('evaluation_progress').select('passed');
+    const passedCount = (allAttempts || []).filter(a => a.passed).length;
+    const totalAttempts = (allAttempts || []).length;
+    const evaluationSuccessRate = totalAttempts > 0 ? (passedCount / totalAttempts) * 100 : 0;
+
     res.status(200).json({
       success: true,
       data: {
@@ -70,6 +76,7 @@ export const getOverview = async (
           totalCourses: totalCourses || 0,
           avgTeacherCompletion: Math.round(avgTeacherCompletion),
           studentCompletionRate: Math.round(studentCompletionRate),
+          evaluationSuccessRate: Math.round(evaluationSuccessRate),
         },
         trends: {
           newUsersThisMonth: newUsersThisMonth || 0,
@@ -250,6 +257,84 @@ export const getEngagementMetrics = async (
         dailyActiveUsers,
         activityBreakdown,
         topPerformers: topPerformers || [],
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get school performance analytics
+ * @route   GET /api/admin/analytics/schools
+ * @access  Private/Admin
+ */
+export const getSchoolAnalytics = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    // Get all schools with their teachers and students progress
+    const { data: schools, error: schoolError } = await supabase
+      .from('schools')
+      .select('id, name, school_code');
+
+    if (schoolError) throw schoolError;
+
+    const schoolStats = await Promise.all(
+      (schools || []).map(async (school) => {
+        // Get all profiles for this school
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, role')
+          .eq('school_id', school.id);
+
+        const profileIds = (profiles || []).map(p => p.id);
+        const teacherCount = (profiles || []).filter(p => p.role === 'teacher').length;
+        const studentCount = (profiles || []).filter(p => p.role === 'student').length;
+
+        let totalXP = 0;
+        let completions = 0;
+
+        if (profileIds.length > 0) {
+          // Get total XP for these profiles
+          const { data: progress } = await supabase
+            .from('user_progress')
+            .select('total_xp')
+            .in('user_id', profileIds);
+
+          totalXP = (progress || []).reduce((sum, p) => sum + (p.total_xp || 0), 0);
+
+          // Get completions
+          const { count: completionCount } = await supabase
+            .from('video_progress')
+            .select('*', { count: 'exact', head: true })
+            .in('user_id', profileIds)
+            .eq('completed', true);
+          
+          completions = completionCount || 0;
+        }
+
+        return {
+          id: school.id,
+          name: school.name,
+          schoolCode: school.school_code,
+          teacherCount,
+          studentCount,
+          totalXP,
+          completions,
+        };
+      })
+    );
+
+    // Sort by total XP
+    schoolStats.sort((a, b) => b.totalXP - a.totalXP);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        schools: schoolStats,
       },
     });
   } catch (error) {
