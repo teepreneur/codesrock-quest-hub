@@ -254,6 +254,7 @@ export default function Analytics() {
             </div>
           </CardContent>
         </Card>
+      </div>
 
       {/* Charts Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
