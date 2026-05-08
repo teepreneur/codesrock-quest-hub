@@ -47,9 +47,9 @@ export const getOverview = async (
     const { count: totalPossibleMastery } = await supabase.from('topics').select('*', { count: 'exact', head: true }).eq('is_active', true);
     
     // Simplified: Percentage of students who have completed at least one topic
-    const { data: studentsWithProgress } = await supabase.from('student_topic_progress').select('student_id', { count: 'exact', head: true });
+    const { count: progressCount } = await supabase.from('student_topic_progress').select('*', { count: 'exact', head: true });
     const studentCompletionRate = totalStudents && totalStudents > 0 
-      ? (studentsWithProgress?.length || 0) / totalStudents * 100 
+      ? ((progressCount || 0) / totalStudents) * 100 
       : 0;
 
     // Get engagement trend (last 7 days)
