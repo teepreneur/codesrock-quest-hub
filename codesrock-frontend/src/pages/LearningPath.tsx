@@ -174,6 +174,7 @@ export default function LearningPath() {
                   <div key={topic.id} className="px-1">
                     <Card 
                       onClick={() => setSelectedTopicId(topic.id)}
+                      data-tour={idx === 0 ? 'module-card' : undefined}
                       className={`
                         relative group cursor-pointer transition-all duration-300 rounded-[1.5rem] border-2
                         ${isActive ? 'bg-white border-primary shadow-xl scale-[1.02] z-10' : 'bg-white/50 border-transparent hover:border-primary/20 hover:scale-[1.01]'}

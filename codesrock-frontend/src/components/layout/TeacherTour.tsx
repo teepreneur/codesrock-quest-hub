@@ -47,31 +47,36 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
           {
             target: '[data-tour="sidebar-learning"]',
             content: <RockyTourGuide message="First stop: The Learning Path. This is where your training journey begins. Click here to see your mission map!" />,
+            disableBeacon: true,
           }
         ];
       }
       if (pathname === '/videos') {
         return [
           {
-            target: '.px-1:first-child', // Targets the first module card in the modules sidebar
+            target: '[data-tour="module-card"]',
             content: <RockyTourGuide message="Here are your training modules. We've selected the first one for you. Let's look at the missions inside!" />,
             disableBeacon: true,
           },
           {
-            target: '.mission-node:first-child', // Targets the first video node in the MissionMap
+            target: '[data-tour="first-mission"]',
             content: <RockyTourGuide message="Each node is a mission. Watch the videos to master the skills. Complete all missions in the first module to unlock your finale challenge!" />,
+            disableBeacon: true,
           },
           {
             target: '[data-tour="quiz-card"]',
             content: <RockyTourGuide message="Once you've mastered all the missions, this Final Challenge will unlock. Pass it to earn your Pioneer Badge!" />,
+            disableBeacon: true,
           },
           {
             target: '[data-tour="sidebar-quiz"]',
             content: <RockyTourGuide message="You can also access all your evaluations here. Ready to start your journey?" />,
+            disableBeacon: true,
           },
           {
             target: '[data-tour="video-player"]',
             content: <RockyTourGuide message="Rock on! Watch this video to master the skill. When you're done, I'll help you with the next one!" />,
+            disableBeacon: true,
           }
         ];
       }
@@ -86,6 +91,7 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
           {
             target: '[data-tour="quiz-question"]',
             content: <RockyTourGuide message="Read each question carefully. Use what you learned in the videos to find the best answer!" />,
+            disableBeacon: true,
           }
         ];
       }

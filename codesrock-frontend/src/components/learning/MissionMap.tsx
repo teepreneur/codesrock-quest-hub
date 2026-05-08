@@ -127,6 +127,7 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
 
                 <div className="w-[45%] flex justify-center z-20">
                   <Card 
+                    data-tour={index === 0 ? 'first-mission' : undefined}
                     className={`w-full overflow-hidden rounded-[2.5rem] transition-all duration-500 cursor-pointer border-8 group relative mission-node
                       ${node.status === 'active' ? 'border-primary shadow-[0_20px_50px_rgba(0,0,0,0.15)] scale-105' : 'border-white hover:border-primary/40 shadow-xl'}`}
                     onClick={() => onNodeClick(node)}
