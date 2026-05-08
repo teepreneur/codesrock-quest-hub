@@ -42,7 +42,8 @@ CREATE OR REPLACE FUNCTION award_xp(
   p_user_id UUID,
   p_xp_amount INTEGER,
   p_activity_type TEXT,
-  p_description TEXT
+  p_description TEXT,
+  p_metadata JSONB DEFAULT '{}'::jsonb
 )
 RETURNS JSON AS $$
 DECLARE
@@ -81,8 +82,8 @@ BEGIN
   WHERE user_id = p_user_id;
 
   -- Log activity
-  INSERT INTO activities (user_id, type, description, xp_earned)
-  VALUES (p_user_id, p_activity_type, p_description, p_xp_amount);
+  INSERT INTO activities (user_id, type, description, xp_earned, metadata)
+  VALUES (p_user_id, p_activity_type, p_description, p_xp_amount, p_metadata);
 
   -- If level up, log that too
   IF v_level_up THEN

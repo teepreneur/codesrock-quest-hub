@@ -215,6 +215,7 @@ export interface Database {
           p_xp_amount: number;
           p_activity_type: string;
           p_description: string;
+          p_metadata?: any;
         };
         Returns: {
           success: boolean;
