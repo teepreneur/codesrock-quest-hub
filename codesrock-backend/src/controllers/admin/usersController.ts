@@ -515,7 +515,7 @@ export const searchUsersByContact = async (
     const { data: users, error } = await supabase
       .from('profiles')
       .select('id, first_name, last_name, email, phone_number, role, school_id, schools(name)')
-      .or(`email.eq.${query},phone_number.eq.${query},first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+      .or(`email.ilike.%${query}%,phone_number.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
       .limit(10);
 
     if (error) throw error;
