@@ -154,6 +154,16 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
       showProgress
       showSkipButton
       steps={steps}
+      scrollOffset={100}
+      floaterProps={{
+        disableAnimation: true,
+        styles: {
+          arrow: {
+            length: 8,
+            spread: 12,
+          }
+        }
+      }}
       styles={{
         options: {
           primaryColor: '#6366f1',
