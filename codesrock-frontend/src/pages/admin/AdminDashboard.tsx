@@ -123,11 +123,7 @@ export default function AdminDashboard() {
         </div>
         
         <div className="grid gap-6 md:grid-cols-3">
-          {[
-            { name: "Lincoln Elementary", progress: 78, active: 124, trend: "up" },
-            { name: "Westside Academy", progress: 62, active: 89, trend: "up" },
-            { name: "East Village Tech", progress: 45, active: 210, trend: "down" }
-          ].map((school, i) => (
+          {(data.topSchools || []).map((school, i) => (
             <Card 
               key={i} 
               className="glass-panel overflow-hidden group hover:border-primary/40 transition-all cursor-pointer active:scale-95"
@@ -159,6 +155,11 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           ))}
+          {(!data.topSchools || data.topSchools.length === 0) && (
+            <div className="col-span-full py-12 text-center bg-muted/20 rounded-3xl border border-dashed border-muted-foreground/20">
+               <p className="text-muted-foreground font-bold">No school data available yet. Add schools to start tracking success!</p>
+            </div>
+          )}
         </div>
       </section>
 

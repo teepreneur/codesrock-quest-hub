@@ -66,6 +66,53 @@ export const getOverview = async (
     const totalAttempts = (allAttempts || []).length;
     const evaluationSuccessRate = totalAttempts > 0 ? (passedCount / totalAttempts) * 100 : 0;
 
+    // Get top 3 schools for the dashboard
+    const { data: schoolsForOverview } = await supabase
+      .from('schools')
+      .select('id, name')
+      .limit(10);
+    
+    const schoolSuccessMetrics = await Promise.all(
+      (schoolsForOverview || []).map(async (school) => {
+        const { data: studentProfiles } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('school_id', school.id)
+          .eq('role', 'student');
+        
+        const studentIds = (studentProfiles || []).map(p => p.id);
+        let avgProgress = 0;
+        
+        if (studentIds.length > 0) {
+          const { count: completedCount } = await supabase
+            .from('video_progress')
+            .select('*', { count: 'exact', head: true })
+            .in('user_id', studentIds)
+            .eq('completed', true);
+          
+          const { count: totalProgressCount } = await supabase
+            .from('video_progress')
+            .select('*', { count: 'exact', head: true })
+            .in('user_id', studentIds);
+          
+          avgProgress = totalProgressCount && totalProgressCount > 0 
+            ? Math.round(((completedCount || 0) / totalProgressCount) * 100) 
+            : 0;
+        }
+        
+        return {
+          name: school.name,
+          progress: avgProgress,
+          active: studentIds.length,
+          trend: avgProgress > 50 ? 'up' : 'down'
+        };
+      })
+    );
+    
+    const topSchools = schoolSuccessMetrics
+      .sort((a, b) => b.progress - a.progress)
+      .slice(0, 3);
+
     res.status(200).json({
       success: true,
       data: {
@@ -83,6 +130,7 @@ export const getOverview = async (
           totalActivities: totalActivities || 0,
           engagementCount: recentActivities?.length || 0,
         },
+        topSchools
       },
     });
   } catch (error) {

@@ -62,6 +62,11 @@ export interface DashboardData {
     percentage?: number;
     submittedAt?: string;
   }>;
+  classroomStats?: {
+    avgCompletion: number;
+    studentCount: number;
+    classCount: number;
+  };
 }
 
 export interface AdminStats {

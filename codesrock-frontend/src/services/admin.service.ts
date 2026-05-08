@@ -75,6 +75,12 @@ export interface AnalyticsOverview {
     totalActivities: number;
     engagementTrend: Array<{ id: string; count: number }>;
   };
+  topSchools?: Array<{
+    name: string;
+    progress: number;
+    active: number;
+    trend: 'up' | 'down';
+  }>;
 }
 
 // School types

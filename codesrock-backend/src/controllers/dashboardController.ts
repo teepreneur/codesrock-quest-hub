@@ -196,7 +196,45 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
         percentage: userEval.percentage,
         submittedAt: userEval.submitted_at,
       })),
+      classroomStats: null as any
     };
+
+    // If teacher, add classroom stats
+    if (user.role === 'teacher') {
+      const { data: teacherClasses } = await supabase
+        .from('classes')
+        .select('id')
+        .eq('teacher_id', userId);
+      
+      const classIds = (teacherClasses || []).map(c => c.id);
+      
+      if (classIds.length > 0) {
+        const { data: classStudents } = await supabase
+          .from('class_students')
+          .select('student_id')
+          .in('class_id', classIds);
+        
+        const studentIds = [...new Set((classStudents || []).map(cs => cs.student_id))];
+        
+        if (studentIds.length > 0) {
+          const { data: studentProgress } = await supabase
+            .from('video_progress')
+            .select('completed')
+            .in('user_id', studentIds);
+          
+          const totalVideoInteractions = studentProgress?.length || 0;
+          const completedVideos = (studentProgress || []).filter(p => p.completed).length;
+          
+          dashboard.classroomStats = {
+            avgCompletion: totalVideoInteractions > 0 
+              ? Math.round((completedVideos / totalVideoInteractions) * 100) 
+              : 0,
+            studentCount: studentIds.length,
+            classCount: classIds.length
+          };
+        }
+      }
+    }
 
     res.status(200).json({
       success: true,

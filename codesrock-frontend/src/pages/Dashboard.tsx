@@ -346,43 +346,47 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Class Quick Glance */}
-        <Card className="glass-panel group overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-110 transition-transform duration-700" />
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-2xl text-deep-purple">
-              <Users className="h-6 w-6 text-secondary" />
-              Class Performance
-            </CardTitle>
-            <CardDescription className="text-base font-medium">
-              Monitor your students' aggregate growth
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 relative z-10">
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-secondary/5 to-primary/5 border border-white/50 space-y-4">
-              <div className="flex justify-between items-end">
-                <div>
-                  <h4 className="font-black text-deep-purple text-lg">Active Sections</h4>
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Global classroom health</p>
+        {/* Class Quick Glance - Only for Teachers */}
+        {user?.role === 'teacher' && data.classroomStats && (
+          <Card className="glass-panel group overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-110 transition-transform duration-700" />
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-2xl text-deep-purple">
+                <Users className="h-6 w-6 text-secondary" />
+                Class Performance
+              </CardTitle>
+              <CardDescription className="text-base font-medium">
+                Monitor your {data.classroomStats.studentCount} students' aggregate growth
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 relative z-10">
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-secondary/5 to-primary/5 border border-white/50 space-y-4">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <h4 className="font-black text-deep-purple text-lg">Active Sections</h4>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                      Across {data.classroomStats.classCount} active classes
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-black text-secondary">{data.classroomStats.avgCompletion}%</span>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Avg. Completion</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-2xl font-black text-secondary">84%</span>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase">Avg. Completion</p>
-                </div>
+                <Progress value={data.classroomStats.avgCompletion} className="h-3 bg-white/50" />
               </div>
-              <Progress value={84} className="h-3 bg-white/50" />
-            </div>
-            
-            <Button 
-              onClick={() => navigate('/classes')}
-              variant="outline" 
-              className="w-full font-bold border-secondary/20 text-secondary hover:bg-secondary/10 hover:text-secondary rounded-xl py-6"
-            >
-              View Detailed Roster
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
+              
+              <Button 
+                onClick={() => navigate('/classes')}
+                variant="outline" 
+                className="w-full font-bold border-secondary/20 text-secondary hover:bg-secondary/10 hover:text-secondary rounded-xl py-6"
+              >
+                View Detailed Roster
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="grid gap-8 lg:grid-cols-1">
