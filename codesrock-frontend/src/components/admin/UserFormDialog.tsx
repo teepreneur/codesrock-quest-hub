@@ -43,7 +43,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
       }
     };
 
-    if (open && !user) {
+    if (open) {
       loadSchools();
     }
   }, [open, user]);
@@ -80,7 +80,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
       return;
     }
 
-    if (!user && !formData.schoolId) {
+    if (!user && (!formData.schoolId || formData.schoolId === "none")) {
       toast.error("Please select a school");
       return;
     }
@@ -94,7 +94,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
           firstName: formData.firstName,
           lastName: formData.lastName,
           role: formData.role,
-          schoolId: formData.schoolId || undefined,
+          schoolId: formData.schoolId === "none" ? "" : formData.schoolId || undefined,
           phoneNumber: formData.phoneNumber || undefined,
         });
         toast.success("User updated successfully");
@@ -106,7 +106,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
           firstName: formData.firstName,
           lastName: formData.lastName,
           role: formData.role,
-          schoolId: formData.schoolId,
+          schoolId: formData.schoolId === "none" ? "" : formData.schoolId,
           phoneNumber: formData.phoneNumber,
         });
 
@@ -274,29 +274,28 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
               />
             </div>
 
-            {!user && (
-              <div className="grid gap-2">
-                <Label htmlFor="school">School *</Label>
-                <Select
-                  value={formData.schoolId}
-                  onValueChange={(value) => setFormData({ ...formData, schoolId: value })}
-                >
-                  <SelectTrigger id="school">
-                    <SelectValue placeholder={loadingSchools ? "Loading schools..." : "Select a school"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {schools.map((school) => (
-                      <SelectItem key={school.id} value={school.id}>
-                        {school.name} ({school.schoolCode})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  The user will be assigned to this school
-                </p>
-              </div>
-            )}
+            <div className="grid gap-2">
+              <Label htmlFor="school">School {!user && "*"}</Label>
+              <Select
+                value={formData.schoolId}
+                onValueChange={(value) => setFormData({ ...formData, schoolId: value })}
+              >
+                <SelectTrigger id="school">
+                  <SelectValue placeholder={loadingSchools ? "Loading schools..." : "Select a school"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No School (Independent)</SelectItem>
+                  {schools.map((school) => (
+                    <SelectItem key={school.id} value={school.id}>
+                      {school.name} ({school.schoolCode})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                The user will be assigned to this school
+              </p>
+            </div>
 
             <div className="grid gap-2">
               <Label htmlFor="role">Role *</Label>
