@@ -476,7 +476,7 @@ export const getTeacherDetailedPerformance = async (
     
     const classIds = (teacherClasses || []).map(c => c.id);
     
-    let students = [];
+    let students: any[] = [];
 
     if (classIds.length > 0) {
       const { data: classStudents } = await supabase
@@ -514,7 +514,7 @@ export const getTeacherDetailedPerformance = async (
             xp: xpData?.total_xp || 0,
             level: xpData?.current_level || 1,
             masteryCount,
-            className: classInfo?.classes?.name || 'Unknown',
+            className: (classInfo?.classes as any)?.name || 'Unknown',
             lastLogin: profile.last_login
           };
         });
