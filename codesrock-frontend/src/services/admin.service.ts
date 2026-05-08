@@ -244,6 +244,11 @@ class AdminService {
     return apiService.delete(`/admin/content/topics/${topicId}`);
   }
 
+  async getAllTopics(): Promise<any[]> {
+    const response = await apiService.get<any>('/admin/content/topics');
+    return response.topics || [];
+  }
+
   // ==================== Video Management ====================
 
   async getVideos(topicId: string): Promise<any> {

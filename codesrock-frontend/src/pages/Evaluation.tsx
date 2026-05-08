@@ -31,8 +31,8 @@ export default function Evaluation() {
     try {
       setLoading(true);
       const response = await adminService.getEvaluation(topicId!);
-      if (response.data) {
-        setEvaluation(response.data);
+      if (response && response.id) {
+        setEvaluation(response);
       } else {
         toast.error("No evaluation found for this module");
         navigate("/videos");
@@ -75,20 +75,28 @@ export default function Evaluation() {
   };
 
   const handleSubmit = async () => {
+    if (!evaluation || !evaluation.evaluation_questions) {
+      return toast.error("Evaluation data is missing");
+    }
+
     if (Object.keys(selectedAnswers).length < evaluation.evaluation_questions.length) {
       return toast.warning("Please answer all questions before submitting");
     }
 
     const finalScore = calculateScore();
     setScore(finalScore);
-    const passed = finalScore >= 80; // 80% pass mark
+    const passed = finalScore >= 80;
 
     try {
       setSubmitting(true);
       const user = authService.getStoredUser();
-      if (!user) return;
+      if (!user) {
+        toast.error("User session expired. Please login again.");
+        return navigate("/login");
+      }
 
-      // Call the new submit endpoint
+      console.log("Submitting evaluation:", { userId: user.id, evaluationId: evaluation.id, score: finalScore, passed });
+
       await adminService.submitEvaluation({
         userId: user.id,
         evaluationId: evaluation.id,
@@ -102,8 +110,9 @@ export default function Evaluation() {
       } else {
         toast.error(`Study a bit more! You got ${finalScore}%. You need 80% to pass.`);
       }
-    } catch (error) {
-      toast.error("Failed to submit evaluation");
+    } catch (error: any) {
+      console.error("Evaluation submission failed:", error);
+      toast.error(error.message || "Failed to submit evaluation");
     } finally {
       setSubmitting(false);
     }
@@ -164,6 +173,17 @@ export default function Evaluation() {
             </div>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  if (!evaluation || !evaluation.evaluation_questions || evaluation.evaluation_questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <HelpCircle className="h-16 w-16 text-muted-foreground opacity-20" />
+        <h2 className="text-xl font-black text-deep-purple italic">No questions found!</h2>
+        <p className="text-muted-foreground font-bold">This evaluation hasn't been set up with questions yet.</p>
+        <Button onClick={() => navigate("/videos")}>Go Back</Button>
       </div>
     );
   }

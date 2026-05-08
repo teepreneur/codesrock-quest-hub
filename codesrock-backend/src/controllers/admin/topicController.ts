@@ -3,6 +3,45 @@ import { supabase } from '../../config/supabase';
 import logger from '../../utils/logger';
 
 /**
+ * @desc    Get all topics across all courses (for Evaluations tab)
+ * @route   GET /api/admin/content/topics
+ * @access  Private/ContentAdmin
+ */
+export const getAllTopics = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { data: topics, error } = await supabase
+      .from('topics')
+      .select('*, courses(title), evaluations(id, title, is_active)')
+      .eq('is_active', true)
+      .order('course_id');
+
+    if (error) throw error;
+
+    // Filter out topics where course is inactive (if any)
+    const validTopics = (topics || []).filter(t => t.courses);
+
+    res.status(200).json({
+      success: true,
+      count: validTopics.length,
+      data: {
+        topics: validTopics.map(t => ({
+          ...t,
+          courseTitle: t.courses?.title,
+          evaluationStatus: t.evaluations?.length > 0 ? (t.evaluations[0].is_active ? 'active' : 'inactive') : 'none',
+          evaluationId: t.evaluations?.length > 0 ? t.evaluations[0].id : null
+        }))
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc    Get all topics for a course
  * @route   GET /api/admin/content/courses/:courseId/topics
  * @access  Private/ContentAdmin

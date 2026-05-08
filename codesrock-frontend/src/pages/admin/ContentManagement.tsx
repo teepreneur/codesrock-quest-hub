@@ -47,8 +47,11 @@ export default function ContentManagement() {
   const [editingVideo, setEditingVideo] = useState<any>(null);
 
   // Evaluations
+  const [allTopics, setAllTopics] = useState<any[]>([]);
+  const [allTopicsLoading, setAllTopicsLoading] = useState(false);
   const [evaluationDialogOpen, setEvaluationDialogOpen] = useState(false);
   const [selectedTopicForEval, setSelectedTopicForEval] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("courses");
 
   // Resources
   const [resources, setResources] = useState<Resource[]>([]);
@@ -103,6 +106,18 @@ export default function ContentManagement() {
     }
   };
 
+  const loadAllTopics = async () => {
+    try {
+      setAllTopicsLoading(true);
+      const response = await adminService.getAllTopics();
+      setAllTopics(response);
+    } catch (error: any) {
+      toast.error("Failed to load topics for evaluations");
+    } finally {
+      setAllTopicsLoading(false);
+    }
+  };
+
   const loadResources = async () => {
     try {
       setResourcesLoading(true);
@@ -124,7 +139,12 @@ export default function ContentManagement() {
     } catch { /* ignore */ }
   };
 
-  useEffect(() => { loadCourses(); loadResources(); loadStats(); }, []);
+  useEffect(() => {
+    if (activeTab === "courses") loadCourses();
+    if (activeTab === "resources") loadResources();
+    if (activeTab === "evaluations") loadAllTopics();
+    loadStats();
+  }, [activeTab]);
   useEffect(() => { loadCourses(); }, [courseSearchTerm]);
   useEffect(() => { loadResources(); }, [resourceSearchTerm]);
 
@@ -325,7 +345,7 @@ export default function ContentManagement() {
         <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Active Resources</CardTitle><Eye className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold text-purple-500">{stats.activeResources}</div><p className="text-xs text-muted-foreground">Available for download</p></CardContent></Card>
       </div>
 
-      <Tabs defaultValue="courses" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
@@ -401,27 +421,36 @@ export default function ContentManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {coursesLoading ? (
+                    {allTopicsLoading ? (
                       <TableRow><TableCell colSpan={4} className="text-center py-8">Loading...</TableCell></TableRow>
-                    ) : courses.map((course: any) => (
-                      <TableRow key={course.id} className="bg-muted/5 font-bold italic">
-                        <TableCell colSpan={4} className="text-primary text-xs uppercase tracking-widest">{course.title}</TableCell>
+                    ) : allTopics.length === 0 ? (
+                      <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No modules found</TableCell></TableRow>
+                    ) : allTopics.map((topic: any) => (
+                      <TableRow key={topic.id}>
+                        <TableCell className="font-bold text-xs text-muted-foreground uppercase">{topic.courseTitle}</TableCell>
+                        <TableCell className="font-medium">{topic.title}</TableCell>
+                        <TableCell>
+                          {topic.evaluationStatus === 'active' ? (
+                            <Badge className="bg-green-500">Active</Badge>
+                          ) : topic.evaluationStatus === 'inactive' ? (
+                            <Badge variant="secondary">Draft</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground/60 border-dashed">Not Created</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-orange-500 hover:text-orange-600 hover:bg-orange-50 font-bold gap-2"
+                            onClick={() => { setSelectedTopicForEval(topic); setEvaluationDialogOpen(true); }}
+                          >
+                            <HelpCircle className="h-4 w-4" />
+                            {topic.evaluationId ? "Manage Quiz" : "Create Quiz"}
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
-                    {/* Note: In a real implementation, we would fetch topics for all courses or allow selection */}
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-10 bg-orange-50/30">
-                        <div className="flex flex-col items-center gap-3">
-                          <HelpCircle className="h-10 w-10 text-orange-500 opacity-20" />
-                          <p className="text-sm font-bold text-muted-foreground max-w-sm">
-                            To manage evaluations, please select a course from the <b>Courses</b> tab, then click the orange question mark next to any topic.
-                          </p>
-                          <Button variant="outline" size="sm" onClick={() => { document.querySelector('[data-value="courses"]')?.dispatchEvent(new MouseEvent('click', {bubbles: true})); }}>
-                            Go to Courses
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
                   </TableBody>
                 </Table>
               </div>

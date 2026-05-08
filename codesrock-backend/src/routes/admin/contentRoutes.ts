@@ -17,6 +17,7 @@ import {
 } from '../../controllers/admin/evaluationController';
 import {
   getTopicsByCourse,
+  getAllTopics,
   createTopic,
   updateTopic,
   deleteTopic,
@@ -46,6 +47,7 @@ router.route('/courses/:courseId/topics').get(getTopicsByCourse).post(createTopi
 router.route('/courses/:id').put(updateCourse).delete(deleteCourse);
 
 // Topic routes
+router.get('/topics', getAllTopics);
 router.route('/topics/:topicId/videos').get(getVideosByTopic).post(createVideo);
 router.route('/topics/:topicId').put(updateTopic).delete(deleteTopic);
 
