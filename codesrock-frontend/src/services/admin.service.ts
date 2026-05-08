@@ -358,6 +358,10 @@ class AdminService {
   async submitEvaluation(data: { userId: string, evaluationId: string, score: number, passed: boolean }) {
     return apiService.post('/evaluations/submit-mastery', data);
   }
+
+  async deleteEvaluation(evaluationId: string): Promise<void> {
+    return apiService.delete(`/evaluations/${evaluationId}`);
+  }
 }
 
 // Export singleton instance

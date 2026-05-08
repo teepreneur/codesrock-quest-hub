@@ -49,6 +49,7 @@ export default function ContentManagement() {
   // Evaluations
   const [allTopics, setAllTopics] = useState<any[]>([]);
   const [allTopicsLoading, setAllTopicsLoading] = useState(false);
+  const [evalSelectedCourseId, setEvalSelectedCourseId] = useState<string | null>(null);
   const [evaluationDialogOpen, setEvaluationDialogOpen] = useState(false);
   const [selectedTopicForEval, setSelectedTopicForEval] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("courses");
@@ -142,7 +143,10 @@ export default function ContentManagement() {
   useEffect(() => {
     if (activeTab === "courses") loadCourses();
     if (activeTab === "resources") loadResources();
-    if (activeTab === "evaluations") loadAllTopics();
+    if (activeTab === "evaluations") {
+      loadCourses();
+      loadAllTopics();
+    }
     loadStats();
   }, [activeTab]);
   useEffect(() => { loadCourses(); }, [courseSearchTerm]);
@@ -400,62 +404,89 @@ export default function ContentManagement() {
         </TabsContent>
 
         <TabsContent value="evaluations" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Module Evaluations</CardTitle>
-                  <CardDescription>Manage finale quizzes and mastery questions for each module</CardDescription>
+          {!evalSelectedCourseId ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {courses.map((course) => (
+                <Card key={course.id} className="hover:border-primary/50 cursor-pointer transition-colors group" onClick={() => setEvalSelectedCourseId(course.id)}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className="text-[10px] uppercase tracking-widest">{course.category}</Badge>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                    <CardTitle className="text-lg mt-2">{course.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{course.description}</p>
+                    <div className="flex items-center gap-4 mt-4 text-[10px] font-bold uppercase text-muted-foreground">
+                       <span>{allTopics.filter(t => t.course_id === course.id).length} Modules</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="icon" onClick={() => setEvalSelectedCourseId(null)}>
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div>
+                      <CardTitle>Module Evaluations</CardTitle>
+                      <CardDescription>
+                        Modules for <span className="font-bold text-foreground">{courses.find(c => c.id === evalSelectedCourseId)?.title}</span>
+                      </CardDescription>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-               <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Course</TableHead>
-                      <TableHead>Module (Topic)</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allTopicsLoading ? (
-                      <TableRow><TableCell colSpan={4} className="text-center py-8">Loading...</TableCell></TableRow>
-                    ) : allTopics.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No modules found</TableCell></TableRow>
-                    ) : allTopics.map((topic: any) => (
-                      <TableRow key={topic.id}>
-                        <TableCell className="font-bold text-xs text-muted-foreground uppercase">{topic.courseTitle}</TableCell>
-                        <TableCell className="font-medium">{topic.title}</TableCell>
-                        <TableCell>
-                          {topic.evaluationStatus === 'active' ? (
-                            <Badge className="bg-green-500">Active</Badge>
-                          ) : topic.evaluationStatus === 'inactive' ? (
-                            <Badge variant="secondary">Draft</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-muted-foreground/60 border-dashed">Not Created</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-orange-500 hover:text-orange-600 hover:bg-orange-50 font-bold gap-2"
-                            onClick={() => { setSelectedTopicForEval(topic); setEvaluationDialogOpen(true); }}
-                          >
-                            <HelpCircle className="h-4 w-4" />
-                            {topic.evaluationId ? "Manage Quiz" : "Create Quiz"}
-                          </Button>
-                        </TableCell>
+              </CardHeader>
+              <CardContent>
+                 <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Module (Topic)</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {allTopicsLoading ? (
+                        <TableRow><TableCell colSpan={3} className="text-center py-8">Loading...</TableCell></TableRow>
+                      ) : allTopics.filter(t => t.course_id === evalSelectedCourseId).length === 0 ? (
+                        <TableRow><TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No modules found for this course</TableCell></TableRow>
+                      ) : allTopics.filter(t => t.course_id === evalSelectedCourseId).map((topic: any) => (
+                        <TableRow key={topic.id}>
+                          <TableCell className="font-medium">{topic.title}</TableCell>
+                          <TableCell>
+                            {topic.evaluationStatus === 'active' ? (
+                              <Badge className="bg-green-500">Active</Badge>
+                            ) : topic.evaluationStatus === 'inactive' ? (
+                              <Badge variant="secondary">Draft</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-muted-foreground/60 border-dashed">Not Created</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-orange-500 hover:text-orange-600 hover:bg-orange-50 font-bold gap-2"
+                              onClick={() => { setSelectedTopicForEval(topic); setEvaluationDialogOpen(true); }}
+                            >
+                              <HelpCircle className="h-4 w-4" />
+                              {topic.evaluationId ? "Manage Quiz" : "Create Quiz"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 

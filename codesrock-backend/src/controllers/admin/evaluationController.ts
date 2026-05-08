@@ -142,3 +142,26 @@ export const submitEvaluation = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ success: false, message: error.message || 'Server error', error: error });
   }
 };
+
+/**
+ * Delete an evaluation
+ */
+export const deleteEvaluation = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { evaluationId } = req.params;
+
+    const { error } = await supabase
+      .from('evaluations')
+      .delete()
+      .eq('id', evaluationId);
+
+    if (error) throw error;
+
+    res.status(200).json({
+      success: true,
+      message: 'Evaluation deleted successfully'
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Server error', error: error });
+  }
+};

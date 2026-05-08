@@ -24,6 +24,7 @@ export function EvaluationFormDialog({ open, onOpenChange, topicId, topicTitle }
   const [description, setDescription] = useState("");
   const [xpReward, setXpReward] = useState(500);
   const [questions, setQuestions] = useState<any[]>([]);
+  const [evaluationId, setEvaluationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && topicId) {
@@ -35,22 +36,23 @@ export function EvaluationFormDialog({ open, onOpenChange, topicId, topicTitle }
     try {
       setFetching(true);
       const response = await adminService.getEvaluation(topicId);
-      const data = response.data;
-      if (data) {
-        setTitle(data.title || "");
-        setDescription(data.description || "");
-        setXpReward(data.xp_reward || 500);
+      if (response && response.id) {
+        setTitle(response.title || "");
+        setDescription(response.description || "");
+        setXpReward(response.xp_reward || 500);
         
-        if (data.evaluation_questions) {
-          const mappedQuestions = data.evaluation_questions.map((q: any) => ({
+        if (response.evaluation_questions) {
+          const mappedQuestions = response.evaluation_questions.map((q: any) => ({
             questionText: q.question_text,
             questionType: q.question_type,
             options: q.options || [],
             correctAnswer: q.correct_answer
           }));
           setQuestions(mappedQuestions);
+          setEvaluationId(response.id);
         }
       } else {
+        setEvaluationId(null);
         // Defaults for new evaluation
         setTitle(`${topicTitle} Mastery Quiz`);
         setDescription(`Prove your knowledge of ${topicTitle} and earn bonus XP!`);
@@ -120,6 +122,22 @@ export function EvaluationFormDialog({ open, onOpenChange, topicId, topicTitle }
       onOpenChange(false);
     } catch (error: any) {
       toast.error(error.message || "Failed to save evaluation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!evaluationId) return;
+    if (!window.confirm("Are you sure you want to delete this evaluation? This cannot be undone.")) return;
+
+    try {
+      setLoading(true);
+      await adminService.deleteEvaluation(evaluationId);
+      toast.success("Evaluation deleted successfully!");
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete evaluation");
     } finally {
       setLoading(false);
     }
@@ -250,11 +268,20 @@ export function EvaluationFormDialog({ open, onOpenChange, topicId, topicTitle }
           </div>
         )}
 
-        <DialogFooter className="sticky bottom-0 bg-background pt-4 border-t">
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? "Saving..." : "Save Evaluation"}
-          </Button>
+        <DialogFooter className="sticky bottom-0 bg-background pt-4 border-t flex justify-between items-center sm:justify-between">
+          <div>
+            {evaluationId && (
+              <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete} disabled={loading}>
+                Delete Quiz
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={loading}>
+              {loading ? "Saving..." : "Save Evaluation"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

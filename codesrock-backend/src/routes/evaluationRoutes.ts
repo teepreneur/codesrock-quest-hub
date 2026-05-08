@@ -15,6 +15,7 @@ import {
   getEvaluationByTopic,
   saveEvaluation,
   submitEvaluation as submitNewEvaluation,
+  deleteEvaluation,
 } from '../controllers/admin/evaluationController';
 import { protect } from '../middleware/auth';
 import { validate } from '../middleware/validator';
@@ -119,6 +120,7 @@ router.post('/evaluations/review', validate(reviewEvaluationValidation), reviewE
 // New dynamic evaluation routes
 router.get('/evaluations/topic/:topicId', getEvaluationByTopic);
 router.post('/evaluations/save', saveEvaluation);
+router.delete('/evaluations/:evaluationId', deleteEvaluation);
 router.post('/evaluations/submit-mastery', submitNewEvaluation);
 router.get('/evaluations/user/:userId', validate(userIdParamValidation), getUserEvaluations);
 
