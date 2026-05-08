@@ -35,7 +35,7 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-muted/30 bg-white/60 backdrop-blur-xl px-6 h-20 flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <SidebarTrigger className="lg:hidden" />
+        <SidebarTrigger className="lg:hidden" data-tour="sidebar-trigger" />
         <form onSubmit={handleSearch} className="relative hidden md:block group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <input

@@ -6,8 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { HelpCircle, CheckCircle2, XCircle, Award, ArrowRight, ArrowLeft, Star } from "lucide-react";
 import { toast } from "sonner";
-import { adminService } from "@/services/admin.service";
-import { authService } from "@/services/auth.service";
+import { adminService, authService, onboardingService } from "@/services";
 
 export default function Evaluation() {
   const { id: topicId } = useParams();
@@ -107,6 +106,17 @@ export default function Evaluation() {
       setShowResults(true);
       if (passed) {
         toast.success(`🎉 Congratulations! You passed with ${finalScore}%!`);
+        
+        // Trigger teacher activation if user is a teacher
+        if (user.role === 'teacher') {
+          try {
+            await onboardingService.activateTeacher();
+            console.log("Teacher activation triggered");
+          } catch (activationError) {
+            console.error("Failed to trigger teacher activation:", activationError);
+            // Non-critical error, we don't want to break the results view
+          }
+        }
       } else {
         toast.error(`Study a bit more! You got ${finalScore}%. You need 80% to pass.`);
       }

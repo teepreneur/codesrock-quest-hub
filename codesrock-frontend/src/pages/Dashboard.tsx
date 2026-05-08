@@ -195,7 +195,7 @@ export default function Dashboard() {
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Level Progress */}
-        <Card className="lg:col-span-2 glass-panel overflow-hidden">
+        <Card className="lg:col-span-2 glass-panel overflow-hidden" data-tour="mission-map">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl" />
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-2xl">

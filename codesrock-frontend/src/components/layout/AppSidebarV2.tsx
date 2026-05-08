@@ -76,8 +76,9 @@ export function AppSidebar() {
             <SidebarMenu className="gap-2">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <NavLink
+                    <NavLink
                     to={item.url}
+                    data-tour={item.title === 'My Classes' ? 'sidebar-classes' : undefined}
                     className={({ isActive }) =>
                       `flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-300 group relative z-20 ${
                         isActive

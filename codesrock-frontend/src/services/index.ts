@@ -11,3 +11,4 @@ export * from './resource.service';
 export * from './dashboard.service';
 export * from './admin.service';
 export * from './class.service';
+export * from './onboarding.service';

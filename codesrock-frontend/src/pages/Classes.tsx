@@ -133,7 +133,7 @@ export default function Classes() {
 
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
+            <Button className="bg-primary hover:bg-primary/90" data-tour="add-class-btn">
               <Plus className="mr-2 h-4 w-4" />
               New Class
             </Button>
@@ -236,7 +236,7 @@ export default function Classes() {
               <p className="text-muted-foreground max-w-xs mx-auto mb-6">
                 Start by creating your first class to manage your students and assign courses.
               </p>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(true)}>
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(true)} data-tour="add-class-btn">
                 <Plus className="mr-2 h-4 w-4" />
                 Create First Class
               </Button>

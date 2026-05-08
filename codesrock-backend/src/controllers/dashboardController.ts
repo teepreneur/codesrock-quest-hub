@@ -151,6 +151,8 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
         levelName: progress.level_name,
         streak: progress.streak,
         lastActivityDate: progress.last_activity_date,
+        isActivated: progress.is_activated,
+        onboardingStatus: progress.onboarding_status,
         badgeCount: userBadges?.length || 0,
         recentBadges,
         levelDetails: {
