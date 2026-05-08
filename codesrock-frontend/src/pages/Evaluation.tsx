@@ -35,11 +35,11 @@ export default function Evaluation() {
         setEvaluation(response.data);
       } else {
         toast.error("No evaluation found for this module");
-        navigate("/learning-path");
+        navigate("/videos");
       }
     } catch (error) {
       toast.error("Failed to load evaluation");
-      navigate("/learning-path");
+      navigate("/videos");
     } finally {
       setLoading(false);
     }
@@ -148,7 +148,7 @@ export default function Evaluation() {
 
             <div className="flex gap-4 pt-4">
               {passed ? (
-                <Button className="flex-1 h-16 rounded-2xl text-lg font-black uppercase tracking-widest bg-primary hover:scale-[1.02] shadow-xl" onClick={() => navigate("/learning-path")}>
+                <Button className="flex-1 h-16 rounded-2xl text-lg font-black uppercase tracking-widest bg-primary hover:scale-[1.02] shadow-xl" onClick={() => navigate("/videos")}>
                   Return to Journey <ArrowRight className="ml-2" />
                 </Button>
               ) : (
@@ -156,7 +156,7 @@ export default function Evaluation() {
                   <Button variant="outline" className="flex-1 h-16 rounded-2xl text-lg font-black uppercase border-2" onClick={() => { setShowResults(false); setCurrentQuestionIndex(0); setSelectedAnswers({}); }}>
                     Try Again
                   </Button>
-                  <Button className="flex-1 h-16 rounded-2xl text-lg font-black uppercase bg-deep-purple" onClick={() => navigate("/learning-path")}>
+                  <Button className="flex-1 h-16 rounded-2xl text-lg font-black uppercase bg-deep-purple" onClick={() => navigate("/videos")}>
                     Back to Lessons
                   </Button>
                 </>

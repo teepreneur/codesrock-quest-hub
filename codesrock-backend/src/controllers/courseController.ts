@@ -297,6 +297,7 @@ export const getCoursesByCategory = async (req: Request, res: Response): Promise
 export const updateVideoProgress = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, videoId, courseId, watchedSeconds, totalSeconds } = req.body;
+    const seconds = watchedSeconds; // For compatibility with existing logic below
 
     // Security Check: IDOR Protection
     if (userId !== req.user?.userId && !['super_admin', 'content_admin'].includes(req.user?.role || '')) {
