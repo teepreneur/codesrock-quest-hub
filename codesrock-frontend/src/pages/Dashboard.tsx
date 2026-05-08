@@ -96,7 +96,7 @@ export default function Dashboard() {
     );
   }
 
-  const { user: dashboardUser, progress, stats, recentActivities, courseProgress, recommendedCourses } = data;
+  const { user: dashboardUser, progress, stats, recentActivities, courseProgress, recommendedCourses, classroomStats } = data;
 
   return (
     <div className="space-y-8 animate-fade-in-up pb-10">
@@ -347,7 +347,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Class Quick Glance - Only for Teachers */}
-        {user?.role === 'teacher' && data.classroomStats && (
+        {user?.role === 'teacher' && classroomStats && (
           <Card className="glass-panel group overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-110 transition-transform duration-700" />
             <CardHeader>
@@ -356,7 +356,7 @@ export default function Dashboard() {
                 Class Performance
               </CardTitle>
               <CardDescription className="text-base font-medium">
-                Monitor your {data.classroomStats.studentCount} students' aggregate growth
+                Monitor your {classroomStats.studentCount} students' aggregate growth
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 relative z-10">
@@ -365,15 +365,15 @@ export default function Dashboard() {
                   <div>
                     <h4 className="font-black text-deep-purple text-lg">Active Sections</h4>
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                      Across {data.classroomStats.classCount} active classes
+                      Across {classroomStats.classCount} active classes
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-2xl font-black text-secondary">{data.classroomStats.avgCompletion}%</span>
+                    <span className="text-2xl font-black text-secondary">{classroomStats.avgCompletion}%</span>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Avg. Completion</p>
                   </div>
                 </div>
-                <Progress value={data.classroomStats.avgCompletion} className="h-3 bg-white/50" />
+                <Progress value={classroomStats.avgCompletion} className="h-3 bg-white/50" />
               </div>
               
               <Button 
