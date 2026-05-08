@@ -326,7 +326,11 @@ export default function ContentManagement() {
       </div>
 
       <Tabs defaultValue="courses" className="space-y-4">
-        <TabsList><TabsTrigger value="courses">Courses</TabsTrigger><TabsTrigger value="resources">Resources</TabsTrigger></TabsList>
+        <TabsList>
+          <TabsTrigger value="courses">Courses</TabsTrigger>
+          <TabsTrigger value="resources">Resources</TabsTrigger>
+          <TabsTrigger value="evaluations">Evaluations</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="courses" className="space-y-4">
           {renderBreadcrumb()}
@@ -368,6 +372,56 @@ export default function ContentManagement() {
                         </TableCell>
                       </TableRow>
                     ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="evaluations" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Module Evaluations</CardTitle>
+                  <CardDescription>Manage finale quizzes and mastery questions for each module</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+               <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Course</TableHead>
+                      <TableHead>Module (Topic)</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {coursesLoading ? (
+                      <TableRow><TableCell colSpan={4} className="text-center py-8">Loading...</TableCell></TableRow>
+                    ) : courses.map((course: any) => (
+                      <TableRow key={course.id} className="bg-muted/5 font-bold italic">
+                        <TableCell colSpan={4} className="text-primary text-xs uppercase tracking-widest">{course.title}</TableCell>
+                      </TableRow>
+                    ))}
+                    {/* Note: In a real implementation, we would fetch topics for all courses or allow selection */}
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-10 bg-orange-50/30">
+                        <div className="flex flex-col items-center gap-3">
+                          <HelpCircle className="h-10 w-10 text-orange-500 opacity-20" />
+                          <p className="text-sm font-bold text-muted-foreground max-w-sm">
+                            To manage evaluations, please select a course from the <b>Courses</b> tab, then click the orange question mark next to any topic.
+                          </p>
+                          <Button variant="outline" size="sm" onClick={() => { document.querySelector('[data-value="courses"]')?.dispatchEvent(new MouseEvent('click', {bubbles: true})); }}>
+                            Go to Courses
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </div>
