@@ -117,7 +117,7 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
               <div key={node.id} style={{ height: '400px' }} className={`flex items-center w-full relative ${isEven ? 'flex-row' : 'flex-row-reverse'}`}>
                 {node.status === 'active' && (
                   <div className={`absolute -top-16 ${isEven ? 'left-[22%]' : 'right-[22%]'} z-30 animate-bounce-subtle`}>
-                    <img src="/assets/rocky/idea-transparent.webp" alt="Rocky" className="w-20 h-20 object-contain drop-shadow-xl" />
+                    <img src="/rocky_3D_idea.png" alt="Rocky" className="w-20 h-20 object-contain drop-shadow-xl" />
                     <div className="bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full border-2 border-primary/30 text-[10px] font-black text-primary uppercase shadow-lg mt-1 whitespace-nowrap">You are here! 📍</div>
                   </div>
                 )}

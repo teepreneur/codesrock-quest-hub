@@ -110,6 +110,24 @@ export default function LearningPath() {
       }
       const detail = await courseService.getCourseById(selectedCourse.id, user.id);
       setCourseDetail(detail);
+
+      // Auto-advance logic
+      const topic = detail.course?.topics?.find((t: any) => t.id === selectedTopicId);
+      if (topic && topic.videos) {
+        const currentIndex = topic.videos.findIndex((v: any) => v.id === watchingVideo.id);
+        const nextVideo = topic.videos[currentIndex + 1];
+        
+        if (nextVideo) {
+          // Small delay for smooth transition after completion toast
+          setTimeout(() => {
+            setWatchingVideo(nextVideo);
+            setIsPlayerOpen(true);
+            toast.info(`Next Lesson: ${nextVideo.title} 🚀`);
+          }, 2000);
+        } else {
+          setIsPlayerOpen(false); // Close if last video
+        }
+      }
     } catch (error: any) { toast.error("Failed to save progress"); }
   };
 
