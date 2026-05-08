@@ -490,3 +490,87 @@ export const getUserStats = async (
     next(error);
   }
 };
+
+/**
+ * @desc    Search users by email or phone
+ * @route   GET /api/admin/users/search
+ * @access  Private/Admin
+ */
+export const searchUsersByContact = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { query } = req.query;
+
+    if (!query) {
+      res.status(400).json({ success: false, message: 'Search query is required' });
+      return;
+    }
+
+    const { data: users, error } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, email, phone_number, role, school_id, schools(name)')
+      .or(`email.eq.${query},phone_number.eq.${query},first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+      .limit(10);
+
+    if (error) throw error;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        users: users || [],
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Pair a user (teacher) with a school
+ * @route   POST /api/admin/users/:id/pair-school
+ * @access  Private/Admin
+ */
+export const pairUserWithSchool = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.params.id;
+    const { schoolId } = req.body;
+
+    if (!schoolId) {
+      res.status(400).json({ success: false, message: 'School ID is required' });
+      return;
+    }
+
+    // 1. Update user profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ school_id: schoolId })
+      .eq('id', userId);
+
+    if (profileError) throw profileError;
+
+    // 2. Update user's classes to belong to this school
+    const { error: classesError } = await supabase
+      .from('classes')
+      .update({ school_id: schoolId })
+      .eq('teacher_id', userId);
+
+    if (classesError) {
+      console.error('Error updating teacher classes during pairing:', classesError);
+      // We don't fail the whole request if classes update fails, but we log it
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User paired with school successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};

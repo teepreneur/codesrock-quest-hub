@@ -341,3 +341,200 @@ export const getSchoolAnalytics = async (
     next(error);
   }
 };
+
+/**
+ * @desc    Get detailed school performance
+ * @route   GET /api/admin/analytics/schools/:id/performance
+ * @access  Private/Admin
+ */
+export const getSchoolPerformance = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const schoolId = req.params.id;
+
+    const { data: school, error: schoolError } = await supabase
+      .from('schools')
+      .select('*')
+      .eq('id', schoolId)
+      .single();
+
+    if (schoolError || !school) {
+      res.status(404).json({ success: false, message: 'School not found' });
+      return;
+    }
+
+    // Get all teachers in this school
+    const { data: teachers } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, email, last_login')
+      .eq('school_id', schoolId)
+      .eq('role', 'teacher');
+
+    const teacherStats = await Promise.all(
+      (teachers || []).map(async (teacher) => {
+        // Teacher's own progress
+        const { data: progress } = await supabase
+          .from('video_progress')
+          .select('completed')
+          .eq('user_id', teacher.id);
+        
+        const ownCompletions = (progress || []).filter(p => p.completed).length;
+
+        // Students under this teacher (via classes)
+        const { data: teacherClasses } = await supabase
+          .from('classes')
+          .select('id')
+          .eq('teacher_id', teacher.id);
+        
+        const classIds = (teacherClasses || []).map(c => c.id);
+        
+        let studentCount = 0;
+        let avgStudentXP = 0;
+
+        if (classIds.length > 0) {
+          const { data: classStudents } = await supabase
+            .from('class_students')
+            .select('student_id')
+            .in('class_id', classIds);
+          
+          const studentIds = (classStudents || []).map(cs => cs.student_id);
+          studentCount = studentIds.length;
+
+          if (studentCount > 0) {
+            const { data: studentXP } = await supabase
+              .from('user_progress')
+              .select('total_xp')
+              .in('user_id', studentIds);
+            
+            const totalXP = (studentXP || []).reduce((sum, p) => sum + (p.total_xp || 0), 0);
+            avgStudentXP = totalXP / studentCount;
+          }
+        }
+
+        return {
+          id: teacher.id,
+          name: `${teacher.first_name} ${teacher.last_name}`,
+          email: teacher.email,
+          ownCompletions,
+          studentCount,
+          avgStudentXP: Math.round(avgStudentXP),
+          lastLogin: teacher.last_login
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        school,
+        teachers: teacherStats,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get detailed teacher performance & students
+ * @route   GET /api/admin/analytics/teachers/:id/performance
+ * @access  Private/Admin
+ */
+export const getTeacherDetailedPerformance = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const teacherId = req.params.id;
+
+    const { data: teacher, error: teacherError } = await supabase
+      .from('profiles')
+      .select('*, schools(name)')
+      .eq('id', teacherId)
+      .single();
+
+    if (teacherError || !teacher) {
+      res.status(404).json({ success: false, message: 'Teacher not found' });
+      return;
+    }
+
+    // Teacher's own progress details
+    const { data: ownProgress } = await supabase
+      .from('video_progress')
+      .select('*, courses(title)')
+      .eq('user_id', teacherId);
+
+    // Get all students under this teacher
+    const { data: teacherClasses } = await supabase
+      .from('classes')
+      .select('id, name')
+      .eq('teacher_id', teacherId);
+    
+    const classIds = (teacherClasses || []).map(c => c.id);
+    
+    let students = [];
+
+    if (classIds.length > 0) {
+      const { data: classStudents } = await supabase
+        .from('class_students')
+        .select('student_id, classes(name)')
+        .in('class_id', classIds);
+      
+      const studentIds = (classStudents || []).map(cs => cs.student_id);
+
+      if (studentIds.length > 0) {
+        const { data: studentProfiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email, last_login')
+          .in('id', studentIds);
+        
+        const { data: studentXP } = await supabase
+          .from('user_progress')
+          .select('user_id, total_xp, current_level')
+          .in('user_id', studentIds);
+
+        const { data: studentMastery } = await supabase
+          .from('student_topic_progress')
+          .select('student_id')
+          .in('student_id', studentIds);
+
+        students = (studentProfiles || []).map(profile => {
+          const xpData = (studentXP || []).find(x => x.user_id === profile.id);
+          const masteryCount = (studentMastery || []).filter(m => m.student_id === profile.id).length;
+          const classInfo = (classStudents || []).find(cs => cs.student_id === profile.id);
+
+          return {
+            id: profile.id,
+            name: `${profile.first_name} ${profile.last_name}`,
+            email: profile.email,
+            xp: xpData?.total_xp || 0,
+            level: xpData?.current_level || 1,
+            masteryCount,
+            className: classInfo?.classes?.name || 'Unknown',
+            lastLogin: profile.last_login
+          };
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        teacher: {
+          id: teacher.id,
+          name: `${teacher.first_name} ${teacher.last_name}`,
+          school: teacher.schools?.name || 'Independent',
+        },
+        ownProgress: ownProgress || [],
+        students,
+        classes: teacherClasses || []
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

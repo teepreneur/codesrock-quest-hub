@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Building2, Search, Plus, Edit, Trash2, RefreshCw, Copy, AlertCircle, Users, CheckCircle, TrendingUp } from "lucide-react";
+import { Building2, Search, Plus, Edit, Trash2, RefreshCw, Copy, AlertCircle, Users, CheckCircle, TrendingUp, UserPlus, UserSearch } from "lucide-react";
 import { adminService, type School, type CreateSchoolData, type UpdateSchoolData } from "@/services/admin.service";
 import { toast } from "sonner";
 
@@ -31,6 +31,11 @@ export default function SchoolManagement() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
   const [createdSchool, setCreatedSchool] = useState<School | null>(null);
+  const [pairTeacherDialogOpen, setPairTeacherDialogOpen] = useState(false);
+  const [teacherSearchQuery, setTeacherSearchQuery] = useState("");
+  const [teacherSearchResults, setTeacherSearchResults] = useState<any[]>([]);
+  const [isSearchingTeachers, setIsSearchingTeachers] = useState(false);
+  const [isPairing, setIsPairing] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<CreateSchoolData>({
@@ -166,6 +171,37 @@ export default function SchoolManagement() {
     } catch (err: any) {
       console.error("Error deleting school:", err);
       toast.error(err.message || "Failed to deactivate school");
+    }
+  };
+
+  const handleSearchTeacher = async () => {
+    if (!teacherSearchQuery.trim()) return;
+    
+    try {
+      setIsSearchingTeachers(true);
+      const response = await adminService.searchUsersByContact(teacherSearchQuery);
+      setTeacherSearchResults(response.users);
+      if (response.users.length === 0) toast.info("No teachers found with that contact info");
+    } catch (error) {
+      toast.error("Failed to search for teachers");
+    } finally {
+      setIsSearchingTeachers(false);
+    }
+  };
+
+  const handlePairTeacher = async (userId: string) => {
+    if (!selectedSchool) return;
+
+    try {
+      setIsPairing(true);
+      await adminService.pairUserWithSchool(userId, selectedSchool.id);
+      toast.success("Teacher paired with school successfully");
+      setPairTeacherDialogOpen(false);
+      loadSchools();
+    } catch (error) {
+      toast.error("Failed to pair teacher with school");
+    } finally {
+      setIsPairing(false);
     }
   };
 
@@ -346,6 +382,20 @@ export default function SchoolManagement() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedSchool(school);
+                                setPairTeacherDialogOpen(true);
+                                setTeacherSearchQuery("");
+                                setTeacherSearchResults([]);
+                              }}
+                              className="text-orange-500 hover:text-orange-600 hover:bg-orange-50"
+                              title="Add Teacher"
+                            >
+                              <UserPlus className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -567,6 +617,60 @@ export default function SchoolManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Pair Teacher Dialog */}
+      <Dialog open={pairTeacherDialogOpen} onOpenChange={setPairTeacherDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserSearch className="h-5 w-5 text-primary" />
+              Add Teacher to {selectedSchool?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Search for an independent teacher by email or phone number to pair them with this school.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="flex gap-2">
+              <Input 
+                placeholder="Email or phone number..." 
+                value={teacherSearchQuery}
+                onChange={(e) => setTeacherSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearchTeacher()}
+              />
+              <Button onClick={handleSearchTeacher} disabled={isSearchingTeachers}>
+                {isSearchingTeachers ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Search"}
+              </Button>
+            </div>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {teacherSearchResults.map((user) => (
+                <div key={user.id} className="flex items-center justify-between p-3 rounded-xl border border-muted bg-muted/20 hover:bg-muted/40 transition-colors">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-sm">{user.first_name} {user.last_name}</span>
+                    <span className="text-[10px] text-muted-foreground">{user.email}</span>
+                    {user.school_id && (
+                      <Badge variant="outline" className="mt-1 w-fit text-[8px] h-4">
+                        Already at {user.schools?.name || "another school"}
+                      </Badge>
+                    )}
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 text-primary font-black text-[10px]"
+                    disabled={isPairing || user.school_id === selectedSchool?.id}
+                    onClick={() => handlePairTeacher(user.id)}
+                  >
+                    {user.school_id === selectedSchool?.id ? "ALREADY HERE" : "PAIR NOW"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

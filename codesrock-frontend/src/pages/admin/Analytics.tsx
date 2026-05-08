@@ -232,13 +232,17 @@ export default function Analytics() {
           <CardContent>
             <div className="space-y-4">
               {schoolAnalytics?.schools?.slice(0, 5).map((school: any, idx: number) => (
-                <div key={school.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div 
+                  key={school.id} 
+                  className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-primary/10 hover:border-primary/20 border border-transparent transition-all cursor-pointer group"
+                  onClick={() => window.location.href = `/admin/schools/${school.id}/performance`}
+                >
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 group-hover:bg-primary group-hover:text-white transition-colors flex items-center justify-center font-bold text-primary text-sm">
                       #{idx + 1}
                     </div>
                     <div>
-                      <p className="font-bold text-sm">{school.name}</p>
+                      <p className="font-bold text-sm group-hover:text-primary transition-colors">{school.name}</p>
                       <p className="text-[10px] text-muted-foreground uppercase font-black">{school.schoolCode}</p>
                     </div>
                   </div>

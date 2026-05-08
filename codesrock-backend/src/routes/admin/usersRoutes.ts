@@ -7,6 +7,8 @@ import {
   deleteUser,
   resetUserPassword,
   getUserStats,
+  searchUsersByContact,
+  pairUserWithSchool,
 } from '../../controllers/admin/usersController';
 import { protect } from '../../middleware/auth';
 import { requireAdmin, auditLog } from '../../middleware/roleAuth';
@@ -22,6 +24,9 @@ router.use(auditLog);
 router.route('/').get(getAllUsers).post(createUser);
 
 router.route('/stats').get(getUserStats);
+router.route('/search').get(searchUsersByContact);
+
+router.route('/:id/pair-school').post(pairUserWithSchool);
 
 router
   .route('/:id')

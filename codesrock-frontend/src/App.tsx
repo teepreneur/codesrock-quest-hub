@@ -27,6 +27,7 @@ const ContentManagement = lazy(() => import("./pages/admin/ContentManagement"));
 const Analytics = lazy(() => import("./pages/admin/Analytics"));
 const SchoolManagement = lazy(() => import("./pages/admin/SchoolManagement"));
 const SchoolPerformance = lazy(() => import("./pages/admin/SchoolPerformance"));
+const TeacherPerformance = lazy(() => import("./pages/admin/TeacherPerformance"));
 const StudentReport = lazy(() => import("./pages/StudentReport"));
 const SearchResults = lazy(() => import("./pages/SearchResults"));
 
@@ -87,6 +88,7 @@ const App = () => (
               <Route path="/admin/analytics" element={<AdminRoute><Analytics /></AdminRoute>} />
               <Route path="/admin/schools" element={<AdminRoute><SchoolManagement /></AdminRoute>} />
               <Route path="/admin/schools/:id/performance" element={<AdminRoute><SchoolPerformance /></AdminRoute>} />
+              <Route path="/admin/teachers/:id/performance" element={<AdminRoute><TeacherPerformance /></AdminRoute>} />
             </Route>
   
             <Route path="/test-dashboard" element={<TestDashboard />} />

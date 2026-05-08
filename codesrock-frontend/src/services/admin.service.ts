@@ -202,6 +202,22 @@ class AdminService {
     return apiService.get('/admin/analytics/schools');
   }
 
+  async getSchoolPerformance(schoolId: string): Promise<any> {
+    return apiService.get(`/admin/analytics/schools/${schoolId}/performance`);
+  }
+
+  async getTeacherDetailedPerformance(teacherId: string): Promise<any> {
+    return apiService.get(`/admin/analytics/teachers/${teacherId}/performance`);
+  }
+
+  async searchUsersByContact(query: string): Promise<any> {
+    return apiService.get(`/admin/users/search?query=${encodeURIComponent(query)}`);
+  }
+
+  async pairUserWithSchool(userId: string, schoolId: string): Promise<any> {
+    return apiService.post(`/admin/users/${userId}/pair-school`, { schoolId });
+  }
+
   // ==================== Course Management ====================
 
   async getAllCourses(params?: {
