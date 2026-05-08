@@ -23,6 +23,7 @@ export interface User {
   role: string;
   isActive: boolean;
   isOnline?: boolean;
+  phoneNumber?: string;
   schoolId?: string;
   schoolName?: string;
   schoolCode?: string;
@@ -36,6 +37,7 @@ export interface CreateUserData {
   lastName: string;
   role?: string;
   schoolId: string;
+  phoneNumber?: string;
 }
 
 export interface UpdateUserData {
@@ -43,6 +45,7 @@ export interface UpdateUserData {
   lastName?: string;
   role?: string;
   schoolId?: string;
+  phoneNumber?: string;
   isActive?: boolean;
   permissions?: string[];
 }

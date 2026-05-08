@@ -95,6 +95,7 @@ export const getAllUsers = async (
       schoolCode: user.schools?.school_code || null,
       isActive: user.is_active,
       isOnline: user.is_online,
+      phoneNumber: user.phone_number,
       lastLogin: user.last_login,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
@@ -169,7 +170,7 @@ export const createUser = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { firstName, lastName, role, schoolId } = req.body;
+    const { firstName, lastName, role, schoolId, phoneNumber } = req.body;
 
     // Validate required fields
     if (!firstName || !lastName) {
@@ -250,6 +251,7 @@ export const createUser = async (
         last_name: lastName,
         role: role || 'teacher',
         school_id: schoolId,
+        phone_number: phoneNumber,
         is_active: true,
         is_online: false,
       })
@@ -328,7 +330,7 @@ export const updateUser = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { firstName, lastName, role, schoolId, isActive, permissions } = req.body;
+    const { firstName, lastName, role, schoolId, isActive, permissions, phoneNumber } = req.body;
 
     const updateData: any = {};
     if (firstName) updateData.first_name = firstName;
@@ -337,6 +339,7 @@ export const updateUser = async (
     if (schoolId !== undefined) updateData.school_id = schoolId || null;
     if (isActive !== undefined) updateData.is_active = isActive;
     if (permissions) updateData.permissions = permissions;
+    if (phoneNumber !== undefined) updateData.phone_number = phoneNumber;
 
     const { data: user, error } = await supabase
       .from('profiles')

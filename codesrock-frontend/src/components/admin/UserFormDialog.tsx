@@ -25,6 +25,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
     lastName: "",
     role: "teacher" as "teacher" | "school_admin" | "content_admin" | "super_admin",
     schoolId: "",
+    phoneNumber: "",
   });
 
   // Load schools for the dropdown
@@ -55,6 +56,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
         lastName: user.lastName || "",
         role: user.role as any || "teacher",
         schoolId: user.schoolId || "",
+        phoneNumber: user.phoneNumber || "",
       });
       setCredentials(null);
     } else if (open && !user) {
@@ -63,6 +65,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
         lastName: "",
         role: "teacher",
         schoolId: "",
+        phoneNumber: "",
       });
       setCredentials(null);
     }
@@ -92,6 +95,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
           lastName: formData.lastName,
           role: formData.role,
           schoolId: formData.schoolId || undefined,
+          phoneNumber: formData.phoneNumber || undefined,
         });
         toast.success("User updated successfully");
         onSuccess();
@@ -103,6 +107,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
           lastName: formData.lastName,
           role: formData.role,
           schoolId: formData.schoolId,
+          phoneNumber: formData.phoneNumber,
         });
 
         // Show credentials
@@ -309,6 +314,19 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
                   <SelectItem value="super_admin">Super Admin</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                placeholder="+233 24 000 0000"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Optional: Used for searching and pairing teachers with schools.
+              </p>
             </div>
 
             {!user && (
