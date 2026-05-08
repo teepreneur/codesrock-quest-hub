@@ -78,7 +78,12 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                     <NavLink
                     to={item.url}
-                    data-tour={item.title === 'My Classes' ? 'sidebar-classes' : undefined}
+                    data-tour={
+                      item.title === 'My Classes' ? 'sidebar-classes' : 
+                      item.title === 'Learning Path' ? 'sidebar-learning' : 
+                      item.title === 'Evaluation' ? 'sidebar-quiz' : 
+                      undefined
+                    }
                     className={({ isActive }) =>
                       `flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-300 group relative z-20 ${
                         isActive

@@ -127,7 +127,7 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
 
                 <div className="w-[45%] flex justify-center z-20">
                   <Card 
-                    className={`w-full overflow-hidden rounded-[2.5rem] transition-all duration-500 cursor-pointer border-8 group relative
+                    className={`w-full overflow-hidden rounded-[2.5rem] transition-all duration-500 cursor-pointer border-8 group relative mission-node
                       ${node.status === 'active' ? 'border-primary shadow-[0_20px_50px_rgba(0,0,0,0.15)] scale-105' : 'border-white hover:border-primary/40 shadow-xl'}`}
                     onClick={() => onNodeClick(node)}
                   >
@@ -165,6 +165,7 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                   <>
                     <div className="absolute -bottom-[400px] left-1/2 -translate-x-1/2 z-40 w-full flex justify-center">
                       <Card 
+                        data-tour="quiz-card"
                         className={`w-[45%] overflow-hidden rounded-[2.5rem] transition-all duration-700 cursor-pointer border-8 group relative
                           ${node.status === 'watched' ? 'border-orange-400 shadow-[0_0_40px_rgba(251,146,60,0.3)] scale-105' : 'border-white shadow-xl opacity-90'}`}
                         onClick={() => { 

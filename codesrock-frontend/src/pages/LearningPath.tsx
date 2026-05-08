@@ -273,7 +273,7 @@ export default function LearningPath() {
 
               {/* Player Area */}
               <div className="flex-1 overflow-y-auto bg-muted/5 custom-scrollbar">
-                <div className="p-1">
+                <div className="p-1" data-tour="video-player">
                   <YouTubePlayer 
                     videoId={extractYouTubeVideoId(watchingVideo.video_url || "") || ""} 
                     title={watchingVideo.title} 

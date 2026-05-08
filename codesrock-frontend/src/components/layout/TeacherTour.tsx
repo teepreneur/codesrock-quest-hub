@@ -34,7 +34,7 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
   }, [status, location.pathname, user?.role]);
 
   const getStepsForPhase = (phase: number, pathname: string): Step[] => {
-    // Phase 1: Learning Journey
+    // Phase 1: Training & Activation
     if (phase === 1) {
       if (pathname === '/dashboard') {
         return [
@@ -45,17 +45,47 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
             disableBeacon: true,
           },
           {
-            target: '[data-tour="mission-map"]',
-            content: <RockyTourGuide message="First stop: The Mission Map. This is where you'll find your training modules. You'll need to pass the first one to activate your account!" />,
+            target: '[data-tour="sidebar-learning"]',
+            content: <RockyTourGuide message="First stop: The Learning Path. This is where your training journey begins. Click here to see your mission map!" />,
           }
         ];
       }
-      if (pathname === '/learning') {
+      if (pathname === '/videos') {
         return [
           {
-            target: '.mission-node:first-child',
-            content: <RockyTourGuide message="Click on the first module to start your journey. Watch the videos, pass the quiz, and you'll be a certified CodesRock pioneer!" />,
+            target: '.px-1:first-child', // Targets the first module card in the modules sidebar
+            content: <RockyTourGuide message="Here are your training modules. We've selected the first one for you. Let's look at the missions inside!" />,
             disableBeacon: true,
+          },
+          {
+            target: '.mission-node:first-child', // Targets the first video node in the MissionMap
+            content: <RockyTourGuide message="Each node is a mission. Watch the videos to master the skills. Complete all missions in the first module to unlock your finale challenge!" />,
+          },
+          {
+            target: '[data-tour="quiz-card"]',
+            content: <RockyTourGuide message="Once you've mastered all the missions, this Final Challenge will unlock. Pass it to earn your Pioneer Badge!" />,
+          },
+          {
+            target: '[data-tour="sidebar-quiz"]',
+            content: <RockyTourGuide message="You can also access all your evaluations here. Ready to start your journey?" />,
+          },
+          {
+            target: '[data-tour="video-player"]',
+            content: <RockyTourGuide message="Rock on! Watch this video to master the skill. When you're done, I'll help you with the next one!" />,
+          }
+        ];
+      }
+      if (pathname.includes('/evaluation')) {
+        return [
+          {
+            target: 'body',
+            placement: 'center',
+            content: <RockyTourGuide message="Time for the finale! I'll be here to coach you through. You've got this, partner!" />,
+            disableBeacon: true,
+          },
+          {
+            target: '[data-tour="quiz-question"]',
+            content: <RockyTourGuide message="Read each question carefully. Use what you learned in the videos to find the best answer!" />,
           }
         ];
       }

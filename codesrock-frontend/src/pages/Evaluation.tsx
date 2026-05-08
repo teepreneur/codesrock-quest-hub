@@ -226,7 +226,7 @@ export default function Evaluation() {
         </div>
         
         <CardContent className="p-10 space-y-10">
-          <div className="space-y-4">
+          <div className="space-y-4" data-tour="quiz-question">
             <div className="flex items-center gap-3">
               <span className="bg-primary/10 text-primary h-8 w-8 rounded-full flex items-center justify-center font-black text-sm">
                 {currentQuestionIndex + 1}
@@ -238,7 +238,7 @@ export default function Evaluation() {
             </h2>
           </div>
 
-          <div className="grid gap-4">
+          <div className="grid gap-4" data-tour="quiz-options">
             {currentQuestion.options.map((option: string, idx: number) => (
               <Button
                 key={idx}
