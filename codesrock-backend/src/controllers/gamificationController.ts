@@ -302,11 +302,23 @@ export const getAllBadges = async (req: Request, res: Response): Promise<void> =
     if (category) query = query.eq('category', category);
     if (isActive !== undefined) query = query.eq('is_active', isActive === 'true');
 
-    const { data: badges, error } = await query.order('category').order('xp_reward');
+    const { data: badges, error } = await query.order('category').order('xp_reward', { ascending: true });
 
     if (error) {
       console.error('Error getting badges:', error);
-      res.status(500).json({ success: false, message: 'Failed to get badges', error: error.message });
+      // Fallback to order by points if xp_reward is missing
+      const { data: fallbackBadges, error: fallbackError } = await supabase.from('badges').select('*').order('category').order('points', { ascending: true });
+      
+      if (fallbackError) {
+        res.status(500).json({ success: false, message: 'Failed to get badges', error: fallbackError.message });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        count: fallbackBadges?.length || 0,
+        data: fallbackBadges || [],
+      });
       return;
     }
 
@@ -338,7 +350,7 @@ export const getUserBadges = async (req: Request, res: Response): Promise<void> 
 
     const { data: userBadges, error } = await supabase
       .from('user_badges')
-      .select('*, badges(name, description, icon, category, rarity, xp_reward)')
+      .select('*, badges(*)')
       .eq('user_id', userId);
 
     if (error) {
