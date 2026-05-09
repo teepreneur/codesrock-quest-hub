@@ -20,6 +20,14 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
   // Only run for teachers who are not yet completed
   useEffect(() => {
     if (user?.role === 'teacher' && !status.completed) {
+      // Don't auto-run if already dismissed permanently
+      const isDismissed = localStorage.getItem(`tour_dismissed_${status.phase}`);
+      if (isDismissed) return;
+
+      // Don't auto-run if already shown in this session (double check)
+      const hasShownThisSession = sessionStorage.getItem(`tour_shown_${status.phase}_${location.pathname}`);
+      if (hasShownThisSession) return;
+
       // Determine steps based on phase and current location
       const newSteps = getStepsForPhase(status.phase, location.pathname);
       setSteps(newSteps);
@@ -27,6 +35,7 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
       // Auto-run if we have steps for this page
       if (newSteps.length > 0) {
         setRun(true);
+        sessionStorage.setItem(`tour_shown_${status.phase}_${location.pathname}`, 'true');
       } else {
         setRun(false);
       }
@@ -138,6 +147,7 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
 
     if (([STATUS.FINISHED, STATUS.SKIPPED] as string[]).includes(tourStatus)) {
       setRun(false);
+      localStorage.setItem(`tour_dismissed_${status.phase}`, 'true');
       
       // If they skip or finish, we should at least mark this step as seen if it's a critical transition
       // For now, we only update status on specific actions (like passing a quiz or clicking setup)
@@ -155,6 +165,7 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
       showSkipButton
       steps={steps}
       scrollOffset={100}
+      disableBeacon={true}
       floaterProps={{
         disableAnimation: true,
         styles: {
