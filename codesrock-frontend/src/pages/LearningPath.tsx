@@ -64,9 +64,9 @@ export default function LearningPath() {
 
   const extractYouTubeVideoId = (url: string | undefined): string | null => {
     if (!url) return null;
-    const videoIdPattern = /[?&]v=([a-zA-Z0-9_-]{11})|youtu\.be\/([a-zA-Z0-9_-]{11})|embed\/([a-zA-Z0-9_-]{11})/;
+    const videoIdPattern = /(?:v=|\/v\/|embed\/|youtu\.be\/|shorts\/|\/watch\?v=|\&v=)([a-zA-Z0-9_-]{11})/;
     const match = url.match(videoIdPattern);
-    return match ? (match[1] || match[2] || match[3]) : url.length === 11 ? url : null;
+    return match ? match[1] : url.length === 11 ? url : null;
   };
 
   const getYouTubeThumbnail = (url: string | undefined): string | undefined => {
@@ -141,16 +141,21 @@ export default function LearningPath() {
   }
 
   const currentTopic = courseDetail?.course?.topics?.find(t => t.id === selectedTopicId);
-  const missionNodes: MissionNode[] = (currentTopic?.videos || []).map((v: any, idx: number) => ({
-    id: v.id,
-    topic_id: currentTopic.id,
-    title: v.title,
-    status: v.userProgress?.completed ? 'watched' : (idx === 0 || (currentTopic?.videos[idx-1]?.userProgress?.completed)) ? 'active' : 'available',
-    type: 'video',
-    duration: v.duration,
-    xpReward: v.xp_reward,
-    thumbnail: v.thumbnail || getYouTubeThumbnail(v.video_url)
-  }));
+  const missionNodes: MissionNode[] = (currentTopic?.videos || []).map((v: any, idx: number) => {
+    const youtubeThumbnail = getYouTubeThumbnail(v.video_url);
+    const hasRealThumbnail = v.thumbnail && !v.thumbnail.includes('placeholder.com');
+    
+    return {
+      id: v.id,
+      topic_id: currentTopic.id,
+      title: v.title,
+      status: v.userProgress?.completed ? 'watched' : (idx === 0 || (currentTopic?.videos[idx-1]?.userProgress?.completed)) ? 'active' : 'available',
+      type: 'video',
+      duration: v.duration,
+      xpReward: v.xp_reward,
+      thumbnail: hasRealThumbnail ? v.thumbnail : (youtubeThumbnail || "/assets/images/course-placeholder.jpg")
+    };
+  });
 
   return (
     <div className="flex gap-8 animate-fade-in pb-4 h-[calc(100vh-120px)] overflow-hidden">
