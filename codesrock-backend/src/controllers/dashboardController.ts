@@ -88,16 +88,28 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Calculate course statistics
-    const [
-      { count: totalCourses },
-      { count: completedCourses },
-      { count: inProgressCourses },
-    ] = await Promise.all([
-      supabase.from('courses').select('*', { count: 'exact', head: true }).eq('is_active', true),
-      supabase.from('video_progress').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('completed', true),
-      supabase.from('video_progress').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('completed', false).gt('watched_seconds', 0),
-    ]);
+    // Calculate course statistics - Corrected to count unique courses
+    const { data: userVideoProgress } = await supabase
+      .from('video_progress')
+      .select('course_id, completed')
+      .eq('user_id', userId);
+
+    const completedCourseIds = new Set((userVideoProgress || [])
+      .filter(p => p.completed)
+      .map(p => p.course_id));
+    
+    const inProgressCourseIds = new Set((userVideoProgress || [])
+      .filter(p => !p.completed)
+      .map(p => p.course_id));
+
+    const { count: totalCoursesCount } = await supabase
+      .from('courses')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
+
+    const totalCourses = totalCoursesCount || 0;
+    const completedCourses = completedCourseIds.size;
+    const inProgressCourses = inProgressCourseIds.size;
 
     // Get leaderboard position
     const { data: leaderboardData } = await supabase.rpc('get_leaderboard', { p_limit: 100 });
@@ -181,13 +193,31 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
         xpEarned: activity.xp_earned,
         timestamp: activity.timestamp,
       })),
-      courseProgress: (courseProgress || []).map((cp: any) => ({
-        course: cp.courses,
-        progressPercentage:
-          cp.total_seconds > 0 ? Math.round((cp.watched_seconds / cp.total_seconds) * 100) : 0,
-        completed: cp.completed,
-        lastWatchedAt: cp.last_watched_at,
-      })),
+      courseProgress: (() => {
+        const uniqueCourses: Record<string, any> = {};
+        (courseProgress || []).forEach((cp: any) => {
+          const courseId = cp.courses?.id || cp.course_id;
+          if (!uniqueCourses[courseId]) {
+            uniqueCourses[courseId] = {
+              course: cp.courses,
+              progressPercentage: cp.total_seconds > 0 ? Math.round((cp.watched_seconds / cp.total_seconds) * 100) : 0,
+              completed: cp.completed,
+              lastWatchedAt: cp.last_watched_at,
+            };
+          } else if (new Date(cp.last_watched_at) > new Date(uniqueCourses[courseId].last_watched_at)) {
+            // Keep the most recent progress for this course
+            uniqueCourses[courseId] = {
+              course: cp.courses,
+              progressPercentage: cp.total_seconds > 0 ? Math.round((cp.watched_seconds / cp.total_seconds) * 100) : 0,
+              completed: cp.completed,
+              lastWatchedAt: cp.last_watched_at,
+            };
+          }
+        });
+        return Object.values(uniqueCourses).sort((a, b) => 
+          new Date(b.lastWatchedAt).getTime() - new Date(a.lastWatchedAt).getTime()
+        ).slice(0, 5);
+      })(),
       upcomingSessions: validUpcomingSessions,
       recommendedCourses: recommendedCourses || [],
       evaluations: (evaluations || []).map((userEval: any) => ({
