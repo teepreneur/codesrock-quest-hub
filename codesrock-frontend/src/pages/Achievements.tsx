@@ -48,8 +48,10 @@ export default function Achievements() {
 
   const isEarned = (badgeId: string) => {
     return userBadges.some(ub => {
-      const badgeIdValue = typeof ub.badgeId === 'string' ? ub.badgeId : ub.badgeId?._id;
-      return badgeIdValue === badgeId;
+      // Handle Supabase structure: ub.badge_id
+      const bId = (ub as any).badge_id || (ub as any).badgeId;
+      const bIdValue = typeof bId === 'string' ? bId : bId?.id;
+      return bIdValue === badgeId;
     });
   };
 
@@ -83,7 +85,11 @@ export default function Achievements() {
   }
 
   const user = authService.getStoredUser();
-  const currentUserRank = leaderboard.findIndex(entry => entry.userId._id === user?.id) + 1;
+  // Update rank lookup to use 'id' or 'user.id'
+  const currentUserRank = leaderboard.findIndex(entry => {
+    const entryId = (entry.userId as any)?.id || (entry.userId as any)?._id || entry.userId;
+    return entryId === user?.id;
+  }) + 1;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -136,10 +142,11 @@ export default function Achievements() {
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {allBadges.map(badge => {
-            const earned = isEarned(badge._id);
+            const bId = badge.id || (badge as any)._id;
+            const earned = isEarned(bId);
             return (
               <Card
-                key={badge._id}
+                key={bId}
                 className={`${earned ? 'border-primary/40' : 'opacity-60'} hover:scale-105 transition-transform cursor-pointer`}
               >
                 <CardContent className="p-6 text-center space-y-2">
@@ -158,7 +165,7 @@ export default function Achievements() {
                     </Badge>
                     <Badge variant={earned ? "default" : "outline"} className="text-xs">
                       <Star className="h-3 w-3 mr-1" />
-                      {badge.xpReward} XP
+                      {(badge as any).xp_reward || badge.xpReward} XP
                     </Badge>
                   </div>
                   {earned && (
@@ -188,11 +195,12 @@ export default function Achievements() {
           <div className="space-y-3">
             {leaderboard.map((entry, index) => {
               const rank = index + 1;
-              const isCurrentUser = entry.userId._id === user?.id;
+              const entryUserId = (entry.userId as any)?.id || (entry.userId as any)?._id || entry.userId;
+              const isCurrentUser = entryUserId === user?.id;
 
               return (
                 <div
-                  key={entry._id}
+                  key={entry.id || (entry as any)._id}
                   className={`flex items-center justify-between p-4 rounded-lg transition-colors ${isCurrentUser
                       ? 'bg-primary/10 border-2 border-primary'
                       : 'bg-secondary/20 hover:bg-secondary/30'
@@ -210,7 +218,7 @@ export default function Achievements() {
                     {/* User Info */}
                     <div>
                       <p className="font-semibold flex items-center gap-2">
-                        {entry.userId.firstName} {entry.userId.lastName}
+                        {(entry.userId as any).firstName} {(entry.userId as any).lastName}
                         {isCurrentUser && (
                           <Badge variant="default" className="text-xs">You</Badge>
                         )}
@@ -233,7 +241,7 @@ export default function Achievements() {
             })}
           </div>
 
-          {currentUserRank === 0 && (
+          {(currentUserRank === 0 || leaderboard.length === 0) && (
             <div className="mt-4 p-4 bg-secondary/20 rounded-lg text-center">
               <p className="text-sm text-muted-foreground">
                 You're not on the leaderboard yet. Complete courses and earn XP to rank up!
@@ -265,8 +273,10 @@ export default function Achievements() {
         <Card>
           <CardContent className="p-6 text-center">
             <p className="text-3xl font-bold text-blue-500">
-              {userBadges.filter(b => {
-                const badge = allBadges.find(ab => ab._id === (typeof b.badgeId === 'string' ? b.badgeId : b.badgeId?._id));
+              {userBadges.filter(ub => {
+                const bId = (ub as any).badge_id || (ub as any).badgeId;
+                const bIdValue = typeof bId === 'string' ? bId : bId?.id;
+                const badge = allBadges.find(ab => (ab.id || (ab as any)._id) === bIdValue);
                 return badge?.rarity === 'Rare';
               }).length}
             </p>
@@ -276,8 +286,10 @@ export default function Achievements() {
         <Card>
           <CardContent className="p-6 text-center">
             <p className="text-3xl font-bold text-purple-500">
-              {userBadges.filter(b => {
-                const badge = allBadges.find(ab => ab._id === (typeof b.badgeId === 'string' ? b.badgeId : b.badgeId?._id));
+              {userBadges.filter(ub => {
+                const bId = (ub as any).badge_id || (ub as any).badgeId;
+                const bIdValue = typeof bId === 'string' ? bId : bId?.id;
+                const badge = allBadges.find(ab => (ab.id || (ab as any)._id) === bIdValue);
                 return badge?.rarity === 'Epic';
               }).length}
             </p>
@@ -287,8 +299,10 @@ export default function Achievements() {
         <Card>
           <CardContent className="p-6 text-center">
             <p className="text-3xl font-bold text-yellow-500">
-              {userBadges.filter(b => {
-                const badge = allBadges.find(ab => ab._id === (typeof b.badgeId === 'string' ? b.badgeId : b.badgeId?._id));
+              {userBadges.filter(ub => {
+                const bId = (ub as any).badge_id || (ub as any).badgeId;
+                const bIdValue = typeof bId === 'string' ? bId : bId?.id;
+                const badge = allBadges.find(ab => (ab.id || (ab as any)._id) === bIdValue);
                 return badge?.rarity === 'Legendary';
               }).length}
             </p>
