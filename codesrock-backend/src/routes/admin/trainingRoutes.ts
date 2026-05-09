@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { createTrainingSession, updateTrainingSession, deleteTrainingSession } from '../../controllers/admin/trainingController';
-import { protect, adminOnly } from '../../middleware/auth';
+import { protect } from '../../middleware/auth';
+import { requireAdmin } from '../../middleware/roleAuth';
 
 const router = Router();
 
 // All routes are protected and admin only
 router.use(protect);
-router.use(adminOnly);
+router.use(requireAdmin);
 
 /**
  * @route   POST /api/admin/training
