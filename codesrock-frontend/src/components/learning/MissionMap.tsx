@@ -208,9 +208,9 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
                             </div>
                             <Button 
                               className={`w-full h-12 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all
-                                ${node.status === 'watched' ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-200' : 'bg-slate-100 text-slate-400'}`}
+                                ${isEvaluationPassed ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-200' : node.status === 'watched' ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-200' : 'bg-slate-100 text-slate-400'}`}
                             >
-                              {node.status === 'watched' ? 'Start Finale 🚀' : 'Locked'}
+                              {isEvaluationPassed ? 'Completed ✅' : node.status === 'watched' ? 'Start Finale 🚀' : 'Locked'}
                             </Button>
                           </div>
                         </CardContent>

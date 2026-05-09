@@ -53,7 +53,8 @@ export default function LearningPath() {
       const detail = await courseService.getCourseById(course.id, user?.id);
       setCourseDetail(detail);
       if (detail.course?.topics?.length > 0) {
-        setSelectedTopicId(detail.course.topics[0].id);
+        const firstUncompleted = detail.course.topics.find((t: any) => !t.evaluation?.evaluation_progress?.passed);
+        setSelectedTopicId(firstUncompleted ? firstUncompleted.id : detail.course.topics[0].id);
       }
     } catch (error) {
       toast.error("Failed to load course modules");
@@ -235,7 +236,7 @@ export default function LearningPath() {
               nodes={missionNodes} 
               onNodeClick={handleWatchVideo}
               moduleTitle={currentTopic.title}
-              isEvaluationPassed={!!courseDetail?.userProgress?.some((p: any) => p.topic_id === currentTopic.id && p.completed)}
+              isEvaluationPassed={!!currentTopic?.evaluation?.evaluation_progress?.passed}
               currentTopicId={currentTopic.id}
            />
         ) : (
