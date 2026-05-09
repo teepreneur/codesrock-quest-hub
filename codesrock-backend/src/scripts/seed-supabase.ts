@@ -100,8 +100,6 @@ async function seedDatabase() {
       { name: 'Week Warrior', description: '7-day streak', category: 'Milestone', icon: '🔥', points: 30 },
       { name: 'Month Champion', description: '30-day streak', category: 'Milestone', icon: '💪', points: 100 },
       { name: 'Level Up!', description: 'Reach Level 2', category: 'Milestone', icon: '⬆️', points: 20 },
-      { name: 'HTML Master', description: 'Complete all HTML courses', category: 'Course', icon: '🏆', points: 100 },
-      { name: 'JavaScript Ninja', description: 'Complete all JS courses', category: 'Course', icon: '⚡', points: 100 },
       { name: 'Top Performer', description: 'Reach top 3 in leaderboard', category: 'Special', icon: '👑', points: 75 },
       { name: 'Early Bird', description: 'Login before 7 AM', category: 'Special', icon: '🌅', points: 15 },
       { name: 'CodesRock Champion', description: 'Reach Level 8', category: 'Special', icon: '🏅', points: 200 }
@@ -120,22 +118,6 @@ async function seedDatabase() {
     // 4. Create Courses
     console.log('\nCreating courses...');
     const courses = [
-      // HTML/CSS
-      { title: 'HTML Basics', description: 'Learn the fundamentals of HTML and create your first web page', category: 'HTML/CSS', difficulty: 'Beginner', duration: 30, xp_reward: 50, order_index: 1 },
-      { title: 'CSS Fundamentals', description: 'Master CSS styling and make beautiful websites', category: 'HTML/CSS', difficulty: 'Beginner', duration: 45, xp_reward: 50, order_index: 2 },
-      { title: 'Flexbox Layout', description: 'Learn modern CSS Flexbox for responsive layouts', category: 'HTML/CSS', difficulty: 'Intermediate', duration: 40, xp_reward: 75, order_index: 3 },
-      { title: 'CSS Grid', description: 'Master CSS Grid for complex page layouts', category: 'HTML/CSS', difficulty: 'Intermediate', duration: 45, xp_reward: 75, order_index: 4 },
-      { title: 'Responsive Design', description: 'Build mobile-friendly, responsive websites', category: 'HTML/CSS', difficulty: 'Advanced', duration: 60, xp_reward: 100, order_index: 5 },
-
-      // JavaScript
-      { title: 'JavaScript Introduction', description: 'Start your journey with JavaScript programming', category: 'JavaScript', difficulty: 'Beginner', duration: 40, xp_reward: 50, order_index: 6 },
-      { title: 'Variables and Data Types', description: 'Understand JavaScript variables and data types', category: 'JavaScript', difficulty: 'Beginner', duration: 35, xp_reward: 50, order_index: 7 },
-      { title: 'Functions in JavaScript', description: 'Master functions and code reusability', category: 'JavaScript', difficulty: 'Beginner', duration: 45, xp_reward: 50, order_index: 8 },
-      { title: 'Arrays and Objects', description: 'Work with arrays and objects in JavaScript', category: 'JavaScript', difficulty: 'Intermediate', duration: 50, xp_reward: 75, order_index: 9 },
-      { title: 'DOM Manipulation', description: 'Create interactive web pages with DOM', category: 'JavaScript', difficulty: 'Intermediate', duration: 60, xp_reward: 75, order_index: 10 },
-      { title: 'Events and Event Listeners', description: 'Handle user interactions with events', category: 'JavaScript', difficulty: 'Intermediate', duration: 50, xp_reward: 75, order_index: 11 },
-      { title: 'Async JavaScript', description: 'Master promises and async/await', category: 'JavaScript', difficulty: 'Advanced', duration: 70, xp_reward: 100, order_index: 12 },
-
       // Computer Science
       { title: 'How Computers Think', description: 'Introduction to computer science fundamentals', category: 'Computer Science', difficulty: 'Beginner', duration: 35, xp_reward: 50, order_index: 13 },
       { title: 'Binary and Number Systems', description: 'Understand how computers represent data', category: 'Computer Science', difficulty: 'Beginner', duration: 40, xp_reward: 50, order_index: 14 },
@@ -163,9 +145,6 @@ async function seedDatabase() {
     // 5. Create Resources
     console.log('\nCreating resources...');
     const resources = [
-      { title: 'HTML Cheat Sheet', description: 'Quick reference for all HTML tags', category: 'Reference', file_type: 'PDF', grade_level: 'All Levels', subject: 'HTML', xp_reward: 10 },
-      { title: 'CSS Properties Guide', description: 'Complete CSS properties reference', category: 'Reference', file_type: 'PDF', grade_level: 'All Levels', subject: 'CSS', xp_reward: 10 },
-      { title: 'JavaScript ES6+ Features', description: 'Modern JavaScript features explained', category: 'Tutorial', file_type: 'PDF', grade_level: 'Intermediate', subject: 'JavaScript', xp_reward: 15 },
       { title: 'Web Accessibility Guide', description: 'Make your websites accessible to everyone', category: 'Guide', file_type: 'PDF', grade_level: 'Intermediate', subject: 'Web Development', xp_reward: 15 },
       { title: 'Teaching Code to Kids', description: 'Pedagogy guide for teaching programming', category: 'Teaching', file_type: 'PDF', grade_level: 'Teachers', subject: 'Pedagogy', xp_reward: 20 },
       { title: 'Lesson Plan Template', description: 'Ready-to-use coding lesson template', category: 'Teaching', file_type: 'DOCX', grade_level: 'Teachers', subject: 'Planning', xp_reward: 10 },
