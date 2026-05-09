@@ -3,6 +3,7 @@ import usersRoutes from './usersRoutes';
 import contentRoutes from './contentRoutes';
 import analyticsRoutes from './analyticsRoutes';
 import schoolsRoutes from './schoolsRoutes';
+import trainingRoutes from './trainingRoutes';
 
 const router = express.Router();
 
@@ -11,5 +12,6 @@ router.use('/users', usersRoutes);
 router.use('/content', contentRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/schools', schoolsRoutes);
+router.use('/training', trainingRoutes);
 
 export default router;

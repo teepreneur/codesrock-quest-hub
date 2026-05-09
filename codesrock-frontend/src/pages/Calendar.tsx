@@ -1,37 +1,88 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, Clock, User, Video, Plus } from "lucide-react";
-import { trainingSessions } from "@/lib/mockData";
+import { Calendar as CalendarIcon, Clock, User, Video, Plus, ExternalLink } from "lucide-react";
+import { trainingService, TrainingSession } from "@/services/training.service";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Calendar() {
-  const upcomingSessions = trainingSessions.filter((session) => !session.isPast);
-  const pastSessions = trainingSessions.filter((session) => session.isPast);
+  const [upcomingSessions, setUpcomingSessions] = useState<TrainingSession[]>([]);
+  const [pastSessions, setPastSessions] = useState<TrainingSession[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleJoinSession = (session: typeof trainingSessions[0]) => {
-    if (session.isLive) {
-      toast.success(`🎥 Joining session: ${session.title}`);
-    } else {
-      toast.info(`📅 This session starts on ${session.date} at ${session.time}`);
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const [upcoming, past] = await Promise.all([
+        trainingService.getUpcomingSessions(),
+        trainingService.getPastSessions()
+      ]);
+      setUpcomingSessions(upcoming);
+      setPastSessions(past);
+    } catch (error) {
+      console.error("Error fetching sessions:", error);
+      toast.error("Failed to load training calendar");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRSVP = (session: typeof trainingSessions[0]) => {
-    toast.success(`✅ RSVP confirmed for ${session.title}`, {
-      description: "We'll send you a reminder before the session starts",
-    });
+  const handleJoinSession = (session: TrainingSession) => {
+    if (session.meeting_link) {
+      window.open(session.meeting_link, '_blank');
+      toast.success(`🎥 Joining session: ${session.title}`);
+    } else {
+      toast.error("Meeting link not available yet.");
+    }
   };
 
-  const handleAddToCalendar = (session: typeof trainingSessions[0]) => {
-    toast.success(`📅 Added to your calendar`, {
+  const handleRSVP = async (session: TrainingSession) => {
+    try {
+      await trainingService.rsvpToSession(session.id);
+      toast.success(`✅ RSVP confirmed for ${session.title}`, {
+        description: "We'll send you a reminder before the session starts",
+      });
+      fetchSessions(); // Refresh to show updated RSVP status
+    } catch (error) {
+      toast.error("Failed to RSVP. Please try again.");
+    }
+  };
+
+  const handleAddToCalendar = (session: TrainingSession) => {
+    // Simple way to add to Google Calendar
+    const start = new Date(session.start_time).toISOString().replace(/-|:|\.\d\d\d/g, "");
+    const end = new Date(session.end_time).toISOString().replace(/-|:|\.\d\d\d/g, "");
+    const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(session.title)}&dates=${start}/${end}&details=${encodeURIComponent(session.description)}&location=${encodeURIComponent(session.meeting_link || 'Online')}`;
+    window.open(url, '_blank');
+    
+    toast.success(`📅 Opening Google Calendar`, {
       description: session.title,
     });
   };
 
-  const handleWatchRecording = (session: typeof trainingSessions[0]) => {
-    toast.success(`🎥 Opening recording: ${session.title}`);
+  const handleWatchRecording = (session: TrainingSession) => {
+    if (session.recording_url) {
+      window.open(session.recording_url, '_blank');
+    } else {
+      toast.info("Recording is still being processed.");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-24" />)}
+        </div>
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -80,9 +131,12 @@ export default function Calendar() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {trainingSessions.reduce((sum, s) => sum + s.duration, 0)}
+                  {upcomingSessions.reduce((sum, s) => {
+                    const duration = (new Date(s.end_time).getTime() - new Date(s.start_time).getTime()) / 60000;
+                    return sum + duration;
+                  }, 0)}
                 </p>
-                <p className="text-sm text-muted-foreground">Total Minutes</p>
+                <p className="text-sm text-muted-foreground">Total Live Minutes</p>
               </div>
             </div>
           </CardContent>
@@ -105,12 +159,12 @@ export default function Calendar() {
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row gap-6">
                     {/* Date Badge */}
-                    <div className="flex-shrink-0 text-center p-4 rounded-lg bg-primary/10 border border-primary/20">
+                    <div className="flex-shrink-0 text-center p-4 rounded-lg bg-primary/10 border border-primary/20 min-w-[80px]">
                       <div className="text-3xl font-bold text-primary mb-1">
-                        {new Date(session.date).getDate()}
+                        {new Date(session.start_time).getDate()}
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(session.date).toLocaleDateString("en-US", { month: "short" })}
+                      <div className="text-sm text-muted-foreground uppercase">
+                        {new Date(session.start_time).toLocaleDateString("en-US", { month: "short" })}
                       </div>
                     </div>
 
@@ -118,18 +172,19 @@ export default function Calendar() {
                     <div className="flex-1 space-y-3">
                       <div>
                         <h3 className="text-xl font-semibold mb-2">{session.title}</h3>
-                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground mb-4">{session.description}</p>
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
-                            <span>{session.time}</span>
+                            <span>{new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Video className="h-4 w-4" />
-                            <span>{session.duration} minutes</span>
+                            <span>{(new Date(session.end_time).getTime() - new Date(session.start_time).getTime()) / 60000} mins</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <User className="h-4 w-4" />
-                            <span>{session.trainer}</span>
+                            <span>{session.instructor}</span>
                           </div>
                         </div>
                       </div>
@@ -137,27 +192,35 @@ export default function Calendar() {
                       <div className="flex flex-wrap gap-2">
                         {session.isLive ? (
                           <>
-                            <Badge className="bg-green-500 hover:bg-green-600 animate-pulse">
+                            <Badge className="bg-green-500 hover:bg-green-600 animate-pulse px-3 py-1">
                               🔴 LIVE NOW
                             </Badge>
                             <Button
                               onClick={() => handleJoinSession(session)}
                               className="bg-green-500 hover:bg-green-600"
                             >
-                              Join Session
+                              <ExternalLink className="mr-2 h-4 w-4" />
+                              Join Google Meet
                             </Button>
                           </>
                         ) : (
                           <>
+                            {session.isRSVPed ? (
+                              <Badge variant="outline" className="text-green-600 border-green-600 px-3 py-1">
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                                Registered
+                              </Badge>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRSVP(session)}
+                              >
+                                RSVP Now
+                              </Button>
+                            )}
                             <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRSVP(session)}
-                            >
-                              RSVP
-                            </Button>
-                            <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
                               onClick={() => handleAddToCalendar(session)}
                             >
@@ -173,76 +236,82 @@ export default function Calendar() {
               </Card>
             ))
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-12 text-muted-foreground">
               <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>No upcoming sessions scheduled</p>
+              <p>No upcoming sessions scheduled at the moment</p>
+              <p className="text-sm">Check back soon for new training dates!</p>
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* Past Sessions / Recordings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Video className="h-5 w-5 text-secondary" />
-            Past Session Recordings
-          </CardTitle>
-          <CardDescription>Watch recordings of previous training sessions</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {pastSessions.map((session) => (
-            <Card key={session.id} className="border-muted hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-6">
-                  {/* Video Icon */}
-                  <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-secondary/20 flex items-center justify-center">
-                    <Video className="h-8 w-8 text-secondary" />
-                  </div>
-
-                  {/* Session Info */}
-                  <div className="flex-1 space-y-2">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-1">{session.title}</h3>
-                      <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                        <span>Recorded: {session.date}</span>
-                        <span>•</span>
-                        <span>{session.duration} minutes</span>
-                        <span>•</span>
-                        <span>{session.trainer}</span>
-                      </div>
+      {pastSessions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Video className="h-5 w-5 text-secondary" />
+              Past Session Recordings
+            </CardTitle>
+            <CardDescription>Watch recordings of previous training sessions</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {pastSessions.map((session) => (
+              <Card key={session.id} className="border-muted hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* Video Icon */}
+                    <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-secondary/20 flex items-center justify-center">
+                      <Video className="h-8 w-8 text-secondary" />
                     </div>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleWatchRecording(session)}
-                      className="mt-2"
-                    >
-                      <Video className="mr-2 h-4 w-4" />
-                      Watch Recording
-                    </Button>
+                    {/* Session Info */}
+                    <div className="flex-1 space-y-2">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-1">{session.title}</h3>
+                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                          <span>Recorded: {new Date(session.start_time).toLocaleDateString()}</span>
+                          <span>•</span>
+                          <span>{session.instructor}</span>
+                        </div>
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleWatchRecording(session)}
+                        className="mt-2"
+                        disabled={!session.recording_url}
+                      >
+                        <Video className="mr-2 h-4 w-4" />
+                        {session.recording_url ? "Watch Recording" : "Processing..."}
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </CardContent>
-      </Card>
+                </CardContent>
+              </Card>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Help Card */}
-      <Card className="border-muted">
+      <Card className="border-muted bg-muted/30">
         <CardHeader>
-          <CardTitle className="text-lg">Need Help?</CardTitle>
+          <CardTitle className="text-lg">Training Guidelines</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p>
-            If you can't attend a live session, don't worry! All sessions are recorded and available
-            to watch at your convenience.
+            • All live sessions are conducted via <strong>Google Meet</strong>. A link will appear when the session is live.
           </p>
           <p>
-            For technical issues or questions, contact our support team at{" "}
-            <span className="text-primary font-medium">support@codesrock.edu</span>
+            • RSVP to sessions to receive reminders and ensure your spot.
+          </p>
+          <p>
+            • Attending live sessions earns you <strong>XP</strong> towards your next level!
+          </p>
+          <p>
+            • Technical issues? Contact <span className="text-primary font-medium">support@codesrock.edu</span>
           </p>
         </CardContent>
       </Card>

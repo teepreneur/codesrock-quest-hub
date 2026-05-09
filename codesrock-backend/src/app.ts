@@ -41,6 +41,7 @@ import adminRoutes from './routes/admin';
 import classRoutes from './routes/classRoutes';
 import searchRoutes from './routes/searchRoutes';
 import onboardingRoutes from './routes/onboardingRoutes';
+import certificateRoutes from './routes/certificateRoutes';
 
 // Initialize express app
 const app: Application = express();
@@ -114,6 +115,7 @@ app.use('/api/classes', classRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/certificates', certificateRoutes);
 
 // 404 handler - must be after all routes
 app.use(notFound);
