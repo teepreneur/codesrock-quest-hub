@@ -59,10 +59,9 @@ export function AppSidebar() {
             </div>
             {open && (
               <div className="animate-fade-in">
-                <h2 className="font-heading font-black text-xl text-deep-purple leading-tight tracking-tight italic">CodesRock</h2>
-                <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-80">
+                <h2 className="font-heading font-black text-xl text-deep-purple leading-tight tracking-tight italic">
                   {isAdmin ? 'Admin Console' : 'Teacher Hub'}
-                </p>
+                </h2>
               </div>
             )}
           </div>
