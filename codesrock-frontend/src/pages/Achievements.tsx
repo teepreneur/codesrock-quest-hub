@@ -218,7 +218,7 @@ export default function Achievements() {
                     {/* User Info */}
                     <div>
                       <p className="font-semibold flex items-center gap-2">
-                        {(entry.userId as any).firstName} {(entry.userId as any).lastName}
+                        {entry.userId?.firstName || 'Anonymous'} {entry.userId?.lastName || 'User'}
                         {isCurrentUser && (
                           <Badge variant="default" className="text-xs">You</Badge>
                         )}

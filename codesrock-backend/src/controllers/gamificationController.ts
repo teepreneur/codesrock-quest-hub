@@ -215,10 +215,11 @@ export const getLeaderboard = async (req: Request, res: Response): Promise<void>
 
     const formattedLeaderboard = (leaderboard || []).map((entry: any, index: number) => ({
       rank: index + 1,
-      user: {
+      id: entry.user_id,
+      userId: {
         id: entry.user_id,
-        firstName: entry.first_name,
-        lastName: entry.last_name,
+        firstName: entry.first_name || 'Anonymous',
+        lastName: entry.last_name || 'User',
         email: entry.email,
         role: entry.role,
       },
