@@ -18,6 +18,7 @@ WHERE subject IN ('HTML', 'CSS', 'JavaScript')
    OR title LIKE '%JavaScript%';
 
 -- 4. Restrict Leaderboard to Teachers only
+DROP FUNCTION IF EXISTS get_leaderboard(integer);
 CREATE OR REPLACE FUNCTION get_leaderboard(p_limit INTEGER DEFAULT 10)
 RETURNS TABLE(
   user_id UUID,
