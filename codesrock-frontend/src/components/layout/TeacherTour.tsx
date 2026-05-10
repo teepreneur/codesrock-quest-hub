@@ -34,8 +34,24 @@ export const TeacherTour: React.FC<TeacherTourProps> = ({ status, onStatusUpdate
       
       // Auto-run if we have steps for this page
       if (newSteps.length > 0) {
-        setRun(true);
-        sessionStorage.setItem(`tour_shown_${status.phase}_${location.pathname}`, 'true');
+        const targetSelector = newSteps[0].target as string;
+        
+        if (targetSelector === 'body') {
+          setRun(true);
+          sessionStorage.setItem(`tour_shown_${status.phase}_${location.pathname}`, 'true');
+        } else {
+          // Poll for the element because the page might be in a loading state
+          const checkExist = setInterval(() => {
+            if (document.querySelector(targetSelector)) {
+              clearInterval(checkExist);
+              setRun(true);
+              sessionStorage.setItem(`tour_shown_${status.phase}_${location.pathname}`, 'true');
+            }
+          }, 500);
+          
+          // Clear interval if component unmounts or location changes
+          return () => clearInterval(checkExist);
+        }
       } else {
         setRun(false);
       }
