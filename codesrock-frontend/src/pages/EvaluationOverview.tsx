@@ -31,7 +31,7 @@ export default function EvaluationOverview() {
 
   // Merge evaluations with progress
   const mergedEvaluations = useMemo(() => {
-    if (!evaluations?.data) return [];
+    if (!evaluations || !Array.isArray(evaluations)) return [];
     
     const progressMap = new Map();
     dashboard?.evaluations?.forEach((p: any) => {
@@ -40,7 +40,7 @@ export default function EvaluationOverview() {
       progressMap.set(p.evaluation_id || p.evaluation?.id, p);
     });
 
-    return evaluations.data.map((ev: any) => ({
+    return evaluations.map((ev: any) => ({
       ...ev,
       progress: progressMap.get(ev.id)
     }));
