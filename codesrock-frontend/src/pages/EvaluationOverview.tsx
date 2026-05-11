@@ -35,9 +35,9 @@ export default function EvaluationOverview() {
     
     const progressMap = new Map();
     dashboard?.evaluations?.forEach((p: any) => {
-      // The progress record might have evaluation_id or we might need to match by title
-      // Based on dashboardController.ts, it returns evaluation_progress records
-      progressMap.set(p.evaluation_id || p.evaluation?.id, p);
+      // Robust mapping: check evaluation_id, id in singular/plural relations
+      const evalId = p.evaluation_id || p.evaluation?.id || p.evaluations?.id;
+      if (evalId) progressMap.set(evalId, p);
     });
 
     return evaluations.map((ev: any) => ({
