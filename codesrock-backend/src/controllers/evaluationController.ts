@@ -100,7 +100,7 @@ export const startEvaluation = async (req: Request, res: Response): Promise<void
 
     // Check if user already has an evaluation in progress
     const { data: existing } = await supabase
-      .from('user_evaluations')
+      .from('evaluation_progress')
       .select('*')
       .eq('user_id', userId)
       .eq('evaluation_id', evaluationId)
@@ -117,14 +117,12 @@ export const startEvaluation = async (req: Request, res: Response): Promise<void
 
     // Create new user evaluation
     const { data: userEvaluation, error: createError } = await supabase
-      .from('user_evaluations')
+      .from('evaluation_progress')
       .insert({
         user_id: userId,
         evaluation_id: evaluationId,
-        completed_items: [],
         score: 0,
-        percentage: 0,
-        status: 'in-progress',
+        passed: false,
       })
       .select()
       .single();
@@ -171,7 +169,7 @@ export const updateEvaluationProgress = async (req: Request, res: Response): Pro
 
     // Find user evaluation
     const { data: userEvaluation, error: userError } = await supabase
-      .from('user_evaluations')
+      .from('evaluation_progress')
       .select('*')
       .eq('user_id', userId)
       .eq('evaluation_id', evaluationId)
@@ -195,23 +193,18 @@ export const updateEvaluationProgress = async (req: Request, res: Response): Pro
     }
 
     // Calculate score
-    let earnedPoints = 0;
-    completedItems.forEach((itemId: string) => {
-      const item = evaluation.checklist_items.find((i: any) => i.id === itemId);
-      if (item) {
-        earnedPoints += item.points;
-      }
-    });
-
-    const percentage = Math.round((earnedPoints / evaluation.total_points) * 100);
+    // Note: The logic for calculating score from items is specific to checklist-style evaluations
+    // For now, we update the score and passed status
+    const earnedPoints = req.body.score || 0;
+    const passed = req.body.passed || false;
 
     // Update user evaluation
     const { data: updated, error: updateError } = await supabase
-      .from('user_evaluations')
+      .from('evaluation_progress')
       .update({
-        completed_items: completedItems,
         score: earnedPoints,
-        percentage,
+        passed,
+        completed_at: new Date().toISOString()
       })
       .eq('user_id', userId)
       .eq('evaluation_id', evaluationId)
@@ -228,9 +221,8 @@ export const updateEvaluationProgress = async (req: Request, res: Response): Pro
       success: true,
       message: 'Progress updated successfully',
       data: {
-        completedItems: updated.completed_items,
         score: updated.score,
-        percentage: updated.percentage,
+        passed: updated.passed,
       },
     });
   } catch (error: any) {
@@ -264,7 +256,7 @@ export const submitEvaluation = async (req: Request, res: Response): Promise<voi
 
     // Find user evaluation
     const { data: userEvaluation, error: userError } = await supabase
-      .from('user_evaluations')
+      .from('evaluation_progress')
       .select('*')
       .eq('user_id', userId)
       .eq('evaluation_id', evaluationId)
@@ -285,7 +277,7 @@ export const submitEvaluation = async (req: Request, res: Response): Promise<voi
 
     // Mark as submitted
     const { error: updateError } = await supabase
-      .from('user_evaluations')
+      .from('evaluation_progress')
       .update({
         status: 'submitted',
         submitted_at: new Date().toISOString(),
@@ -365,7 +357,7 @@ export const reviewEvaluation = async (req: Request, res: Response): Promise<voi
 
     // Find user evaluation
     const { data: userEvaluation, error: userError } = await supabase
-      .from('user_evaluations')
+      .from('evaluation_progress')
       .select('*')
       .eq('id', userEvaluationId)
       .single();
@@ -408,7 +400,7 @@ export const reviewEvaluation = async (req: Request, res: Response): Promise<voi
       certificateId = certificate.id;
 
       // Award XP for passing evaluation
-      const xpReward = 150; // Base XP for passing evaluation
+      const xpReward = evaluation.xp_reward || 150; // Use evaluation specific reward or default
       await supabase.rpc('award_xp', {
         p_user_id: userEvaluation.user_id,
         p_xp_amount: xpReward,
@@ -424,7 +416,7 @@ export const reviewEvaluation = async (req: Request, res: Response): Promise<voi
 
     // Update review
     const { data: updated, error: updateError } = await supabase
-      .from('user_evaluations')
+      .from('evaluation_progress')
       .update({
         status,
         reviewed_at: new Date().toISOString(),
@@ -469,10 +461,10 @@ export const getUserEvaluations = async (req: Request, res: Response): Promise<v
     }
 
     const { data: userEvaluations, error } = await supabase
-      .from('user_evaluations')
-      .select('*, evaluations(title, description), certificates(certificate_number, issued_date)')
+      .from('evaluation_progress')
+      .select('*, evaluations(title, description), certificates(certificate_id, date_earned)')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('completed_at', { ascending: false });
 
     if (error) {
       console.error('Error getting user evaluations:', error);

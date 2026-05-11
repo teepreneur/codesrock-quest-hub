@@ -71,7 +71,7 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
 
       // Evaluation status
       supabase
-        .from('user_evaluations')
+        .from('evaluation_progress')
         .select('*, evaluations(title, description)')
         .eq('user_id', userId)
         .order('updated_at', { ascending: false })
