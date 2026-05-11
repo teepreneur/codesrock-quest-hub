@@ -374,6 +374,10 @@ class AdminService {
     return apiService.get(`/evaluations/topic/${topicId}`);
   }
 
+  async getAllEvaluations(): Promise<any> {
+    return apiService.get('/evaluations');
+  }
+
   async saveEvaluation(data: {
     topicId: string;
     title: string;

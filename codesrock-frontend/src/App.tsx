@@ -15,6 +15,7 @@ const TestDashboard = lazy(() => import("./pages/TestDashboard"));
 const LearningPath = lazy(() => import("./pages/LearningPath"));
 const Resources = lazy(() => import("./pages/Resources"));
 const Evaluation = lazy(() => import("./pages/Evaluation"));
+const EvaluationOverview = lazy(() => import("./pages/EvaluationOverview"));
 const Achievements = lazy(() => import("./pages/Achievements"));
 const Certificates = lazy(() => import("./pages/Certificates"));
 const Calendar = lazy(() => import("./pages/Calendar"));
@@ -72,6 +73,7 @@ const App = () => (
               <Route path="/videos" element={<LearningPath />} />
               <Route path="/learning-path" element={<LearningPath />} />
               <Route path="/resources" element={<Resources />} />
+              <Route path="/evaluation" element={<EvaluationOverview />} />
               <Route path="/evaluation/:id" element={<Evaluation />} />
               <Route path="/achievements" element={<Achievements />} />
               <Route path="/certificates" element={<Certificates />} />
