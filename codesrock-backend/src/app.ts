@@ -7,10 +7,10 @@ import { errorHandler, notFound } from './middleware/errorHandler';
 import logger from './utils/logger';
 
 // Rate limiting configuration
-// General API rate limit: 100 requests per 15 minutes
+// General API rate limit: 500 requests per 15 minutes
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 500,
   message: {
     success: false,
     message: 'Too many requests, please try again later.',

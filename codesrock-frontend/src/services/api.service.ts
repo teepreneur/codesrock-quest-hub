@@ -25,20 +25,28 @@ export class ApiError extends Error {
  */
 class ApiService {
   private isRefreshing = false;
-  private refreshSubscribers: ((token: string) => void)[] = [];
+  private refreshSubscribers: { resolve: (token: string) => void; reject: (error: any) => void }[] = [];
 
   /**
    * Subscribe to token refresh
    */
-  private subscribeTokenRefresh(callback: (token: string) => void): void {
-    this.refreshSubscribers.push(callback);
+  private subscribeTokenRefresh(resolve: (token: string) => void, reject: (error: any) => void): void {
+    this.refreshSubscribers.push({ resolve, reject });
   }
 
   /**
    * Notify all subscribers when token is refreshed
    */
   private onTokenRefreshed(token: string): void {
-    this.refreshSubscribers.forEach((callback) => callback(token));
+    this.refreshSubscribers.forEach((sub) => sub.resolve(token));
+    this.refreshSubscribers = [];
+  }
+
+  /**
+   * Reject all subscribers when token refresh fails
+   */
+  private onTokenRefreshFailed(error: any): void {
+    this.refreshSubscribers.forEach((sub) => sub.reject(error));
     this.refreshSubscribers = [];
   }
 
@@ -120,12 +128,13 @@ class ApiService {
             });
           } catch (refreshError) {
             this.isRefreshing = false;
+            this.onTokenRefreshFailed(refreshError);
             throw refreshError;
           }
         } else {
           // Wait for token refresh to complete
-          const newToken = await new Promise<string>((resolve) => {
-            this.subscribeTokenRefresh(resolve);
+          const newToken = await new Promise<string>((resolve, reject) => {
+            this.subscribeTokenRefresh(resolve, reject);
           });
 
           // Retry with new token
