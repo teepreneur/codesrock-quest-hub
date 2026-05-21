@@ -419,11 +419,13 @@ export const getContentStats = async (
       { count: totalCourses },
       { count: totalResources },
       { count: activeCourses },
+      { count: activeResources },
       { count: totalViews },
     ] = await Promise.all([
       supabase.from('courses').select('*', { count: 'exact', head: true }),
       supabase.from('resources').select('*', { count: 'exact', head: true }),
       supabase.from('courses').select('*', { count: 'exact', head: true }).eq('is_active', true),
+      supabase.from('resources').select('*', { count: 'exact', head: true }).eq('is_active', true),
       supabase.from('video_progress').select('*', { count: 'exact', head: true }),
     ]);
 
@@ -433,6 +435,7 @@ export const getContentStats = async (
         totalCourses: totalCourses || 0,
         totalResources: totalResources || 0,
         activeCourses: activeCourses || 0,
+        activeResources: activeResources || 0,
         totalViews: totalViews || 0,
       },
     });

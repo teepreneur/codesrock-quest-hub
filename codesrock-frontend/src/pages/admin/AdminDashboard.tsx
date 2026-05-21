@@ -191,7 +191,11 @@ export default function AdminDashboard() {
               <div className="text-4xl font-black text-secondary group-hover:scale-110 transition-transform">{trends.totalActivities.toLocaleString()}</div>
             </div>
             
-            <Button variant="ghost" className="w-full text-secondary font-black hover:bg-secondary/5 py-6 rounded-2xl">
+            <Button 
+              variant="ghost" 
+              className="w-full text-secondary font-black hover:bg-secondary/5 py-6 rounded-2xl"
+              onClick={() => navigate('/admin/analytics')}
+            >
                View Full Analytics Report
                <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

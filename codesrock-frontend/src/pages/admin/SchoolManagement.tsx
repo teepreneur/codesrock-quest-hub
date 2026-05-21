@@ -366,9 +366,9 @@ export default function SchoolManagement() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1 w-24">
-                            <span className="text-xs font-bold text-primary">{school.avgProgress || Math.floor(Math.random() * 50) + 30}%</span>
+                            <span className="text-xs font-bold text-primary">{school.avgProgress || 0}%</span>
                             <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                               <div className="h-full bg-primary" style={{ width: `${school.avgProgress || Math.floor(Math.random() * 50) + 30}%` }} />
+                               <div className="h-full bg-primary" style={{ width: `${school.avgProgress || 0}%` }} />
                             </div>
                           </div>
                         </TableCell>

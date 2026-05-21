@@ -136,10 +136,49 @@ export const getAllSchools = async (
       throw new AppError('Failed to fetch schools', 500);
     }
 
-    res.status(200).json({
-      success: true,
-      data: {
-        schools: (schools || []).map((school) => ({
+    const schoolsWithStats = await Promise.all(
+      (schools || []).map(async (school) => {
+        const [
+          { count: teacherCount },
+          { data: studentProfiles }
+        ] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('school_id', school.id)
+            .eq('role', 'teacher'),
+          supabase
+            .from('profiles')
+            .select('id')
+            .eq('school_id', school.id)
+            .eq('role', 'student')
+        ]);
+
+        const studentIds = (studentProfiles || []).map(p => p.id);
+        let avgProgress = 0;
+
+        if (studentIds.length > 0) {
+          const [
+            { count: completedCount },
+            { count: totalProgressCount }
+          ] = await Promise.all([
+            supabase
+              .from('video_progress')
+              .select('*', { count: 'exact', head: true })
+              .in('user_id', studentIds)
+              .eq('completed', true),
+            supabase
+              .from('video_progress')
+              .select('*', { count: 'exact', head: true })
+              .in('user_id', studentIds)
+          ]);
+
+          avgProgress = totalProgressCount && totalProgressCount > 0
+            ? Math.round(((completedCount || 0) / totalProgressCount) * 100)
+            : 0;
+        }
+
+        return {
           id: school.id,
           name: school.name,
           schoolCode: school.school_code,
@@ -147,11 +186,19 @@ export const getAllSchools = async (
           region: school.region,
           district: school.district,
           contactEmail: school.contact_email,
-          teacherCount: school.teacher_count,
+          teacherCount: teacherCount || 0,
+          avgProgress,
           isActive: school.is_active,
           createdAt: school.created_at,
           updatedAt: school.updated_at,
-        })),
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        schools: schoolsWithStats,
         pagination: {
           page: pageNum,
           limit: limitNum,

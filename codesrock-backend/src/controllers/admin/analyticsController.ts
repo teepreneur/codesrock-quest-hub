@@ -236,10 +236,29 @@ export const getCourseAnalytics = async (
     // Sort by completion rate
     courseStats.sort((a, b) => b.completionRate - a.completionRate);
 
+    // Compute dynamic sum/average metrics at root level
+    const { data: allVideoProgress } = await supabase
+      .from('video_progress')
+      .select('watched_seconds, total_seconds');
+
+    const totalViewsSum = courseStats.reduce((sum, c) => sum + c.totalViews, 0);
+
+    let avgProgress = 0;
+    if (allVideoProgress && allVideoProgress.length > 0) {
+      const validProgress = allVideoProgress.filter(p => p.total_seconds > 0);
+      if (validProgress.length > 0) {
+        avgProgress = Math.round(
+          (validProgress.reduce((sum, p) => sum + (p.watched_seconds / p.total_seconds) * 100, 0) / validProgress.length)
+        );
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: {
         courses: courseStats,
+        totalViews: totalViewsSum,
+        avgProgress,
       },
     });
   } catch (error) {
@@ -262,22 +281,24 @@ export const getEngagementMetrics = async (
     const daysAgo = new Date();
     daysAgo.setDate(daysAgo.getDate() - Number(days));
 
-    // Get activities for the period
+    // Get activities for the period using created_at instead of timestamp
     const { data: activities } = await supabase
       .from('activities')
-      .select('user_id, type, timestamp')
-      .gte('timestamp', daysAgo.toISOString());
+      .select('user_id, type, created_at')
+      .gte('created_at', daysAgo.toISOString());
 
     // Calculate unique users per day
     const dailyUsers = new Map<string, Set<string>>();
     const typeBreakdown = new Map<string, number>();
 
     (activities || []).forEach((activity) => {
-      const date = activity.timestamp.split('T')[0];
-      if (!dailyUsers.has(date)) {
-        dailyUsers.set(date, new Set());
+      const date = activity.created_at ? activity.created_at.split('T')[0] : '';
+      if (date) {
+        if (!dailyUsers.has(date)) {
+          dailyUsers.set(date, new Set());
+        }
+        dailyUsers.get(date)!.add(activity.user_id);
       }
-      dailyUsers.get(date)!.add(activity.user_id);
 
       typeBreakdown.set(activity.type, (typeBreakdown.get(activity.type) || 0) + 1);
     });
@@ -292,12 +313,44 @@ export const getEngagementMetrics = async (
       count,
     }));
 
-    // Get top performers
-    const { data: topPerformers } = await supabase
-      .from('user_progress')
-      .select('*, profiles(first_name, last_name, email)')
-      .order('total_xp', { ascending: false })
-      .limit(10);
+    // Concurrently fetch all engagement metrics from database tables
+    const [
+      { count: totalDownloads },
+      { count: quizAttempts },
+      { count: certificatesIssued },
+      { count: skillsMastered },
+      { count: badgesEarned },
+      { data: xpData },
+      { data: resourceRatings },
+      { data: sessionRatings },
+      { data: topPerformers }
+    ] = await Promise.all([
+      supabase.from('resource_downloads').select('*', { count: 'exact', head: true }),
+      supabase.from('evaluation_progress').select('*', { count: 'exact', head: true }),
+      supabase.from('certificates').select('*', { count: 'exact', head: true }),
+      supabase.from('evaluation_progress').select('*', { count: 'exact', head: true }).eq('passed', true),
+      supabase.from('user_badges').select('*', { count: 'exact', head: true }),
+      supabase.from('user_progress').select('total_xp'),
+      supabase.from('resource_downloads').select('rating').not('rating', 'is', null),
+      supabase.from('session_registrations').select('rating').not('rating', 'is', null),
+      supabase
+        .from('user_progress')
+        .select('*, profiles(first_name, last_name, email)')
+        .order('total_xp', { ascending: false })
+        .limit(10)
+    ]);
+
+    const totalXP = (xpData || []).reduce((sum, p) => sum + (p.total_xp || 0), 0);
+    const avgXP = xpData && xpData.length > 0 ? Math.round(totalXP / xpData.length) : 0;
+
+    const allRatings = [
+      ...(resourceRatings || []).map(r => r.rating),
+      ...(sessionRatings || []).map(s => s.rating)
+    ].filter(r => typeof r === 'number' && r > 0);
+
+    const satisfaction = allRatings.length > 0
+      ? Math.round((allRatings.reduce((sum, r) => sum + r, 0) / allRatings.length) * 10) / 10
+      : 4.5;
 
     res.status(200).json({
       success: true,
@@ -305,6 +358,13 @@ export const getEngagementMetrics = async (
         dailyActiveUsers,
         activityBreakdown,
         topPerformers: topPerformers || [],
+        totalDownloads: totalDownloads || 0,
+        quizAttempts: quizAttempts || 0,
+        certificatesIssued: certificatesIssued || 0,
+        skillsMastered: skillsMastered || 0,
+        badgesEarned: badgesEarned || 0,
+        avgXP,
+        satisfaction
       },
     });
   } catch (error) {

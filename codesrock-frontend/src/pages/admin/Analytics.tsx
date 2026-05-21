@@ -70,25 +70,48 @@ export default function Analytics() {
   }, [dateRange]);
 
   // Format engagement trend data for chart
-  const engagementChartData = overview?.trends?.engagementTrend?.map((item) => ({
-    date: String(item._id || ''),
+  const engagementChartData = engagementMetrics?.dailyActiveUsers?.map((item: any) => ({
+    date: String(item.date || ''),
     activities: item.count || 0,
   })) || [];
 
   // Course completion data for chart
-  const courseCompletionData = courseAnalytics?.topCourses?.map((course: any) => ({
+  const courseCompletionData = courseAnalytics?.courses?.map((course: any) => ({
     name: String(course.title || 'Untitled').substring(0, 20) + (course.title?.length > 20 ? "..." : ""),
-    completions: Number(course.completionCount) || 0,
-    views: Number(course.viewCount) || 0,
+    completions: Number(course.completions) || 0,
+    views: Number(course.totalViews) || 0,
   })) || [];
 
   // User activity distribution
-  const activityDistribution = [
-    { name: 'Video Watching', value: Number(engagementMetrics?.videoViews) || 45 },
-    { name: 'Resource Downloads', value: Number(engagementMetrics?.resourceDownloads) || 25 },
-    { name: 'Quiz Completions', value: Number(engagementMetrics?.quizCompletions) || 20 },
-    { name: 'Certificate Earned', value: Number(engagementMetrics?.certificatesEarned) || 10 },
-  ];
+  const videoWatchingCount = engagementMetrics?.activityBreakdown
+    ?.filter((a: any) => a._id === 'video_started' || a._id === 'video_completed')
+    .reduce((sum: number, a: any) => sum + (a.count || 0), 0) || 0;
+
+  const resourceDownloadsCount = engagementMetrics?.activityBreakdown
+    ?.filter((a: any) => a._id === 'resource_downloaded')
+    .reduce((sum: number, a: any) => sum + (a.count || 0), 0) || 0;
+
+  const quizCompletionsCount = engagementMetrics?.activityBreakdown
+    ?.filter((a: any) => a._id === 'evaluation_submitted')
+    .reduce((sum: number, a: any) => sum + (a.count || 0), 0) || 0;
+
+  const certificateEarnedCount = engagementMetrics?.activityBreakdown
+    ?.filter((a: any) => a._id === 'badge_earned' || a._id === 'level_up')
+    .reduce((sum: number, a: any) => sum + (a.count || 0), 0) || 0;
+
+  const activityDistribution = (engagementMetrics?.activityBreakdown && engagementMetrics?.activityBreakdown.length > 0)
+    ? [
+        { name: 'Video Watching', value: videoWatchingCount },
+        { name: 'Resource Downloads', value: resourceDownloadsCount },
+        { name: 'Quiz Completions', value: quizCompletionsCount },
+        { name: 'Certificates/Badges', value: certificateEarnedCount },
+      ]
+    : [
+        { name: 'Video Watching', value: 45 },
+        { name: 'Resource Downloads', value: 25 },
+        { name: 'Quiz Completions', value: 20 },
+        { name: 'Certificate Earned', value: 10 },
+      ];
 
   const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'];
 
@@ -357,7 +380,7 @@ export default function Analytics() {
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <span className="text-sm font-medium">Daily Active Users</span>
                 <span className="text-sm font-bold text-cyan-500">
-                  {safeValue(engagementMetrics?.dailyActiveUsers || overview?.stats?.activeToday, 0)}
+                  {safeValue(overview?.stats?.activeToday, 0)}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
