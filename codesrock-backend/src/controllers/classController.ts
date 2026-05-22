@@ -81,13 +81,25 @@ export const createClass = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
+    let resolvedSchoolId = schoolId;
+    if (!resolvedSchoolId) {
+      const { data: teacherProfile } = await supabase
+        .from('profiles')
+        .select('school_id')
+        .eq('id', teacherId)
+        .single();
+      if (teacherProfile && teacherProfile.school_id) {
+        resolvedSchoolId = teacherProfile.school_id;
+      }
+    }
+
     const { data: newClass, error } = await supabase
       .from('classes')
       .insert({
         name,
         teacher_id: teacherId,
         course_id: courseId || null,
-        school_id: schoolId || null
+        school_id: resolvedSchoolId || null
       })
       .select()
       .single();
@@ -430,8 +442,47 @@ export const manuallyCreateAndEnroll = async (req: Request, res: Response): Prom
       return;
     }
 
-    // 1. Create a placeholder email
-    const placeholderEmail = `student_${Date.now()}_${Math.floor(Math.random() * 1000)}@codesrock.internal`;
+    // Resolve school ID
+    let resolvedSchoolId = cls.school_id;
+    if (!resolvedSchoolId) {
+      const { data: teacherProfile } = await supabase
+        .from('profiles')
+        .select('school_id')
+        .eq('id', cls.teacher_id)
+        .single();
+      if (teacherProfile && teacherProfile.school_id) {
+        resolvedSchoolId = teacherProfile.school_id;
+        // Update the class school_id so it is persisted for the class
+        await supabase
+          .from('classes')
+          .update({ school_id: resolvedSchoolId })
+          .eq('id', classId);
+      }
+    }
+
+    // Generate username using the database function
+    let username = '';
+    if (resolvedSchoolId) {
+      const { data: generatedUsername, error: usernameError } = await supabase.rpc('generate_username', {
+        p_first_name: firstName,
+        p_last_name: lastName,
+        p_school_id: resolvedSchoolId,
+      });
+      if (!usernameError && generatedUsername) {
+        username = generatedUsername;
+      }
+    }
+
+    // Fallback username generation if RPC fails or schoolId is null
+    if (!username) {
+      const cleanFirst = firstName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const cleanLast = lastName.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const rand = Math.floor(1000 + Math.random() * 9000);
+      username = `${cleanFirst}_${cleanLast}_${rand}`;
+    }
+
+    // 1. Create a placeholder email using the username
+    const placeholderEmail = `${username}@student.codesrock.internal`;
     const tempPassword = Math.random().toString(36).slice(-12);
 
     // 2. Create the auth user (using admin privileges)
@@ -439,7 +490,13 @@ export const manuallyCreateAndEnroll = async (req: Request, res: Response): Prom
       email: placeholderEmail,
       password: tempPassword,
       email_confirm: true,
-      user_metadata: { first_name: firstName, last_name: lastName, role: 'student' }
+      user_metadata: { 
+        first_name: firstName, 
+        last_name: lastName, 
+        role: 'student',
+        username: username,
+        school_id: resolvedSchoolId
+      }
     });
 
     if (authError) {
@@ -447,14 +504,18 @@ export const manuallyCreateAndEnroll = async (req: Request, res: Response): Prom
       throw authError;
     }
 
-    // 3. Update the profile to ensure role and school_id are correct
+    // Wait a brief moment for the handle_new_user database trigger to create the profile
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // 3. Update the profile to ensure role, school_id, and username are correct
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .update({ 
         first_name: firstName, 
         last_name: lastName, 
         role: 'student',
-        school_id: cls.school_id 
+        username: username,
+        school_id: resolvedSchoolId || null 
       })
       .eq('id', authUser.user.id)
       .select()

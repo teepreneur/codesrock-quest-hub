@@ -142,6 +142,8 @@ export default function UserManagement() {
         return 'default';
       case 'content_admin':
         return 'secondary';
+      case 'student':
+        return 'outline';
       default:
         return 'outline';
     }
@@ -211,6 +213,7 @@ export default function UserManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="student">Student</SelectItem>
                 <SelectItem value="teacher">Teacher</SelectItem>
                 <SelectItem value="school_admin">School Admin</SelectItem>
                 <SelectItem value="content_admin">Content Admin</SelectItem>

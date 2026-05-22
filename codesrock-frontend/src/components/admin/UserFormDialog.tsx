@@ -23,7 +23,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    role: "teacher" as "teacher" | "school_admin" | "content_admin" | "super_admin",
+    role: "teacher" as "teacher" | "school_admin" | "content_admin" | "super_admin" | "student",
     schoolId: "",
     phoneNumber: "",
   });
@@ -307,6 +307,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSuccess }: UserForm
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="student">Student</SelectItem>
                   <SelectItem value="teacher">Teacher</SelectItem>
                   <SelectItem value="school_admin">School Admin</SelectItem>
                   <SelectItem value="content_admin">Content Admin</SelectItem>
