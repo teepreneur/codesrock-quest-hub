@@ -43,6 +43,18 @@ class TrainingService {
       sessionId 
     });
   }
+
+  /**
+   * Mark attendance for a session (Join session)
+   */
+  async attendSession(sessionId: string): Promise<void> {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return apiService.post('/sessions/attend', { 
+      userId: user.id,
+      sessionId,
+      duration: 60
+    });
+  }
 }
 
 export const trainingService = new TrainingService();

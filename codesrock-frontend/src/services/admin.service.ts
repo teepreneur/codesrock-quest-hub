@@ -368,6 +368,25 @@ class AdminService {
     return apiService.delete(`/admin/schools/${schoolId}`);
   }
 
+  // ==================== Training Management ====================
+
+  async getTrainingSessions(): Promise<any[]> {
+    const response = await apiService.get<any>('/admin/training');
+    return response.data || response || [];
+  }
+
+  async createTrainingSession(data: any): Promise<any> {
+    return apiService.post('/admin/training', data);
+  }
+
+  async updateTrainingSession(sessionId: string, data: any): Promise<any> {
+    return apiService.put(`/admin/training/${sessionId}`, data);
+  }
+
+  async deleteTrainingSession(sessionId: string): Promise<void> {
+    return apiService.delete(`/admin/training/${sessionId}`);
+  }
+
   // ==================== Evaluation Management ====================
 
   async getEvaluation(topicId: string): Promise<any> {

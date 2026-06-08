@@ -15,6 +15,7 @@ import { TopicFormDialog } from "@/components/admin/TopicFormDialog";
 import { VideoFormDialog } from "@/components/admin/VideoFormDialog";
 import { ResourceFormDialog } from "@/components/admin/ResourceFormDialog";
 import { EvaluationFormDialog } from "@/components/admin/EvaluationFormDialog";
+import { TrainingSessionFormDialog } from "@/components/admin/TrainingSessionFormDialog";
 import type { Course, Resource } from "@/types/content.types";
 import { HelpCircle } from "lucide-react";
 
@@ -60,6 +61,13 @@ export default function ContentManagement() {
   const [resourceSearchTerm, setResourceSearchTerm] = useState("");
   const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
+
+  // Training Sessions
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionSearchTerm, setSessionSearchTerm] = useState("");
+  const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<any | null>(null);
 
   // Stats
   const [stats, setStats] = useState({ totalCourses: 0, activeCourses: 0, totalResources: 0, activeResources: 0 });
@@ -133,6 +141,18 @@ export default function ContentManagement() {
     }
   };
 
+  const loadSessions = async () => {
+    try {
+      setSessionsLoading(true);
+      const data = await adminService.getTrainingSessions();
+      setSessions(data);
+    } catch (error: any) {
+      toast.error("Failed to load training sessions");
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
   const loadStats = async () => {
     try {
       const response = await adminService.getContentStats();
@@ -143,6 +163,7 @@ export default function ContentManagement() {
   useEffect(() => {
     if (activeTab === "courses") loadCourses();
     if (activeTab === "resources") loadResources();
+    if (activeTab === "sessions") loadSessions();
     if (activeTab === "evaluations") {
       loadCourses();
       loadAllTopics();
@@ -168,6 +189,7 @@ export default function ContentManagement() {
       else if (deleteTarget.type === "topic") { await adminService.deleteTopic(deleteTarget.item.id || deleteTarget.item._id); loadTopics(selectedCourse.id || selectedCourse._id); }
       else if (deleteTarget.type === "video") { await adminService.deleteVideo(deleteTarget.item.id || deleteTarget.item._id); loadVideos(selectedTopic.id || selectedTopic._id); }
       else if (deleteTarget.type === "resource") { await adminService.deleteResource(deleteTarget.item.id || deleteTarget.item._id); loadResources(); loadStats(); }
+      else if (deleteTarget.type === "session") { await adminService.deleteTrainingSession(deleteTarget.item.id || deleteTarget.item._id); loadSessions(); }
       toast.success(`${deleteTarget.type.charAt(0).toUpperCase() + deleteTarget.type.slice(1)} deleted`);
     } catch (error: any) { toast.error(error.message || "Delete failed"); }
     setDeleteTarget(null);
@@ -353,6 +375,7 @@ export default function ContentManagement() {
         <TabsList>
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
+          <TabsTrigger value="sessions">Live Sessions</TabsTrigger>
           <TabsTrigger value="evaluations">Evaluations</TabsTrigger>
         </TabsList>
 
@@ -396,6 +419,106 @@ export default function ContentManagement() {
                         </TableCell>
                       </TableRow>
                     ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sessions" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Training Sessions & Meetings</CardTitle>
+                  <CardDescription>Schedule professional development meetings, set Google Meet links, and track participation</CardDescription>
+                </div>
+                <Button onClick={() => { setEditingSession(null); setSessionDialogOpen(true); }}>
+                  <Plus className="h-4 w-4 mr-2" />Schedule Session
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="relative max-w-md mb-6">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search sessions..." 
+                  value={sessionSearchTerm} 
+                  onChange={(e) => setSessionSearchTerm(e.target.value)} 
+                  className="pl-9" 
+                />
+              </div>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Instructor</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Participants</TableHead>
+                      <TableHead>XP</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sessionsLoading ? (
+                      <TableRow><TableCell colSpan={8} className="text-center py-8">Loading sessions...</TableCell></TableRow>
+                    ) : sessions.length === 0 ? (
+                      <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No sessions scheduled yet.</TableCell></TableRow>
+                    ) : sessions
+                        .filter(s => s.title.toLowerCase().includes(sessionSearchTerm.toLowerCase()))
+                        .map((session: any) => (
+                          <TableRow key={session.id || session._id}>
+                            <TableCell className="font-semibold">{session.title}</TableCell>
+                            <TableCell>
+                              {session.status === 'live' ? (
+                                <Badge className="bg-red-500 animate-pulse font-black text-white">🔴 Live</Badge>
+                              ) : session.status === 'scheduled' ? (
+                                <Badge className="bg-blue-500 font-bold">Scheduled</Badge>
+                              ) : session.status === 'completed' ? (
+                                <Badge className="bg-green-600 font-bold">Completed</Badge>
+                              ) : (
+                                <Badge variant="destructive">Cancelled</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="capitalize">{session.type}</TableCell>
+                            <TableCell>{session.instructor || '—'}</TableCell>
+                            <TableCell className="text-xs">
+                              {new Date(session.start_time).toLocaleString("en-US", { 
+                                month: "short", 
+                                day: "numeric", 
+                                hour: "2-digit", 
+                                minute: "2-digit" 
+                              })}
+                            </TableCell>
+                            <TableCell className="font-mono text-center">
+                              {session.current_participants ?? 0} / {session.max_participants ?? 50}
+                            </TableCell>
+                            <TableCell className="font-bold text-primary font-mono">+{session.xp_reward ?? 25}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => { setEditingSession(session); setSessionDialogOpen(true); }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => setDeleteTarget({ type: "session", item: session })}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    }
                   </TableBody>
                 </Table>
               </div>
@@ -495,6 +618,7 @@ export default function ContentManagement() {
       {selectedCourse && <TopicFormDialog open={topicDialogOpen} onOpenChange={setTopicDialogOpen} courseId={selectedCourse.id || selectedCourse._id} topic={editingTopic} onSuccess={() => loadTopics(selectedCourse.id || selectedCourse._id)} />}
       {selectedTopic && <VideoFormDialog open={videoDialogOpen} onOpenChange={setVideoDialogOpen} topicId={selectedTopic.id || selectedTopic._id} video={editingVideo} onSuccess={() => loadVideos(selectedTopic.id || selectedTopic._id)} />}
       <ResourceFormDialog open={resourceDialogOpen} onOpenChange={setResourceDialogOpen} resource={editingResource} onSuccess={() => { loadResources(); loadStats(); }} />
+      <TrainingSessionFormDialog open={sessionDialogOpen} onOpenChange={setSessionDialogOpen} session={editingSession} onSuccess={loadSessions} />
 
       {selectedTopicForEval && (
         <EvaluationFormDialog 

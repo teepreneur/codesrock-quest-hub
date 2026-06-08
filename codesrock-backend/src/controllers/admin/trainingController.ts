@@ -54,25 +54,59 @@ export const createTrainingSession = async (req: Request, res: Response): Promis
 };
 
 /**
+ * Get all training sessions (Admin only, includes inactive/drafts)
+ * GET /api/admin/training
+ */
+export const getAdminTrainingSessions = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { data: sessions, error } = await supabase
+      .from('training_sessions')
+      .select('*')
+      .order('start_time', { ascending: false });
+
+    if (error) {
+      console.error('Error getting admin sessions:', error);
+      res.status(500).json({ success: false, message: 'Failed to get training sessions', error: error.message });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: sessions || [],
+    });
+  } catch (error: any) {
+    console.error('Error in getAdminTrainingSessions:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+/**
  * Update an existing training session (Admin only)
  * PUT /api/admin/training/:id
  */
 export const updateTrainingSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const { title, description, instructor, startTime, endTime, type, meetingLink, recordingUrl, maxParticipants, tags, xpReward, isActive, status } = req.body;
+
+    const updateData: any = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (instructor !== undefined) updateData.instructor = instructor;
+    if (startTime !== undefined) updateData.start_time = startTime;
+    if (endTime !== undefined) updateData.end_time = endTime;
+    if (type !== undefined) updateData.type = type;
+    if (meetingLink !== undefined) updateData.meeting_link = meetingLink;
+    if (recordingUrl !== undefined) updateData.recording_url = recordingUrl;
+    if (maxParticipants !== undefined) updateData.max_participants = maxParticipants;
+    if (tags !== undefined) updateData.tags = tags;
+    if (xpReward !== undefined) updateData.xp_reward = xpReward;
+    if (isActive !== undefined) updateData.is_active = isActive;
+    if (status !== undefined) updateData.status = status;
 
     const { data: session, error } = await supabase
       .from('training_sessions')
-      .update({
-        ...updates,
-        start_time: updates.startTime,
-        end_time: updates.endTime,
-        meeting_link: updates.meetingLink,
-        recording_url: updates.recordingUrl,
-        max_participants: updates.maxParticipants,
-        xp_reward: updates.xpReward
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();

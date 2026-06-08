@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, Clock, User, Video, Plus, ExternalLink } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, Video, Plus, ExternalLink, CheckCircle } from "lucide-react";
 import { trainingService, TrainingSession } from "@/services/training.service";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,10 +32,16 @@ export default function Calendar() {
     }
   };
 
-  const handleJoinSession = (session: TrainingSession) => {
+  const handleJoinSession = async (session: TrainingSession) => {
     if (session.meeting_link) {
       window.open(session.meeting_link, '_blank');
       toast.success(`🎥 Joining session: ${session.title}`);
+      try {
+        await trainingService.attendSession(session.id);
+        fetchSessions();
+      } catch (error) {
+        console.error("Failed to mark session attendance:", error);
+      }
     } else {
       toast.error("Meeting link not available yet.");
     }
@@ -311,7 +317,7 @@ export default function Calendar() {
             • Attending live sessions earns you <strong>XP</strong> towards your next level!
           </p>
           <p>
-            • Technical issues? Contact <span className="text-primary font-medium">support@codesrock.edu</span>
+            • Technical issues? Contact <span className="text-primary font-medium">hello@codesrock.com</span>
           </p>
         </CardContent>
       </Card>
