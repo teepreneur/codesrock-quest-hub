@@ -8,7 +8,7 @@ import logger from '../../utils/logger';
  */
 export const createTrainingSession = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { title, description, instructor, startTime, endTime, type, meetingLink, recordingUrl, maxParticipants, tags, xpReward } = req.body;
+    const { title, description, instructor, startTime, endTime, type, meetingLink, recordingUrl, maxParticipants, tags, xpReward, isActive, status } = req.body;
 
     if (!title || !startTime || !endTime) {
       res.status(400).json({ success: false, message: 'Title, start time, and end time are required' });
@@ -28,7 +28,9 @@ export const createTrainingSession = async (req: Request, res: Response): Promis
         recording_url: recordingUrl,
         max_participants: maxParticipants,
         tags,
-        xp_reward: xpReward || 25
+        xp_reward: xpReward || 25,
+        is_active: isActive !== undefined ? isActive : true,
+        status: status || 'scheduled'
       })
       .select()
       .single();
@@ -70,9 +72,26 @@ export const getAdminTrainingSessions = async (req: Request, res: Response): Pro
       return;
     }
 
+    // Get registration counts for sessions
+    const { data: regCounts } = await supabase
+      .from('session_registrations')
+      .select('session_id');
+
+    const countMap: Record<string, number> = {};
+    if (regCounts) {
+      regCounts.forEach((r) => {
+        countMap[r.session_id] = (countMap[r.session_id] || 0) + 1;
+      });
+    }
+
+    const sessionsWithCounts = (sessions || []).map((session) => ({
+      ...session,
+      current_participants: countMap[session.id] || 0,
+    }));
+
     res.status(200).json({
       success: true,
-      data: sessions || [],
+      data: sessionsWithCounts,
     });
   } catch (error: any) {
     console.error('Error in getAdminTrainingSessions:', error);

@@ -28,7 +28,32 @@ export const getAllSessions = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Add isLive status based on current time
+    // Get registration counts for all training sessions
+    const { data: regCounts } = await supabase
+      .from('session_registrations')
+      .select('session_id');
+
+    const countMap: Record<string, number> = {};
+    if (regCounts) {
+      regCounts.forEach((r) => {
+        countMap[r.session_id] = (countMap[r.session_id] || 0) + 1;
+      });
+    }
+
+    // Get RSVP status for current user
+    const userId = req.user?.userId;
+    let registeredSessionIds: string[] = [];
+    if (userId) {
+      const { data: userRegs } = await supabase
+        .from('session_registrations')
+        .select('session_id')
+        .eq('user_id', userId);
+      if (userRegs) {
+        registeredSessionIds = userRegs.map((ur) => ur.session_id);
+      }
+    }
+
+    // Add isLive, current_participants, and isRSVPed status
     const now = new Date();
     const updatedSessions = (sessions || []).map((session) => {
       const startTime = new Date(session.start_time);
@@ -36,6 +61,8 @@ export const getAllSessions = async (req: Request, res: Response): Promise<void>
       return {
         ...session,
         isLive: now >= startTime && now <= endTime,
+        current_participants: countMap[session.id] || 0,
+        isRSVPed: registeredSessionIds.includes(session.id),
       };
     });
 
@@ -96,6 +123,14 @@ export const getSessionById = async (req: Request, res: Response): Promise<void>
       }
     }
 
+    // Get count of registered participants
+    const { count: participantCount } = await supabase
+      .from('session_registrations')
+      .select('*', { count: 'exact', head: true })
+      .eq('session_id', sessionId);
+
+    const currentParticipants = participantCount || 0;
+
     // Check if session is live
     const now = new Date();
     const startTime = new Date(session.start_time);
@@ -106,12 +141,17 @@ export const getSessionById = async (req: Request, res: Response): Promise<void>
     const canJoin =
       session.is_active &&
       session.status !== 'cancelled' &&
-      session.current_participants < session.max_participants;
+      currentParticipants < session.max_participants;
+
+    const sessionWithCounts = {
+      ...session,
+      current_participants: currentParticipants,
+    };
 
     res.status(200).json({
       success: true,
       data: {
-        session,
+        session: sessionWithCounts,
         isLive,
         canJoin,
         userRegistration,
@@ -167,7 +207,15 @@ export const registerForSession = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    if (session.current_participants >= session.max_participants) {
+    // Get count of registered participants
+    const { count: participantCount } = await supabase
+      .from('session_registrations')
+      .select('*', { count: 'exact', head: true })
+      .eq('session_id', sessionId);
+
+    const currentParticipants = participantCount || 0;
+
+    if (currentParticipants >= session.max_participants) {
       res.status(400).json({
         success: false,
         message: 'Session is full',
@@ -209,12 +257,6 @@ export const registerForSession = async (req: Request, res: Response): Promise<v
       res.status(500).json({ success: false, message: 'Failed to register for session' });
       return;
     }
-
-    // Increment participant count
-    await supabase
-      .from('training_sessions')
-      .update({ current_participants: session.current_participants + 1 })
-      .eq('id', sessionId);
 
     // Create activity
     await supabase.from('activities').insert({
