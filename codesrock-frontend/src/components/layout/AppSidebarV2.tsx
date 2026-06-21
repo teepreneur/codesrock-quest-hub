@@ -50,11 +50,11 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" data-version="v2-0-force-refresh-101" className="border-r border-muted/50 bg-white/50 backdrop-blur-xl">
       <SidebarContent>
-        <div className="p-6 border-b border-muted/30">
+        <div className={`transition-all duration-300 border-b border-muted/30 ${open ? 'p-6' : 'p-3 flex justify-center'}`}>
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent p-0.5 shadow-lg group-hover:scale-110 transition-transform duration-500">
-              <div className="w-full h-full bg-white rounded-[0.9rem] flex items-center justify-center overflow-hidden">
-                <img src={codesrockLogo} alt="CodesRock" className="w-9 h-9 object-contain" />
+            <div className={`transition-all duration-300 bg-gradient-to-br from-primary to-accent p-0.5 shadow-lg group-hover:scale-110 duration-500 ${open ? 'w-12 h-12 rounded-2xl' : 'w-10 h-10 rounded-xl'}`}>
+              <div className={`w-full h-full bg-white flex items-center justify-center overflow-hidden ${open ? 'rounded-[0.9rem]' : 'rounded-lg'}`}>
+                <img src={codesrockLogo} alt="CodesRock" className={`object-contain transition-all ${open ? 'w-9 h-9' : 'w-7 h-7'}`} />
               </div>
             </div>
             {open && (
@@ -67,14 +67,16 @@ export function AppSidebar() {
           </div>
         </div>
 
-        <SidebarGroup className="px-3 pt-6">
-          <SidebarGroupLabel className="px-3 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4">
-            {isAdmin ? 'Management' : 'Navigation'}
-          </SidebarGroupLabel>
+        <SidebarGroup className={`pt-6 transition-all duration-300 ${open ? 'px-3' : 'px-1'}`}>
+          {open && (
+            <SidebarGroupLabel className="px-3 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 animate-fade-in">
+              {isAdmin ? 'Management' : 'Navigation'}
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
               {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.title} className="flex justify-center">
                     <NavLink
                     to={item.url}
                     data-tour={
@@ -84,15 +86,19 @@ export function AppSidebar() {
                       undefined
                     }
                     className={({ isActive }) =>
-                      `flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-300 group relative z-20 ${
+                      `flex items-center rounded-xl transition-all duration-300 group relative z-20 ${
+                        open 
+                          ? "gap-3 w-full px-4 py-3" 
+                          : "justify-center w-10 h-10 px-0"
+                      } ${
                         isActive
                           ? "bg-primary text-white shadow-lg shadow-primary/30 font-black scale-[1.02]"
                           : "text-deep-purple hover:bg-primary/10 hover:text-primary font-bold"
                       }`
                     }
                   >
-                    <item.icon className={`h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-110 ${item.title === 'My Classes' ? 'text-secondary' : ''}`} />
-                    <span className="text-sm tracking-tight">{item.title}</span>
+                    <item.icon className={`h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-110 shrink-0 ${item.title === 'My Classes' ? 'text-secondary' : ''}`} />
+                    {open && <span className="text-sm tracking-tight animate-fade-in">{item.title}</span>}
                   </NavLink>
                 </SidebarMenuItem>
               ))}
