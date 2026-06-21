@@ -10,6 +10,7 @@ import { courseService, type CourseWithProgress, type CourseDetail, type VideoIt
 import { authService } from "@/services/auth.service";
 import { YouTubePlayer } from "@/components/video/YouTubePlayer";
 import { MissionMap, type MissionNode } from "@/components/learning/MissionMap";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 export default function LearningPath() {
   const [courses, setCourses] = useState<CourseWithProgress[]>([]);
@@ -159,98 +160,108 @@ export default function LearningPath() {
   });
 
   return (
-    <div className="flex gap-8 animate-fade-in pb-4 h-[calc(100vh-120px)] overflow-hidden">
-      
-      {/* LEFT COLUMN: COURSE MODULES SIDEBAR */}
-      <div className="w-80 flex flex-col gap-6 bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-muted/20 p-6 shadow-sm overflow-hidden shrink-0">
-        <div className="flex flex-col h-full overflow-hidden">
-           <div className="flex items-center gap-2 mb-6 px-2">
-              <div className="w-8 h-8 rounded-lg bg-deep-purple/10 flex items-center justify-center">
-                 <BookOpen className="h-4 w-4 text-deep-purple" />
-              </div>
-              <h1 className="text-[10px] font-black text-deep-purple uppercase tracking-[0.4em] opacity-80">Course Modules</h1>
-           </div>
-           
-           <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar space-y-4 pb-6 overflow-x-visible">
-              {(courseDetail?.course?.topics || []).map((topic, idx) => {
-                const isActive = selectedTopicId === topic.id;
-                const isCompleted = (topic.videos || []).every((v: any) => v.userProgress?.completed);
-
-                return (
-                  <div key={topic.id} className="px-1">
-                    <Card 
-                      onClick={() => setSelectedTopicId(topic.id)}
-                      data-tour={idx === 0 ? 'module-card' : undefined}
-                      className={`
-                        relative group cursor-pointer transition-all duration-300 rounded-[1.5rem] border-2
-                        ${isActive ? 'bg-white border-primary shadow-xl scale-[1.02] z-10' : 'bg-white/50 border-transparent hover:border-primary/20 hover:scale-[1.01]'}
-                      `}
-                    >
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div className={`
-                        w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shrink-0
-                        ${isCompleted ? 'bg-green-100 text-green-600 shadow-sm' : isActive ? 'bg-primary text-white shadow-lg' : 'bg-muted/50 text-muted-foreground'}
-                      `}>
-                        {isCompleted ? <CheckCircle className="h-5 w-5" /> : <Play className="h-4 w-4 ml-0.5" />}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${isActive ? 'text-primary' : 'text-muted-foreground/60'}`}>
-                           Module {idx + 1} {isActive && '• CURRENT'}
-                        </p>
-                        <h3 className={`text-xs font-black leading-tight truncate ${isActive ? 'text-deep-purple' : 'text-muted-foreground'}`}>
-                           {topic.title}
-                        </h3>
-                      </div>
-                      {isActive && <ChevronRight className="h-5 w-5 text-primary animate-pulse-slow" />}
-                    </CardContent>
-                  </Card>
+    <div className="h-[calc(100vh-120px)] overflow-hidden pb-4">
+      <ResizablePanelGroup direction="horizontal" className="gap-6 animate-fade-in">
+        
+        {/* LEFT COLUMN: COURSE MODULES SIDEBAR PANEL */}
+        <ResizablePanel 
+          defaultSize={25}
+          minSize={15}
+          maxSize={40}
+          className="flex flex-col bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-muted/20 p-6 shadow-sm overflow-hidden"
+        >
+          <div className="flex flex-col h-full overflow-hidden">
+             <div className="flex items-center gap-2 mb-6 px-2 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-deep-purple/10 flex items-center justify-center">
+                   <BookOpen className="h-4 w-4 text-deep-purple" />
                 </div>
-                );
-              })}
-           </div>
-
-           {/* Learning Paths Integrated into Sidebar */}
-           {courses.length > 1 && (
-              <div className="pt-6 border-t border-muted/20">
-                 <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest mb-3">My Learning Paths</p>
-                 <div className="grid gap-2">
-                    {courses.filter(c => c.id !== selectedCourse?.id).map(c => (
-                       <Button key={c.id} variant="outline" className="w-full justify-start rounded-2xl border-muted/20 text-[10px] font-bold h-12 px-4 hover:border-primary/40 bg-white/30" onClick={() => handleCourseSelect(c)}>
-                          <Layout className="mr-2 h-4 w-4 text-primary opacity-60" />
-                          <span className="truncate">{c.title}</span>
-                       </Button>
-                    ))}
-                 </div>
-              </div>
-           )}
-        </div>
-      </div>
-
-      {/* RIGHT COLUMN: LEARNING JOURNEY MAP */}
-      <div className="flex-1 h-full">
-        {detailLoading ? (
-           <Skeleton className="w-full h-full rounded-[3rem]" />
-        ) : currentTopic ? (
-           <MissionMap 
-              nodes={missionNodes} 
-              onNodeClick={handleWatchVideo}
-              moduleTitle={currentTopic.title}
-              isEvaluationPassed={!!currentTopic?.evaluation?.evaluation_progress?.passed}
-              currentTopicId={currentTopic.id}
-           />
-        ) : (
-           <div className="w-full h-full bg-muted/5 rounded-[3rem] border-4 border-dashed border-muted/10 flex flex-col items-center justify-center text-center p-10 gap-4">
-              <div className="w-20 h-20 rounded-full bg-muted/10 flex items-center justify-center">
-                 <MapIcon className="h-10 w-10 text-muted-foreground/20" />
-              </div>
-              <div className="space-y-1">
-                 <h3 className="text-xl font-black text-deep-purple italic">Ready to learn?</h3>
-                 <p className="text-sm text-muted-foreground max-w-xs font-bold">Select a module from the sidebar to begin your journey.</p>
-              </div>
-           </div>
-        )}
-      </div>
+                <h1 className="text-[10px] font-black text-deep-purple uppercase tracking-[0.4em] opacity-80">Course Modules</h1>
+             </div>
+             
+             <div className="flex-1 overflow-y-auto px-1 py-2 custom-scrollbar space-y-4 pb-6 overflow-x-visible">
+                {(courseDetail?.course?.topics || []).map((topic, idx) => {
+                  const isActive = selectedTopicId === topic.id;
+                  const isCompleted = (topic.videos || []).every((v: any) => v.userProgress?.completed);
+  
+                  return (
+                    <div key={topic.id} className="px-1">
+                      <Card 
+                        onClick={() => setSelectedTopicId(topic.id)}
+                        data-tour={idx === 0 ? 'module-card' : undefined}
+                        className={`
+                          relative group cursor-pointer transition-all duration-300 rounded-[1.5rem] border-2
+                          ${isActive ? 'bg-white border-primary shadow-xl scale-[1.02] z-10' : 'bg-white/50 border-transparent hover:border-primary/20 hover:scale-[1.01]'}
+                        `}
+                      >
+                      <CardContent className="p-4 flex items-center gap-4">
+                        <div className={`
+                          w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shrink-0
+                          ${isCompleted ? 'bg-green-100 text-green-600 shadow-sm' : isActive ? 'bg-primary text-white shadow-lg' : 'bg-muted/50 text-muted-foreground'}
+                        `}>
+                          {isCompleted ? <CheckCircle className="h-5 w-5" /> : <Play className="h-4 w-4 ml-0.5" />}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${isActive ? 'text-primary' : 'text-muted-foreground/60'}`}>
+                             Module {idx + 1} {isActive && '• CURRENT'}
+                          </p>
+                          <h3 className={`text-xs font-black leading-tight truncate ${isActive ? 'text-deep-purple' : 'text-muted-foreground'}`}>
+                             {topic.title}
+                          </h3>
+                        </div>
+                        {isActive && <ChevronRight className="h-5 w-5 text-primary animate-pulse-slow font-black shrink-0" />}
+                      </CardContent>
+                    </Card>
+                  </div>
+                  );
+                })}
+             </div>
+  
+             {/* Learning Paths Integrated into Sidebar */}
+             {courses.length > 1 && (
+                <div className="pt-6 border-t border-muted/20 shrink-0">
+                   <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest mb-3">My Learning Paths</p>
+                   <div className="grid gap-2">
+                      {courses.filter(c => c.id !== selectedCourse?.id).map(c => (
+                         <Button key={c.id} variant="outline" className="w-full justify-start rounded-2xl border-muted/20 text-[10px] font-bold h-12 px-4 hover:border-primary/40 bg-white/30" onClick={() => handleCourseSelect(c)}>
+                            <Layout className="mr-2 h-4 w-4 text-primary opacity-60 shrink-0" />
+                            <span className="truncate">{c.title}</span>
+                         </Button>
+                      ))}
+                   </div>
+                </div>
+             )}
+          </div>
+        </ResizablePanel>
+        
+        {/* RESIZABLE HANDLE WITH GRIP ICON */}
+        <ResizableHandle withHandle className="bg-transparent hover:bg-primary/20 w-1.5 rounded-full transition-all cursor-col-resize shrink-0" />
+  
+        {/* RIGHT COLUMN: LEARNING JOURNEY MAP PANEL */}
+        <ResizablePanel defaultSize={75} className="h-full">
+          {detailLoading ? (
+             <Skeleton className="w-full h-full rounded-[3rem]" />
+          ) : currentTopic ? (
+             <MissionMap 
+                nodes={missionNodes} 
+                onNodeClick={handleWatchVideo}
+                moduleTitle={currentTopic.title}
+                isEvaluationPassed={!!currentTopic?.evaluation?.evaluation_progress?.passed}
+                currentTopicId={currentTopic.id}
+             />
+          ) : (
+             <div className="w-full h-full bg-muted/5 rounded-[3rem] border-4 border-dashed border-muted/10 flex flex-col items-center justify-center text-center p-10 gap-4">
+                <div className="w-20 h-20 rounded-full bg-muted/10 flex items-center justify-center">
+                   <MapIcon className="h-10 w-10 text-muted-foreground/20" />
+                </div>
+                <div className="space-y-1">
+                   <h3 className="text-xl font-black text-deep-purple italic">Ready to learn?</h3>
+                   <p className="text-sm text-muted-foreground max-w-xs font-bold">Select a module from the sidebar to begin your journey.</p>
+                </div>
+             </div>
+          )}
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       {/* Lesson Player - Perfectly Framed */}
       <Dialog open={isPlayerOpen} onOpenChange={setIsPlayerOpen}>
