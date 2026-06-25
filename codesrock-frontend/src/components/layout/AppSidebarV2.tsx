@@ -1,4 +1,4 @@
-import { Home, Play, BookOpen, CheckSquare, Trophy, Award, Calendar, Shield, Users, FileText, BarChart, Building2 } from "lucide-react";
+import { Home, Play, BookOpen, CheckSquare, Trophy, Award, Calendar, Shield, Users, FileText, BarChart, Building2, Settings as SettingsIcon } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import codesrockLogo from "@/assets/codesrock-logo.png";
 import { authService } from "@/services";
@@ -24,6 +24,7 @@ const teacherMenuItems = [
   { title: "Achievements", url: "/achievements", icon: Trophy },
   { title: "Certificates", url: "/certificates", icon: Award },
   { title: "Calendar", url: "/calendar", icon: Calendar },
+  { title: "Settings", url: "/profile", icon: SettingsIcon },
 ];
 
 const adminMenuItems = [
@@ -32,6 +33,7 @@ const adminMenuItems = [
   { title: "User Management", url: "/admin/users", icon: Users, roles: ['super_admin', 'school_admin'] },
   { title: "Content Management", url: "/admin/content", icon: FileText, roles: ['super_admin', 'content_admin'] },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart, roles: ['super_admin', 'school_admin', 'content_admin'] },
+  { title: "Settings", url: "/profile", icon: SettingsIcon, roles: ['super_admin', 'school_admin', 'content_admin'] },
 ];
 
 export function AppSidebar() {
@@ -48,18 +50,18 @@ export function AppSidebar() {
   const menuItems = isAdmin ? filteredAdminItems : teacherMenuItems;
 
   return (
-    <Sidebar collapsible="icon" data-version="v2-0-force-refresh-101" className="border-r border-muted/50 bg-white/50 backdrop-blur-xl">
+    <Sidebar collapsible="icon" data-version="v2-0-force-refresh-101" className="border-r border-muted/50 dark:border-white/10 bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl">
       <SidebarContent>
-        <div className={`transition-all duration-300 border-b border-muted/30 ${open ? 'p-6' : 'p-3 flex justify-center'}`}>
+        <div className={`transition-all duration-300 border-b border-muted/30 dark:border-white/10 ${open ? 'p-6' : 'p-3 flex justify-center'}`}>
           <div className="flex items-center gap-4">
             <div className={`transition-all duration-300 bg-gradient-to-br from-primary to-accent p-0.5 shadow-lg group-hover:scale-110 duration-500 ${open ? 'w-12 h-12 rounded-2xl' : 'w-10 h-10 rounded-xl'}`}>
-              <div className={`w-full h-full bg-white flex items-center justify-center overflow-hidden ${open ? 'rounded-[0.9rem]' : 'rounded-lg'}`}>
+              <div className={`w-full h-full bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden ${open ? 'rounded-[0.9rem]' : 'rounded-lg'}`}>
                 <img src={codesrockLogo} alt="CodesRock" className={`object-contain transition-all ${open ? 'w-9 h-9' : 'w-7 h-7'}`} />
               </div>
             </div>
             {open && (
               <div className="animate-fade-in">
-                <h2 className="font-heading font-black text-xl text-deep-purple leading-tight tracking-tight italic">
+                <h2 className="font-heading font-black text-xl text-deep-purple dark:text-white leading-tight tracking-tight italic">
                   {isAdmin ? 'Admin Console' : 'Teacher Hub'}
                 </h2>
               </div>
@@ -93,7 +95,7 @@ export function AppSidebar() {
                       } ${
                         isActive
                           ? "bg-primary text-white shadow-lg shadow-primary/30 font-black scale-[1.02]"
-                          : "text-deep-purple hover:bg-primary/10 hover:text-primary font-bold"
+                          : "text-deep-purple dark:text-slate-300 hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 dark:hover:text-primary-foreground font-bold"
                       }`
                     }
                   >

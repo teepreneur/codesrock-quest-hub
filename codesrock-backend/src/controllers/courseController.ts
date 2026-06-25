@@ -318,6 +318,29 @@ export const updateVideoProgress = async (req: Request, res: Response): Promise<
     // Calculate progress percentage
     const progressPercentage = totalSeconds > 0 ? Math.round((watchedSeconds / totalSeconds) * 100) : 0;
 
+    // Fetch video details once (resolves duration repair and saves queries later)
+    const { data: video, error: videoError } = await supabase
+      .from('videos')
+      .select('title, xp_reward, duration, completion_count')
+      .eq('id', videoId)
+      .single();
+
+    if (videoError || !video) {
+      res.status(404).json({ success: false, message: 'Video not found' });
+      return;
+    }
+
+    // Auto-repair duration if it's 0 or mismatched with actual duration (reported in seconds by client)
+    const actualDurationMinutes = Math.ceil(totalSeconds / 60);
+    if (actualDurationMinutes > 0 && (video.duration === 0 || video.duration !== actualDurationMinutes)) {
+      await supabase
+        .from('videos')
+        .update({ duration: actualDurationMinutes })
+        .eq('id', videoId);
+      logger.info(`Auto-repaired video duration for "${video.title}" to ${actualDurationMinutes}m`);
+      video.duration = actualDurationMinutes;
+    }
+
     // Find or create video progress (keyed by video_id now)
     const { data: existingProgress } = await supabase
       .from('video_progress')
@@ -353,21 +376,13 @@ export const updateVideoProgress = async (req: Request, res: Response): Promise<
       progress = newProgress;
 
       // Create activity for starting video
-      const { data: video } = await supabase
-        .from('videos')
-        .select('title')
-        .eq('id', videoId)
-        .single();
-
-      if (video) {
-        await supabase.from('activities').insert({
-          user_id: userId,
-          type: 'video_started',
-          description: `Started watching: ${video.title}`,
-          xp_earned: 0,
-          metadata: { videoId, courseId, videoTitle: video.title },
-        });
-      }
+      await supabase.from('activities').insert({
+        user_id: userId,
+        type: 'video_started',
+        description: `Started watching: ${video.title}`,
+        xp_earned: 0,
+        metadata: { videoId, courseId, videoTitle: video.title },
+      });
     }
 
     // Update progress
@@ -402,35 +417,27 @@ export const updateVideoProgress = async (req: Request, res: Response): Promise<
 
     // Award XP if just completed and not already awarded
     if (isNowCompleted && !progress.xp_awarded) {
-      const { data: video } = await supabase
+      // Award XP via RPC
+      await supabase.rpc('award_xp', {
+        p_user_id: userId,
+        p_xp_amount: video.xp_reward,
+        p_activity_type: 'video_completed',
+        p_description: `Completed video: ${video.title}`,
+        p_metadata: { videoId, courseId, videoTitle: video.title },
+      });
+
+      // Mark XP as awarded
+      await supabase
+        .from('video_progress')
+        .update({ xp_awarded: true })
+        .eq('user_id', userId)
+        .eq('video_id', videoId);
+
+      // Increment video completion count
+      await supabase
         .from('videos')
-        .select('title, xp_reward')
-        .eq('id', videoId)
-        .single();
-
-      if (video) {
-        // Award XP via RPC
-        await supabase.rpc('award_xp', {
-          p_user_id: userId,
-          p_xp_amount: video.xp_reward,
-          p_activity_type: 'video_completed',
-          p_description: `Completed video: ${video.title}`,
-          p_metadata: { videoId, courseId, videoTitle: video.title },
-        });
-
-        // Mark XP as awarded
-        await supabase
-          .from('video_progress')
-          .update({ xp_awarded: true })
-          .eq('user_id', userId)
-          .eq('video_id', videoId);
-
-        // Increment video completion count
-        await supabase
-          .from('videos')
-          .update({ completion_count: (video as any).completion_count + 1 || 1 })
-          .eq('id', videoId);
-      }
+        .update({ completion_count: (video.completion_count || 0) + 1 })
+        .eq('id', videoId);
     }
 
     res.status(200).json({

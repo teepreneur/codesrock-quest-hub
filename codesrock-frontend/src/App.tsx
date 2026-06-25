@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AdminRoute } from "./components/AdminRoute";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 // Lazy Load Pages
 const Login = lazy(() => import("./pages/Login"));
@@ -31,6 +32,7 @@ const SchoolPerformance = lazy(() => import("./pages/admin/SchoolPerformance"));
 const TeacherPerformance = lazy(() => import("./pages/admin/TeacherPerformance"));
 const StudentReport = lazy(() => import("./pages/StudentReport"));
 const SearchResults = lazy(() => import("./pages/SearchResults"));
+const Settings = lazy(() => import("./pages/Settings"));
 
 // Loading fallback
 const PageLoader = () => (
@@ -58,11 +60,12 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
+    <ThemeProvider defaultTheme="system" enableSystem>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
@@ -82,6 +85,8 @@ const App = () => (
               <Route path="/classes/:id" element={<ClassDetails />} />
               <Route path="/classes/:classId/students/:studentId/report" element={<StudentReport />} />
               <Route path="/search" element={<SearchResults />} />
+              <Route path="/profile" element={<Settings />} />
+              <Route path="/settings" element={<Settings />} />
               
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
@@ -97,8 +102,9 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-      </BrowserRouter>
-    </TooltipProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

@@ -126,7 +126,17 @@ class ClassService {
   async getProgress(classId: string): Promise<{
     students: { id: string, name: string }[],
     topics: { id: string, title: string, order_index: number }[],
-    progress: { student_id: string, topic_id: string }[]
+    progress: { 
+      student_id: string, 
+      topic_id: string,
+      mastery_level?: 'struggling' | 'developing' | 'proficient' | 'advanced',
+      engagement_score?: number,
+      assessment_score?: number,
+      max_assessment_score?: number,
+      activity_type?: 'unplugged_game' | 'card_sorting' | 'robot_navigation' | 'activity_book',
+      session_date?: string,
+      notes?: string
+    }[]
   }> {
     return apiService.get<any>(`/classes/${classId}/progress`);
   }
@@ -134,7 +144,18 @@ class ClassService {
   /**
    * Update student topic mastery
    */
-  async updateProgress(classId: string, data: { studentId: string, topicId: string, completed: boolean }): Promise<any> {
+  async updateProgress(classId: string, data: { 
+    studentId: string; 
+    topicId: string; 
+    completed: boolean;
+    masteryLevel?: 'struggling' | 'developing' | 'proficient' | 'advanced';
+    engagementScore?: number;
+    assessmentScore?: number;
+    maxAssessmentScore?: number;
+    activityType?: 'unplugged_game' | 'card_sorting' | 'robot_navigation' | 'activity_book';
+    sessionDate?: string;
+    notes?: string;
+  }): Promise<any> {
     return apiService.post(`/classes/${classId}/progress`, data);
   }
 

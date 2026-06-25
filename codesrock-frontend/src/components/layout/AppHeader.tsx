@@ -33,7 +33,7 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-muted/30 bg-white/60 backdrop-blur-xl px-6 h-20 flex items-center justify-between">
+    <header className="sticky top-0 z-40 w-full border-b border-muted/30 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl px-6 h-20 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <SidebarTrigger data-tour="sidebar-trigger" />
         <form onSubmit={handleSearch} className="relative hidden md:block group">
@@ -43,20 +43,20 @@ export function AppHeader() {
             placeholder="Search resources..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-4 py-2 bg-muted/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all w-64 lg:w-80"
+            className="pl-10 pr-4 py-2 bg-muted/50 dark:bg-slate-800/40 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800 transition-all w-64 lg:w-80"
           />
         </form>
       </div>
 
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative rounded-xl hover:bg-primary/10 hover:text-primary group">
+        <Button variant="ghost" size="icon" className="relative rounded-xl hover:bg-primary/10 hover:text-primary group dark:hover:bg-primary/25">
           <Bell className="h-5 w-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full border-2 border-white animate-pulse" />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-12 w-12 rounded-xl border border-muted/30 p-0 overflow-hidden group">
+            <Button variant="ghost" className="relative h-12 w-12 rounded-xl border border-muted/30 dark:border-white/10 p-0 overflow-hidden group">
               <Avatar className="h-full w-full rounded-xl group-hover:scale-105 transition-transform">
                 <AvatarImage src="" alt={user?.firstName} />
                 <AvatarFallback className="bg-primary/10 text-primary font-black">
@@ -65,14 +65,14 @@ export function AppHeader() {
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-64 rounded-2xl p-2 shadow-2xl border-muted/30" align="end" forceMount>
+          <DropdownMenuContent className="w-64 rounded-2xl p-2 shadow-2xl border-muted/30 dark:border-white/10 bg-white dark:bg-slate-900" align="end" forceMount>
             <DropdownMenuLabel className="font-normal p-3">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-black text-deep-purple leading-none">{user?.fullName}</p>
+                <p className="text-sm font-black text-deep-purple dark:text-white leading-none">{user?.fullName}</p>
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{user?.role?.replace('_', ' ')}</p>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-muted/50" />
+            <DropdownMenuSeparator className="bg-muted/50 dark:bg-white/5" />
             <DropdownMenuItem onClick={() => navigate("/profile")} className="rounded-xl p-3 font-bold gap-3 focus:bg-primary/10 focus:text-primary cursor-pointer">
               <User className="h-4 w-4" />
               <span>Profile Settings</span>

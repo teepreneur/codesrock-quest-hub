@@ -24,7 +24,7 @@ export const getTeacherClasses = async (req: Request, res: Response): Promise<vo
 
     const { data: classes, error } = await supabase
       .from('classes')
-      .select('*, courses(title, thumbnail), schools(name)')
+      .select('*, courses(title, thumbnail), schools(name), class_students(student_id)')
       .eq('teacher_id', teacherId as string)
       .order('created_at', { ascending: false });
 
@@ -40,15 +40,12 @@ export const getTeacherClasses = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    // Get student counts for each class
-    const classesWithCounts = await Promise.all((classes || []).map(async (cls) => {
-      const { count } = await supabase
-        .from('class_students')
-        .select('*', { count: 'exact', head: true })
-        .eq('class_id', cls.id);
-      
-      return { ...cls, studentCount: count || 0 };
-    }));
+    // Compute student counts in memory from inline relations (resolves N+1 query)
+    const classesWithCounts = (classes || []).map((cls) => {
+      const studentCount = (cls.class_students as any)?.length || 0;
+      const { class_students, ...classData } = cls;
+      return { ...classData, studentCount };
+    });
 
     res.status(200).json({
       success: true,
@@ -630,7 +627,18 @@ export const getStudentProgress = async (req: Request, res: Response): Promise<v
 export const updateStudentProgress = async (req: Request, res: Response): Promise<void> => {
   try {
     const { classId } = req.params;
-    const { studentId, topicId, completed } = req.body;
+    const { 
+      studentId, 
+      topicId, 
+      completed,
+      masteryLevel,
+      engagementScore,
+      assessmentScore,
+      maxAssessmentScore,
+      activityType,
+      sessionDate,
+      notes
+    } = req.body;
 
     // Security Check: IDOR Protection
     const { data: cls } = await supabase.from('classes').select('teacher_id').eq('id', classId).single();
@@ -640,14 +648,24 @@ export const updateStudentProgress = async (req: Request, res: Response): Promis
     }
 
     if (completed) {
+      const upsertData: Record<string, any> = {
+        student_id: studentId,
+        topic_id: topicId,
+        teacher_id: req.user?.userId,
+        completed_at: new Date().toISOString()
+      };
+
+      if (masteryLevel !== undefined) upsertData.mastery_level = masteryLevel;
+      if (engagementScore !== undefined) upsertData.engagement_score = engagementScore;
+      if (assessmentScore !== undefined) upsertData.assessment_score = assessmentScore;
+      if (maxAssessmentScore !== undefined) upsertData.max_assessment_score = maxAssessmentScore;
+      if (activityType !== undefined) upsertData.activity_type = activityType;
+      if (sessionDate !== undefined) upsertData.session_date = sessionDate;
+      if (notes !== undefined) upsertData.notes = notes;
+
       const { error } = await supabase
         .from('student_topic_progress')
-        .upsert({
-          student_id: studentId,
-          topic_id: topicId,
-          teacher_id: req.user?.userId,
-          completed_at: new Date().toISOString()
-        }, { onConflict: 'student_id,topic_id' });
+        .upsert(upsertData, { onConflict: 'student_id,topic_id' });
       
       if (error) throw error;
     } else {
