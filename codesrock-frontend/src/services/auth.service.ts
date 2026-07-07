@@ -5,6 +5,7 @@
 
 import { apiService } from './api.service';
 import { API_CONFIG } from '../config/api.config';
+import { identifyUser, resetIdentity } from '../lib/analytics';
 
 export interface User {
   id: string;
@@ -76,6 +77,9 @@ class AuthService {
 
     console.log('Login successful - stored user:', response.user);
 
+    // Tie analytics activity to this account
+    identifyUser(response.user);
+
     return response;
   }
 
@@ -101,6 +105,9 @@ class AuthService {
 
     console.log('School login successful - stored user:', response.user);
 
+    // Tie analytics activity to this account
+    identifyUser(response.user);
+
     return response;
   }
 
@@ -118,6 +125,9 @@ class AuthService {
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
     localStorage.setItem('user', JSON.stringify(response.user));
+
+    // Tie analytics activity to this account
+    identifyUser(response.user);
 
     return response;
   }
@@ -139,6 +149,9 @@ class AuthService {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+
+      // Start the next session as a fresh anonymous analytics user
+      resetIdentity();
     }
   }
 
