@@ -163,6 +163,8 @@ To help you fully master algorithms before teaching your students, here are **6 
 ### Puzzle 1: The Spiral Maze (Concept: Deep Sequencing & Navigation)
 **Guided Walkthrough**
 
+![Puzzle 1: The Spiral Maze](images/puzzle1_spiral.png)
+
 Guide Bolt from the outer edge of a spiral wall grid to the energy cell at the center.
 
 **Grid Layout (5x5):**
@@ -203,6 +205,8 @@ Guide Bolt from the outer edge of a spiral wall grid to the energy cell at the c
 ### Puzzle 2: The Checkpoint Collector (Concept: Multi-Stage Goals)
 **Guided Walkthrough**
 
+![Puzzle 2: The Checkpoint Collector](images/puzzle2_checkpoint.png)
+
 Pixie needs to unlock the security barrier. She must collect **Key A** first, use it to open **Lock A**, then collect **Key B**, and take it to **Lock B**.
 
 **Grid Layout (3x3):**
@@ -240,6 +244,8 @@ Pixie needs to unlock the security barrier. She must collect **Key A** first, us
 
 ### Puzzle 3: Shortest Path Optimization (Concept: Efficient Algorithms)
 **Guided Walkthrough**
+
+![Puzzle 3: Shortest Path Optimization](images/puzzle3_shortest_path.png)
 
 Rocky needs to reach his spaceship at Col 4, Row 4. There are two paths. Compare both and find the shortest algorithm (the one with the fewest commands).
 
@@ -283,6 +289,8 @@ Rocky moves right along Row 1, then up Col 4. (Note: Col 3, Row 1 has a barrier 
 
 ### Puzzle 4: The Loop Detector (Concept: Repeating Patterns)
 **Challenge:** Rocky needs to step on 4 squares in a straight line, light each one up, and turn around. Write the algorithm.
+
+![Puzzle 4: The Loop Detector](images/puzzle4_loop.png)
 
 **Clues & Tips:**
 *   💡 **Clue 1:** If you notice yourself writing `[🚶‍♂️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️]`, that is a repeating sequence! Can you instruct your robot to "Repeat 4 times: Forward"?
