@@ -156,166 +156,199 @@ Here is a printable worksheet you can hand out to your students to practice plan
 
 ## 🏆 Page 7: Teacher Algorithmic Mastery Puzzles
 
-To help you fully master algorithms before teaching your students, here are **6 advanced logic puzzles**. Puzzles 1, 2, and 3 have detailed, guided walkthroughs to teach you the concepts. Puzzles 4, 5, and 6 leave clues and tips to test your problem-solving skills!
+To help you fully master algorithms before teaching your students, here are **6 progressive logic puzzles**. All puzzles feature **Rocky** navigating a grid mat to reach his target (his spaceship `🚀` or friend Kojo `🐶`). 
+
+These puzzles build on each other in difficulty and focus strictly on **Sequencing** and **Debugging** (no loops, in alignment with the Codesrock 1 curriculum). Puzzles 1, 2, and 3 have detailed, guided walkthroughs. Puzzles 4, 5, and 6 leave clues and tips for you to solve!
 
 ---
 
-### Puzzle 1: The Spiral Maze (Concept: Deep Sequencing & Navigation)
+### Puzzle 1: Basic Path Planning (Concept: Simple Sequencing)
 **Guided Walkthrough**
 
-![Puzzle 1: The Spiral Maze](images/puzzle1_spiral.png)
-
-Guide Bolt from the outer edge of a spiral wall grid to the energy cell at the center.
-
-**Grid Layout (5x5):**
-```
-+---+---+---+---+---+
-| B | █ | █ | █ | █ | (Row 5 - B is Bolt, █ is a Wall)
-+---+---+---+---+---+
-|   | █ | ⚡ |   | █ | (Row 4 - ⚡ is the Energy Cell)
-+---+---+---+---+---+
-|   | █ | █ |   | █ | (Row 3)
-+---+---+---+---+---+
-|   |   |   |   | █ | (Row 2)
-+---+---+---+---+---+
-| █ | █ | █ | █ | █ | (Row 1)
-+---+---+---+---+---+
- Col1 Col2 Col3 Col4 Col5
-```
-*   **Start:** Bolt `B` starts at Col 1, Row 5 (facing East/Right).
-*   **Walls:** Indicated by `█`.
-*   **Goal:** Reach the energy cell `⚡` at Col 3, Row 4.
-
-**How to Solve (Step-by-Step Guide):**
-1.  **Decompose the path:** Bolt cannot move through walls. He must travel down Col 1, turn right at Row 2, move east to Col 4, move up Col 4, turn left at Row 4, and step onto Col 3.
-2.  **Plan the steps:**
-    *   Currently facing East (Col 2 is blocked by a wall). So Bolt must turn right first.
-    *   Command 1: ↪️ **Turn Right** (Bolt now faces South/Down).
-    *   Commands 2–4: 🚶‍♂️ **Forward, Forward, Forward** (Bolt moves from Row 5 to Row 4, then Row 3, then Row 2. Position: Col 1, Row 2).
-    *   Command 5: ↩️ **Turn Left** (Bolt now faces East/Right).
-    *   Commands 6–8: 🚶‍♂️ **Forward, Forward, Forward** (Bolt moves from Col 1 to Col 2, then Col 3, then Col 4. Position: Col 4, Row 2).
-    *   Command 9: ↩️ **Turn Left** (Bolt now faces North/Up).
-    *   Commands 10–11: 🚶‍♂️ **Forward, Forward** (Bolt moves from Row 2 to Row 3, then Row 4. Position: Col 4, Row 4).
-    *   Command 12: ↩️ **Turn Left** (Bolt now faces West/Left).
-    *   Command 13: 🚶‍♂️ **Forward** (Bolt moves to Col 3, Row 4 — reaches `⚡`!).
-3.  **The Final Algorithm:** `[↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↩️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↩️, 🚶‍♂️, 🚶‍♂️, ↩️, 🚶‍♂️]` (13 commands total).
-
----
-
-### Puzzle 2: The Checkpoint Collector (Concept: Multi-Stage Goals)
-**Guided Walkthrough**
-
-![Puzzle 2: The Checkpoint Collector](images/puzzle2_checkpoint.png)
-
-Pixie needs to unlock the security barrier. She must collect **Key A** first, use it to open **Lock A**, then collect **Key B**, and take it to **Lock B**.
-
-**Grid Layout (3x3):**
-```
-+----+----+----+
-| 🔑A| 🔒A| 🔑B| (Row 3 - 🔑 is Key, 🔒 is Lock)
-+----+----+----+
-| P  | 🚧 | 🔒B| (Row 2 - P is Pixie, 🚧 is a Wall)
-+----+----+----+
-|    |    |    | (Row 1)
-+----+----+----+
- Col 1 Col 2 Col 3
-```
-*   **Start:** Pixie `P` starts at Col 1, Row 2 (facing North/Up).
-*   **Goal Sequence:** Get `🔑A` (Col 1, Row 3) ➡️ Open `🔒A` (Col 2, Row 3) ➡️ Get `🔑B` (Col 3, Row 3) ➡️ Open `🔒B` (Col 3, Row 2).
-
-**How to Solve (Step-by-Step Guide):**
-1.  **Stage 1: Get Key A.**
-    *   Pixie is at Col 1, Row 2, facing North.
-    *   Command 1: 🚶‍♂️ **Forward** (Reaches Key A at Col 1, Row 3).
-2.  **Stage 2: Open Lock A.**
-    *   Pixie is at Col 1, Row 3, facing North.
-    *   Command 2: ↪️ **Turn Right** (Faces East).
-    *   Command 3: 🚶‍♂️ **Forward** (Unlocks Lock A at Col 2, Row 3).
-3.  **Stage 3: Get Key B.**
-    *   Pixie is at Col 2, Row 3, facing East.
-    *   Command 4: 🚶‍♂️ **Forward** (Reaches Key B at Col 3, Row 3).
-4.  **Stage 4: Open Lock B.**
-    *   Pixie is at Col 3, Row 3, facing East.
-    *   Command 5: ↪️ **Turn Right** (Faces South/Down).
-    *   Command 6: 🚶‍♂️ **Forward** (Unlocks Lock B at Col 3, Row 2 — Success!).
-5.  **The Final Algorithm:** `[🚶‍♂️, ↪️, 🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️]` (6 commands total).
-
----
-
-### Puzzle 3: Shortest Path Optimization (Concept: Efficient Algorithms)
-**Guided Walkthrough**
-
-![Puzzle 3: Shortest Path Optimization](images/puzzle3_shortest_path.png)
-
-Rocky needs to reach his spaceship at Col 4, Row 4. There are two paths. Compare both and find the shortest algorithm (the one with the fewest commands).
+Help Rocky reach his spaceship on an open grid with no obstacles.
 
 **Grid Layout (4x4):**
 ```
 +---+---+---+---+
-|   | 🚧|   | 🚀| (Row 4 - 🚀 is Spaceship)
+|   |   |   |   | (Row 4)
 +---+---+---+---+
-|   | 🚧|   | 🚧| (Row 3)
+|   |   |   |   | (Row 3)
 +---+---+---+---+
 |   |   |   |   | (Row 2)
 +---+---+---+---+
-| R |   | 🚧|   | (Row 1 - R is Rocky)
+| R |   |   | 🚀| (Row 1 - R is Rocky, 🚀 is the Spaceship)
 +---+---+---+---+
  Col1 Col2 Col3 Col4
 ```
 *   **Start:** Rocky `R` starts at Col 1, Row 1 (facing North/Up).
+*   **Goal:** Reach the spaceship `🚀` at Col 4, Row 1.
 
-**Option A (The Outer Left Path):**
-Rocky moves up Col 1, then right along Row 4.
-1.  Commands 1–3: 🚶‍♂️ **Forward, Forward, Forward** (Reaches Col 1, Row 4).
-2.  Command 4: ↪️ **Turn Right** (Faces East).
-3.  Commands 5–7: 🚶‍♂️ **Forward, Forward, Forward** (Reaches Spaceship at Col 4, Row 4).
-*   *Algorithm A length:* 7 commands.
-
-**Option B (The Bottom-Right Zig-Zag Path):**
-Rocky moves right along Row 1, then up Col 4. (Note: Col 3, Row 1 has a barrier `🚧`, and Col 4, Row 3 has a barrier `🚧`).
-1.  Rocky is facing North. To go right:
-    *   Command 1: ↪️ **Turn Right** (Faces East).
-    *   Command 2: 🚶‍♂️ **Forward** (Moves to Col 2, Row 1).
-    *   Command 3: ↩️ **Turn Left** (Faces North).
-    *   Command 4: 🚶‍♂️ **Forward** (Moves to Col 2, Row 2).
-    *   Command 5: ↪️ **Turn Right** (Faces East).
-    *   Commands 6-7: 🚶‍♂️ **Forward, Forward** (Moves to Col 4, Row 2).
-    *   Command 8: ↩️ **Turn Left** (Faces North).
-    *   Command 9: 🚶‍♂️ **Forward** (Moves to Col 4, Row 2 - wait, Row 2 is blocked by 🚧 on Row 3? No, Col 4, Row 3 is blocked! So Rocky has to go around it!).
-*   *Observation:* Option B requires too many turns and maneuvers to bypass obstacles, making it much longer than Option A.
-*   **Conclusion:** Option A is the optimal algorithm with only **7 commands**.
+**How to Solve (Step-by-Step Guide):**
+1.  **Check Rocky's direction:** Rocky is facing North, but the target is to his right (East).
+2.  **Turn toward the target:**
+    *   Command 1: ↪️ **Turn Right** (Rocky now faces East/Right).
+3.  **Move to the goal:**
+    *   Commands 2–4: 🚶‍♂️ **Forward, Forward, Forward** (Rocky moves from Col 1 to Col 2, then Col 3, then Col 4).
+4.  **The Final Algorithm:** `[↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️]` (4 commands total).
 
 ---
 
-### Puzzle 4: The Loop Detector (Concept: Repeating Patterns)
-**Challenge:** Rocky needs to step on 4 squares in a straight line, light each one up, and turn around. Write the algorithm.
+### Puzzle 2: Bypassing Obstacles (Concept: Multi-Turn Sequencing)
+**Guided Walkthrough**
 
-![Puzzle 4: The Loop Detector](images/puzzle4_loop.png)
+Help Rocky reach his spaceship by navigating around a stone wall obstacle.
 
-**Clues & Tips:**
-*   💡 **Clue 1:** If you notice yourself writing `[🚶‍♂️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️]`, that is a repeating sequence! Can you instruct your robot to "Repeat 4 times: Forward"?
-*   💡 **Clue 2:** Don't forget that turning around means doing two turn commands in a row (e.g., `[↪️, ↪️]`).
+**Grid Layout (4x4):**
+```
++---+---+---+---+
+|   |   |   | 🚀| (Row 4 - 🚀 is the Spaceship)
++---+---+---+---+
+|   | █ |   |   | (Row 3 - █ is a Stone Wall)
++---+---+---+---+
+|   | █ |   |   | (Row 2)
++---+---+---+---+
+| R |   |   |   | (Row 1 - R is Rocky)
++---+---+---+---+
+ Col1 Col2 Col3 Col4
+```
+*   **Start:** Rocky `R` starts at Col 1, Row 1 (facing North/Up).
+*   **Goal:** Reach the spaceship `🚀` at Col 4, Row 4.
+
+**How to Solve (Step-by-Step Guide):**
+1.  **Identify the barrier:** The stone wall blocks Col 2, Row 2 and Row 3. Rocky cannot go straight right and then up. He must go up Col 1 first, then turn right.
+2.  **Move past the obstacle row:**
+    *   Commands 1–3: 🚶‍♂️ **Forward, Forward, Forward** (Rocky moves up Col 1 to Row 4. Position: Col 1, Row 4).
+3.  **Turn toward the spaceship:**
+    *   Command 4: ↪️ **Turn Right** (Rocky now faces East).
+4.  **Move to the goal:**
+    *   Commands 5–7: 🚶‍♂️ **Forward, Forward, Forward** (Rocky moves along Row 4 to Col 4 — reaches `🚀`!).
+5.  **The Final Algorithm:** `[🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️]` (7 commands total).
 
 ---
 
-### Puzzle 5: The Debugger's Challenge (Concept: Spotting Errors)
-**Challenge:** Bolt was given this algorithm to reach the target at Col 3, Row 3. However, he hit a wall at step 4! Find the error and correct the code.
+### Puzzle 3: Checkpoint Sequencing (Concept: Multi-Stage Navigation)
+**Guided Walkthrough**
 
-**Algorithm with Bug:**
-`[🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️, 🚶‍♂️, ↩️, 🚶‍♂️]`
+Rocky needs to collect **Key A** to open **Gate A** before he can board his spaceship.
 
-**Clues & Tips:**
-*   💡 **Clue 1:** Draw a grid on paper. Place a toy at Col 1, Row 1 facing North.
-*   💡 **Clue 2:** Execute each step in order. If step 4 (the second `Forward` after turning right) hits a wall, it means the turn was made too early or Bolt moved too many steps. Adjust step 2 or 3!
+**Grid Layout (4x4):**
+```
++----+----+----+----+
+| 🔑A| 🚧A|    |    | (Row 4 - 🔑 is Key, 🚧 is Gate)
++----+----+----+----+
+|    |    |    |    | (Row 3)
++----+----+----+----+
+|    |    |    | 🚀 | (Row 2 - 🚀 is Spaceship)
++----+----+----+----+
+| R  |    |    |    | (Row 1 - R is Rocky)
++----+----+----+----+
+ Col 1 Col 2 Col 3 Col 4
+```
+*   **Start:** Rocky `R` starts at Col 1, Row 1 (facing North/Up).
+*   **Goal Sequence:** Get `🔑A` (Col 1, Row 4) ➡️ Open `🚧A` (Col 2, Row 4) ➡️ Reach Spaceship `🚀` (Col 4, Row 2).
+
+**How to Solve (Step-by-Step Guide):**
+1.  **Stage 1: Collect Key A.**
+    *   Rocky goes straight up Col 1.
+    *   Commands 1–3: 🚶‍♂️ **Forward, Forward, Forward** (Reaches Key A at Col 1, Row 4).
+2.  **Stage 2: Open Gate A.**
+    *   Rocky turns right and moves forward onto the gate.
+    *   Command 4: ↪️ **Turn Right** (Faces East).
+    *   Command 5: 🚶‍♂️ **Forward** (Unlocks Gate A at Col 2, Row 4).
+3.  **Stage 3: Reach the Spaceship.**
+    *   Rocky is at Col 2, Row 4, facing East. He needs to reach Col 4, Row 2.
+    *   Commands 6–7: 🚶‍♂️ **Forward, Forward** (Moves to Col 4, Row 4).
+    *   Command 8: ↪️ **Turn Right** (Faces South/Down).
+    *   Commands 9–10: 🚶‍♂️ **Forward, Forward** (Moves down Col 4 to Row 2 — Reaches `🚀`!).
+4.  **The Final Algorithm:** `[🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️, 🚶‍♂️]` (10 commands total).
 
 ---
 
-### Puzzle 6: The Diagonal Zig-Zag (Concept: Complex Routing)
-**Challenge:** Rocky is at the bottom-left corner of a 4x4 grid mat and wants to reach the top-right corner. There are no diagonal movements allowed. How can you write a "zig-zag" algorithm to get there?
+### Puzzle 4: Hit the Wall (Concept: Basic Debugging)
+**Challenge:** Rocky was programmed to reach the spaceship at Col 4, Row 3. However, his code has a bug and makes him crash into a stone wall at Col 2, Row 3! Find the bug and write the correct algorithm.
+
+**Grid Layout (4x4):**
+```
++---+---+---+---+
+|   |   |   |   | (Row 4)
++---+---+---+---+
+|   | █ |   | 🚀| (Row 3 - █ is a Wall, 🚀 is spaceship)
++---+---+---+---+
+|   |   |   |   | (Row 2)
++---+---+---+---+
+| R |   |   |   | (Row 1 - R is Rocky)
++---+---+---+---+
+ Col1 Col2 Col3 Col4
+```
+*   **Start:** Rocky starts at Col 1, Row 1 (facing North).
+*   **Buggy Algorithm:** `[🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️, 🚶‍♂️]`
 
 **Clues & Tips:**
-*   💡 **Clue 1:** Think of it like climbing a staircase: one step Up, one step Right, one step Up, one step Right.
-*   💡 **Clue 2:** Each time you change direction, you need to turn the robot. Track whether you are facing North or East at the end of each step.
+*   💡 **Clue 1:** Step-by-step trace: (1) Forward to Row 2. (2) Forward to Row 3. (3) Turn Right. (4) Forward to Col 2, Row 3... *Crash!* Col 2, Row 3 has a wall!
+*   💡 **Clue 2:** How can you change step 2 so Rocky turns right *before* he reaches Row 3? 
+
+---
+
+### Puzzle 5: The Missed Checkpoint (Concept: Checkpoint Debugging)
+**Challenge:** Rocky needs to collect Key A at Col 2, Row 2 before reaching the spaceship at Col 4, Row 2. The programmer wrote the algorithm below, but Rocky missed the key completely and arrived at the spaceship locked out! Find the bug and fix it.
+
+**Grid Layout (4x4):**
+```
++----+----+----+----+
+|    |    |    |    | (Row 4)
++----+----+----+----+
+|    |    |    |    | (Row 3)
++----+----+----+----+
+|    | 🔑A|    | 🚀 | (Row 2 - 🔑 is Key, 🚀 is spaceship)
++----+----+----+----+
+| R  |    |    |    | (Row 1 - R is Rocky)
++----+----+----+----+
+ Col 1 Col 2 Col 3 Col 4
+```
+*   **Start:** Rocky starts at Col 1, Row 1 (facing North).
+*   **Buggy Algorithm:** `[↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↩️, 🚶‍♂️]`
+
+**Clues & Tips:**
+*   💡 **Clue 1:** Trace the buggy algorithm. Rocky starts at Col 1, Row 1. He turns right, moves forward 3 times, ending up at Col 4, Row 1. Then he turns left and moves forward to Col 4, Row 2.
+*   💡 **Clue 2:** Notice that Rocky never stepped onto Col 2, Row 2. He bypassed it entirely along Row 1. What step should be changed to make him go up to Row 2 first?
+
+---
+
+### Puzzle 6: Path Optimization (Concept: Debugging & Efficiency)
+**Challenge:** Rocky needs to reach Kojo `🐶` at Col 4, Row 4. There is a wall blocking Row 2. The program below gets Rocky to Kojo, but it is extremely long, repetitive, and has unnecessary turns. Debug and rewrite it to make it the most efficient path.
+
+**Grid Layout (4x4):**
+```
++---+---+---+---+
+|   |   |   | 🐶| (Row 4 - 🐶 is Kojo)
++---+---+---+---+
+|   |   |   |   | (Row 3)
++---+---+---+---+
+| █ | █ | █ |   | (Row 2 - █ is a Wall)
++---+---+---+---+
+| R |   |   |   | (Row 1 - R is Rocky)
++---+---+---+---+
+ Col1 Col2 Col3 Col4
+```
+*   **Start:** Rocky starts at Col 1, Row 1 (facing North).
+*   **Inefficient Algorithm:** `[↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↩️, 🚶‍♂️, ↩️, 🚶‍♂️, ↪️, 🚶‍♂️, ↪️, 🚶‍♂️, ↩️, 🚶‍♂️, 🚶‍♂️]` (15 steps)
+
+**Clues & Tips:**
+*   💡 **Clue 1:** Look at the grid. Since Row 2 is blocked on Cols 1, 2, and 3, Rocky must travel all the way to Col 4 on Row 1 before he can go up.
+*   💡 **Clue 2:** Once Rocky is at Col 4, Row 1, can he just go straight up to Row 4 in a single line without any zig-zag turns? Write down that sequence!
+
+---
+
+## 🌟 Rocky's Golden Rules of Coding
+
+Teach these rules to your students to foster a growth mindset:
+
+1.  **Errors are Awesome!** 🐛
+    *   In coding, making a mistake just means we found a "bug." We don't get sad; we celebrate because finding bugs makes us better problem solvers!
+2.  **Order Matters!** 📋
+    *   You can't put your shoes on before your socks. In algorithms, the order of steps is super important!
+3.  **Break it Down!** 🧩
+    *   If a goal is too far away, break it down into smaller steps. One step forward, one turn at a time!
 
 ---
 
