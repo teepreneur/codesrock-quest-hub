@@ -163,14 +163,21 @@ export default function SchoolManagement() {
     if (!schoolToDelete) return;
 
     try {
-      await adminService.deactivateSchool(schoolToDelete.id);
-      toast.success("School deactivated successfully");
+      if (schoolToDelete.isActive) {
+        // Deactivate active schools
+        await adminService.deactivateSchool(schoolToDelete.id);
+        toast.success("School deactivated successfully");
+      } else {
+        // Permanently delete inactive schools
+        await adminService.permanentDeleteSchool(schoolToDelete.id);
+        toast.success("School permanently deleted");
+      }
       setDeleteDialogOpen(false);
       setSchoolToDelete(null);
       loadSchools();
     } catch (err: any) {
       console.error("Error deleting school:", err);
-      toast.error(err.message || "Failed to deactivate school");
+      toast.error(err.message || "Failed to delete school");
     }
   };
 
@@ -417,6 +424,7 @@ export default function SchoolManagement() {
                               size="sm"
                               onClick={() => handleDeleteSchool(school)}
                               className="text-destructive hover:text-destructive"
+                              title={school.isActive ? "Deactivate School" : "Permanently Delete"}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -600,10 +608,18 @@ export default function SchoolManagement() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {schoolToDelete?.isActive ? "Deactivate School?" : "Permanently Delete School?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will deactivate <span className="font-semibold">{schoolToDelete?.name}</span> and
-              all teachers associated with this school will be unable to log in.
+              {schoolToDelete?.isActive ? (
+                <>This will deactivate <span className="font-semibold">{schoolToDelete?.name}</span> and
+                all teachers associated with this school will be unable to log in.
+                You can permanently delete it afterwards.</>
+              ) : (
+                <>This will <span className="font-semibold text-destructive">permanently delete</span> <span className="font-semibold">{schoolToDelete?.name}</span> and
+                unlink all associated users. This action cannot be undone.</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -612,7 +628,7 @@ export default function SchoolManagement() {
               onClick={confirmDelete}
               className="bg-destructive hover:bg-destructive/90"
             >
-              Deactivate School
+              {schoolToDelete?.isActive ? "Deactivate School" : "Delete Permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

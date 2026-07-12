@@ -6,6 +6,7 @@ import {
   getSchoolById,
   updateSchool,
   deactivateSchool,
+  permanentDeleteSchool,
   getSchoolByCode,
 } from '../../controllers/admin/schoolsController';
 import { protect } from '../../middleware/auth';
@@ -141,5 +142,8 @@ router.put('/:id', validate(updateSchoolValidation), updateSchool);
 
 // Deactivate school (super_admin only)
 router.delete('/:id', validate(schoolIdValidation), deactivateSchool);
+
+// Permanently delete school (super_admin only - must be deactivated first)
+router.delete('/:id/permanent', validate(schoolIdValidation), permanentDeleteSchool);
 
 export default router;

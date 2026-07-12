@@ -67,21 +67,32 @@ export const getOverview = async (
     const evaluationSuccessRate = totalAttempts > 0 ? (passedCount / totalAttempts) * 100 : 0;
 
     // Get top 3 schools for the dashboard
+    // Only fetch active schools for the dashboard
     const { data: schoolsForOverview } = await supabase
       .from('schools')
       .select('id, name')
+      .eq('is_active', true)
       .limit(10);
     
     const schoolSuccessMetrics = await Promise.all(
       (schoolsForOverview || []).map(async (school) => {
+        // Count active students
         const { data: studentProfiles } = await supabase
           .from('profiles')
           .select('id')
           .eq('school_id', school.id)
           .eq('role', 'student');
         
+        // Count active teachers
+        const { count: teacherCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('school_id', school.id)
+          .eq('role', 'teacher');
+        
         const studentIds = (studentProfiles || []).map(p => p.id);
         let avgProgress = 0;
+        let totalInteractions = 0;
         
         if (studentIds.length > 0) {
           const { count: completedCount } = await supabase
@@ -98,19 +109,31 @@ export const getOverview = async (
           avgProgress = totalProgressCount && totalProgressCount > 0 
             ? Math.round(((completedCount || 0) / totalProgressCount) * 100) 
             : 0;
+          
+          totalInteractions = totalProgressCount || 0;
         }
         
         return {
           name: school.name,
           progress: avgProgress,
           active: studentIds.length,
+          teachers: teacherCount || 0,
+          interactions: totalInteractions,
           trend: avgProgress > 50 ? 'up' : 'down'
         };
       })
     );
     
+    // Sort by most active: prioritize schools with more activity (students + interactions + progress)
     const topSchools = schoolSuccessMetrics
-      .sort((a, b) => b.progress - a.progress)
+      .sort((a, b) => {
+        // Primary: total activity score (students + teachers + interactions)
+        const activityA = a.active + a.teachers + a.interactions;
+        const activityB = b.active + b.teachers + b.interactions;
+        if (activityB !== activityA) return activityB - activityA;
+        // Secondary: curriculum progress
+        return b.progress - a.progress;
+      })
       .slice(0, 3);
 
     res.status(200).json({

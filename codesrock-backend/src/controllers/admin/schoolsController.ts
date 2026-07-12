@@ -380,6 +380,66 @@ export const deactivateSchool = async (
 };
 
 /**
+ * @desc    Permanently delete a school (must be deactivated first)
+ * @route   DELETE /api/admin/schools/:id/permanent
+ * @access  Private (super_admin only)
+ */
+export const permanentDeleteSchool = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // First, verify the school exists and is inactive
+    const { data: school, error: fetchError } = await supabase
+      .from('schools')
+      .select('id, name, is_active')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !school) {
+      throw new AppError('School not found', 404);
+    }
+
+    if (school.is_active) {
+      throw new AppError('School must be deactivated before it can be permanently deleted', 400);
+    }
+
+    // Unlink all profiles from this school (set school_id to null)
+    await supabase
+      .from('profiles')
+      .update({ school_id: null })
+      .eq('school_id', id);
+
+    // Unlink all classes from this school
+    await supabase
+      .from('classes')
+      .update({ school_id: null })
+      .eq('school_id', id);
+
+    // Permanently delete the school
+    const { error: deleteError } = await supabase
+      .from('schools')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error('Permanent school deletion error:', deleteError);
+      throw new AppError('Failed to permanently delete school', 500);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `School "${school.name}" has been permanently deleted`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc    Get school by school code (for login lookup)
  * @route   GET /api/admin/schools/code/:code
  * @access  Public (for login validation)

@@ -368,6 +368,10 @@ class AdminService {
     return apiService.delete(`/admin/schools/${schoolId}`);
   }
 
+  async permanentDeleteSchool(schoolId: string): Promise<void> {
+    return apiService.delete(`/admin/schools/${schoolId}/permanent`);
+  }
+
   // ==================== Training Management ====================
 
   async getTrainingSessions(): Promise<any[]> {
