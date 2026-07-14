@@ -165,6 +165,8 @@ These puzzles build on each other in difficulty and focus strictly on **Sequenci
 ### Puzzle 1: Basic Path Planning (Concept: Simple Sequencing)
 **Guided Walkthrough**
 
+![Level 1: Basic Path Planning](images/page7_puzzle1.png)
+
 Help Rocky reach his spaceship on an open grid with no obstacles.
 
 **Grid Layout (4x4):**
@@ -195,6 +197,8 @@ Help Rocky reach his spaceship on an open grid with no obstacles.
 
 ### Puzzle 2: Bypassing Obstacles (Concept: Multi-Turn Sequencing)
 **Guided Walkthrough**
+
+![Level 2: Bypassing Obstacles](images/page7_puzzle2.png)
 
 Help Rocky reach his spaceship by navigating around a stone wall obstacle.
 
@@ -228,6 +232,8 @@ Help Rocky reach his spaceship by navigating around a stone wall obstacle.
 
 ### Puzzle 3: Checkpoint Sequencing (Concept: Multi-Stage Navigation)
 **Guided Walkthrough**
+
+![Level 3: Checkpoint Sequencing](images/page7_puzzle3.png)
 
 Rocky needs to collect **Key A** to open **Gate A** before he can board his spaceship.
 
@@ -267,6 +273,8 @@ Rocky needs to collect **Key A** to open **Gate A** before he can board his spac
 ### Puzzle 4: Hit the Wall (Concept: Basic Debugging)
 **Challenge:** Rocky was programmed to reach the spaceship at Col 4, Row 3. However, his code has a bug and makes him crash into a stone wall at Col 2, Row 3! Find the bug and write the correct algorithm.
 
+![Level 4: Hit the Wall](images/page7_puzzle4.png)
+
 **Grid Layout (4x4):**
 ```
 +---+---+---+---+
@@ -291,6 +299,8 @@ Rocky needs to collect **Key A** to open **Gate A** before he can board his spac
 
 ### Puzzle 5: The Missed Checkpoint (Concept: Checkpoint Debugging)
 **Challenge:** Rocky needs to collect Key A at Col 2, Row 2 before reaching the spaceship at Col 4, Row 2. The programmer wrote the algorithm below, but Rocky missed the key completely and arrived at the spaceship locked out! Find the bug and fix it.
+
+![Level 5: The Missed Checkpoint](images/page7_puzzle5.png)
 
 **Grid Layout (4x4):**
 ```
@@ -317,6 +327,8 @@ Rocky needs to collect **Key A** to open **Gate A** before he can board his spac
 ### Puzzle 6: Path Optimization (Concept: Debugging & Efficiency)
 **Challenge:** Rocky needs to reach Kojo `🐶` at Col 4, Row 4. There is a wall blocking Row 2. The program below gets Rocky to Kojo, but it is extremely long, repetitive, and has unnecessary turns. Debug and rewrite it to make it the most efficient path.
 
+![Level 6: Path Optimization](images/page7_puzzle6.png)
+
 **Grid Layout (4x4):**
 ```
 +---+---+---+---+
@@ -336,19 +348,6 @@ Rocky needs to collect **Key A** to open **Gate A** before he can board his spac
 **Clues & Tips:**
 *   💡 **Clue 1:** Look at the grid. Since Row 2 is blocked on Cols 1, 2, and 3, Rocky must travel all the way to Col 4 on Row 1 before he can go up.
 *   💡 **Clue 2:** Once Rocky is at Col 4, Row 1, can he just go straight up to Row 4 in a single line without any zig-zag turns? Write down that sequence!
-
----
-
-## 🌟 Rocky's Golden Rules of Coding
-
-Teach these rules to your students to foster a growth mindset:
-
-1.  **Errors are Awesome!** 🐛
-    *   In coding, making a mistake just means we found a "bug." We don't get sad; we celebrate because finding bugs makes us better problem solvers!
-2.  **Order Matters!** 📋
-    *   You can't put your shoes on before your socks. In algorithms, the order of steps is super important!
-3.  **Break it Down!** 🧩
-    *   If a goal is too far away, break it down into smaller steps. One step forward, one turn at a time!
 
 ---
 
