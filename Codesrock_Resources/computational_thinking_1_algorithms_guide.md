@@ -156,7 +156,12 @@ Here is a printable worksheet you can hand out to your students to practice plan
 
 ## 🏆 Page 7: Teacher Algorithmic Mastery Puzzles
 
-To help you fully master algorithms before teaching your students, here are **6 progressive logic puzzles**. All puzzles feature **Rocky** navigating a grid mat to reach his target (his spaceship `🚀` or friend Kojo `🐶`). 
+To help you fully master algorithms before teaching your students, here are **6 progressive logic puzzles**. All puzzles feature **Rocky** navigating a grid mat to reach his target (his spaceship `🚀` or friend Kojo `🐶`).
+
+> [!IMPORTANT]
+> **Page Coordinate System:** To match the grid labels printed on the page images, all puzzles use a **Top-Down Coordinate System**:
+> *   **Rows** are numbered **1 to 4 from Top to Bottom** (Row 1 is the top row, Row 4 is the bottom row).
+> *   **Columns** are numbered **1 to 4 from Left to Right** (Col 1 is the left column, Col 4 is the right column).
 
 These puzzles build on each other in difficulty and focus strictly on **Sequencing** and **Debugging** (no loops, in alignment with the Codesrock 1 curriculum). Puzzles 1, 2, and 3 have detailed, guided walkthroughs. Puzzles 4, 5, and 6 leave clues and tips for you to solve!
 
@@ -172,25 +177,25 @@ Help Rocky reach his spaceship on an open grid with no obstacles.
 **Grid Layout (4x4):**
 ```
 +---+---+---+---+
-|   |   |   |   | (Row 4)
-+---+---+---+---+
-|   |   |   |   | (Row 3)
+|   |   |   |   | (Row 1)
 +---+---+---+---+
 |   |   |   |   | (Row 2)
 +---+---+---+---+
-| R |   |   | 🚀| (Row 1 - R is Rocky, 🚀 is the Spaceship)
+|   |   |   |   | (Row 3)
++---+---+---+---+
+| R |   |   | 🚀| (Row 4 - R is Rocky, 🚀 is the Spaceship)
 +---+---+---+---+
  Col1 Col2 Col3 Col4
 ```
-*   **Start:** Rocky `R` starts at Col 1, Row 1 (facing North/Up).
-*   **Goal:** Reach the spaceship `🚀` at Col 4, Row 1.
+*   **Start:** Rocky `R` starts at Col 1, Row 4 (facing North/Up).
+*   **Goal:** Reach the spaceship `🚀` at Col 4, Row 4.
 
 **How to Solve (Step-by-Step Guide):**
-1.  **Check Rocky's direction:** Rocky is facing North, but the target is to his right (East).
+1.  **Check Rocky's direction:** Rocky is facing North, but the target spaceship is to his right (East).
 2.  **Turn toward the target:**
     *   Command 1: ↪️ **Turn Right** (Rocky now faces East/Right).
 3.  **Move to the goal:**
-    *   Commands 2–4: 🚶‍♂️ **Forward, Forward, Forward** (Rocky moves from Col 1 to Col 2, then Col 3, then Col 4).
+    *   Commands 2–4: 🚶‍♂️ **Forward, Forward, Forward** (Rocky moves along Row 4 from Col 1 to Col 4).
 4.  **The Final Algorithm:** `[↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️]` (4 commands total).
 
 ---
@@ -205,27 +210,27 @@ Help Rocky reach his spaceship by navigating around a stone wall obstacle.
 **Grid Layout (4x4):**
 ```
 +---+---+---+---+
-|   |   |   | 🚀| (Row 4 - 🚀 is the Spaceship)
+|   |   |   | 🚀| (Row 1 - 🚀 is the Spaceship)
 +---+---+---+---+
-|   | █ |   |   | (Row 3 - █ is a Stone Wall)
+|   | █ |   |   | (Row 2 - █ is a Stone Wall)
 +---+---+---+---+
-|   | █ |   |   | (Row 2)
+|   | █ |   |   | (Row 3)
 +---+---+---+---+
-| R |   |   |   | (Row 1 - R is Rocky)
+| R |   |   |   | (Row 4 - R is Rocky)
 +---+---+---+---+
  Col1 Col2 Col3 Col4
 ```
-*   **Start:** Rocky `R` starts at Col 1, Row 1 (facing North/Up).
-*   **Goal:** Reach the spaceship `🚀` at Col 4, Row 4.
+*   **Start:** Rocky `R` starts at Col 1, Row 4 (facing North/Up).
+*   **Goal:** Reach the spaceship `🚀` at Col 4, Row 1.
 
 **How to Solve (Step-by-Step Guide):**
-1.  **Identify the barrier:** The stone wall blocks Col 2, Row 2 and Row 3. Rocky cannot go straight right and then up. He must go up Col 1 first, then turn right.
+1.  **Identify the barrier:** The stone wall blocks Col 2, Row 2 and Row 3. Rocky cannot go straight right and then up. He must go up Col 1 first to clear the obstacle.
 2.  **Move past the obstacle row:**
-    *   Commands 1–3: 🚶‍♂️ **Forward, Forward, Forward** (Rocky moves up Col 1 to Row 4. Position: Col 1, Row 4).
+    *   Commands 1–3: 🚶‍♂️ **Forward, Forward, Forward** (Rocky moves up Col 1 from Row 4 to Row 1. Position: Col 1, Row 1).
 3.  **Turn toward the spaceship:**
     *   Command 4: ↪️ **Turn Right** (Rocky now faces East).
 4.  **Move to the goal:**
-    *   Commands 5–7: 🚶‍♂️ **Forward, Forward, Forward** (Rocky moves along Row 4 to Col 4 — reaches `🚀`!).
+    *   Commands 5–7: 🚶‍♂️ **Forward, Forward, Forward** (Rocky moves along Row 1 from Col 1 to Col 4 — reaches `🚀`!).
 5.  **The Final Algorithm:** `[🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️]` (7 commands total).
 
 ---
@@ -240,60 +245,60 @@ Rocky needs to collect **Key A** to open **Gate A** before he can board his spac
 **Grid Layout (4x4):**
 ```
 +----+----+----+----+
-| 🔑A| 🚧A|    |    | (Row 4 - 🔑 is Key, 🚧 is Gate)
-+----+----+----+----+
-|    |    |    |    | (Row 3)
+| 🔑A| 🚧A|    |    | (Row 1 - 🔑 is Key, 🚧 is Gate)
 +----+----+----+----+
 |    |    |    | 🚀 | (Row 2 - 🚀 is Spaceship)
 +----+----+----+----+
-| R  |    |    |    | (Row 1 - R is Rocky)
+|    |    |    |    | (Row 3)
++----+----+----+----+
+| R  |    |    |    | (Row 4 - R is Rocky)
 +----+----+----+----+
  Col 1 Col 2 Col 3 Col 4
 ```
-*   **Start:** Rocky `R` starts at Col 1, Row 1 (facing North/Up).
-*   **Goal Sequence:** Get `🔑A` (Col 1, Row 4) ➡️ Open `🚧A` (Col 2, Row 4) ➡️ Reach Spaceship `🚀` (Col 4, Row 2).
+*   **Start:** Rocky `R` starts at Col 1, Row 4 (facing North/Up).
+*   **Goal Sequence:** Get `🔑A` (Col 1, Row 1) ➡️ Open `🚧A` (Col 2, Row 1) ➡️ Reach Spaceship `🚀` (Col 4, Row 2).
 
 **How to Solve (Step-by-Step Guide):**
 1.  **Stage 1: Collect Key A.**
-    *   Rocky goes straight up Col 1.
-    *   Commands 1–3: 🚶‍♂️ **Forward, Forward, Forward** (Reaches Key A at Col 1, Row 4).
+    *   Rocky goes straight up Col 1 to get Key A.
+    *   Commands 1–3: 🚶‍♂️ **Forward, Forward, Forward** (Rocky moves from Row 4 to Row 1. Position: Col 1, Row 1).
 2.  **Stage 2: Open Gate A.**
-    *   Rocky turns right and moves forward onto the gate.
-    *   Command 4: ↪️ **Turn Right** (Faces East).
-    *   Command 5: 🚶‍♂️ **Forward** (Unlocks Gate A at Col 2, Row 4).
+    *   Rocky turns right and steps onto the gate at Row 1, Col 2.
+    *   Command 4: ↪️ **Turn Right** (Rocky now faces East).
+    *   Command 5: 🚶‍♂️ **Forward** (Unlocks Gate A at Col 2, Row 1).
 3.  **Stage 3: Reach the Spaceship.**
-    *   Rocky is at Col 2, Row 4, facing East. He needs to reach Col 4, Row 2.
-    *   Commands 6–7: 🚶‍♂️ **Forward, Forward** (Moves to Col 4, Row 4).
-    *   Command 8: ↪️ **Turn Right** (Faces South/Down).
-    *   Commands 9–10: 🚶‍♂️ **Forward, Forward** (Moves down Col 4 to Row 2 — Reaches `🚀`!).
-4.  **The Final Algorithm:** `[🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️, 🚶‍♂️]` (10 commands total).
+    *   Rocky is at Col 2, Row 1, facing East. He needs to reach Col 4, Row 2.
+    *   Commands 6–7: 🚶‍♂️ **Forward, Forward** (Rocky moves along Row 1 to Col 4. Position: Col 4, Row 1).
+    *   Command 8: ↪️ **Turn Right** (Rocky now faces South/Down).
+    *   Command 9: 🚶‍♂️ **Forward** (Rocky moves down Col 4 to Row 2 — Reaches `🚀`!).
+4.  **The Final Algorithm:** `[🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️]` (9 commands total).
 
 ---
 
 ### Puzzle 4: Hit the Wall (Concept: Basic Debugging)
-**Challenge:** Rocky was programmed to reach the spaceship at Col 4, Row 3. However, his code has a bug and makes him crash into a stone wall at Col 2, Row 3! Find the bug and write the correct algorithm.
+**Challenge:** Rocky was programmed to reach the spaceship at Col 4, Row 2. However, his code has a bug and makes him crash into a stone wall at Col 2, Row 2! Find the bug and write the correct algorithm.
 
 ![Level 4: Hit the Wall](images/page7_puzzle4.png)
 
 **Grid Layout (4x4):**
 ```
 +---+---+---+---+
-|   |   |   |   | (Row 4)
+|   |   |   |   | (Row 1)
 +---+---+---+---+
-|   | █ |   | 🚀| (Row 3 - █ is a Wall, 🚀 is spaceship)
+|   | █ |   | 🚀| (Row 2 - █ is a Wall, 🚀 is spaceship)
 +---+---+---+---+
-|   |   |   |   | (Row 2)
+|   |   |   |   | (Row 3)
 +---+---+---+---+
-| R |   |   |   | (Row 1 - R is Rocky)
+| R |   |   |   | (Row 4 - R is Rocky)
 +---+---+---+---+
  Col1 Col2 Col3 Col4
 ```
-*   **Start:** Rocky starts at Col 1, Row 1 (facing North).
+*   **Start:** Rocky starts at Col 1, Row 4 (facing North).
 *   **Buggy Algorithm:** `[🚶‍♂️, 🚶‍♂️, ↪️, 🚶‍♂️, 🚶‍♂️]`
 
 **Clues & Tips:**
-*   💡 **Clue 1:** Step-by-step trace: (1) Forward to Row 2. (2) Forward to Row 3. (3) Turn Right. (4) Forward to Col 2, Row 3... *Crash!* Col 2, Row 3 has a wall!
-*   💡 **Clue 2:** How can you change step 2 so Rocky turns right *before* he reaches Row 3? 
+*   💡 **Clue 1:** Trace Rocky's coordinates step-by-step: (1) Forward to Row 3. (2) Forward to Row 2. (3) Turn Right. (4) Forward to Col 2, Row 2... *Crash!* Col 2, Row 2 has a wall!
+*   💡 **Clue 2:** How can you change step 2 so Rocky turns right *before* he reaches Row 2? (For example, turning right on Row 3 or going up to Row 1).
 
 ---
 
@@ -305,49 +310,69 @@ Rocky needs to collect **Key A** to open **Gate A** before he can board his spac
 **Grid Layout (4x4):**
 ```
 +----+----+----+----+
-|    |    |    |    | (Row 4)
-+----+----+----+----+
-|    |    |    |    | (Row 3)
+|    |    |    |    | (Row 1)
 +----+----+----+----+
 |    | 🔑A|    | 🚀 | (Row 2 - 🔑 is Key, 🚀 is spaceship)
 +----+----+----+----+
-| R  |    |    |    | (Row 1 - R is Rocky)
+|    |    |    |    | (Row 3)
++----+----+----+----+
+| R  |    |    |    | (Row 4 - R is Rocky)
 +----+----+----+----+
  Col 1 Col 2 Col 3 Col 4
 ```
-*   **Start:** Rocky starts at Col 1, Row 1 (facing North).
-*   **Buggy Algorithm:** `[↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↩️, 🚶‍♂️]`
+*   **Start:** Rocky starts at Col 1, Row 4 (facing North).
+*   **Buggy Algorithm:** `[↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↩️, 🚶‍♂️, 🚶‍♂️]`
 
 **Clues & Tips:**
-*   💡 **Clue 1:** Trace the buggy algorithm. Rocky starts at Col 1, Row 1. He turns right, moves forward 3 times, ending up at Col 4, Row 1. Then he turns left and moves forward to Col 4, Row 2.
-*   💡 **Clue 2:** Notice that Rocky never stepped onto Col 2, Row 2. He bypassed it entirely along Row 1. What step should be changed to make him go up to Row 2 first?
+*   💡 **Clue 1:** Trace the buggy algorithm. Rocky turns right immediately on Row 4, moves forward 3 times to Col 4, Row 4, then turns left and moves up Col 4 to Row 2.
+*   💡 **Clue 2:** Rocky bypassed the key entirely. To collect it, should Rocky go Up to Row 2 *before* turning right? Trace how many Forward steps he needs to reach Row 2 first.
 
 ---
 
 ### Puzzle 6: Path Optimization (Concept: Debugging & Efficiency)
-**Challenge:** Rocky needs to reach Kojo `🐶` at Col 4, Row 4. There is a wall blocking Row 2. The program below gets Rocky to Kojo, but it is extremely long, repetitive, and has unnecessary turns. Debug and rewrite it to make it the most efficient path.
+**Challenge:** Rocky needs to reach Kojo `🐶` at Col 4, Row 1. There is a wall blocking Row 2 across Col 1, Col 2, and Col 3. The program below gets Rocky to Kojo, but it is extremely long, repetitive, and has unnecessary turns. Debug and rewrite it to make it the most efficient path.
 
 ![Level 6: Path Optimization](images/page7_puzzle6.png)
 
 **Grid Layout (4x4):**
 ```
 +---+---+---+---+
-|   |   |   | 🐶| (Row 4 - 🐶 is Kojo)
-+---+---+---+---+
-|   |   |   |   | (Row 3)
+|   |   |   | 🐶| (Row 1 - 🐶 is Kojo)
 +---+---+---+---+
 | █ | █ | █ |   | (Row 2 - █ is a Wall)
 +---+---+---+---+
-| R |   |   |   | (Row 1 - R is Rocky)
+|   |   |   |   | (Row 3)
++---+---+---+---+
+| R |   |   |   | (Row 4 - R is Rocky)
 +---+---+---+---+
  Col1 Col2 Col3 Col4
 ```
-*   **Start:** Rocky starts at Col 1, Row 1 (facing North).
+*   **Start:** Rocky starts at Col 1, Row 4 (facing North).
 *   **Inefficient Algorithm:** `[↪️, 🚶‍♂️, 🚶‍♂️, 🚶‍♂️, ↩️, 🚶‍♂️, ↩️, 🚶‍♂️, ↪️, 🚶‍♂️, ↪️, 🚶‍♂️, ↩️, 🚶‍♂️, 🚶‍♂️]` (15 steps)
 
 **Clues & Tips:**
-*   💡 **Clue 1:** Look at the grid. Since Row 2 is blocked on Cols 1, 2, and 3, Rocky must travel all the way to Col 4 on Row 1 before he can go up.
-*   💡 **Clue 2:** Once Rocky is at Col 4, Row 1, can he just go straight up to Row 4 in a single line without any zig-zag turns? Write down that sequence!
+*   💡 **Clue 1:** Look at the grid. Row 2 is blocked on Cols 1, 2, and 3. So Rocky *must* travel all the way along Row 4 to Column 4 before he can navigate up.
+*   💡 **Clue 2:** Once Rocky reaches Col 4, Row 4, can he just face North and travel straight up Column 4 to reach Kojo at Row 1? How many steps is that?
+
+---
+
+## 🌟 Rocky's Golden Rules of Coding
+
+Teach these rules to your students to foster a growth mindset:
+
+1.  **Errors are Awesome!** 🐛
+    *   In coding, making a mistake just means we found a "bug." We don't get sad; we celebrate because finding bugs makes us better problem solvers!
+2.  **Order Matters!** 📋
+    *   You can't put your shoes on before your socks. In algorithms, the order of steps is super important!
+3.  **Break it Down!** 🧩
+    *   If a goal is too far away, break it down into smaller steps. One step forward, one turn at a time!
+
+Keep up the incredible work, teachers. You are helping to build the logical thinkers and problem solvers of tomorrow!
+
+**Keep Rocking the Code! 🤘**
+
+*Your friend,*
+**Rocky** 🍊✨t sequence!
 
 ---
 
