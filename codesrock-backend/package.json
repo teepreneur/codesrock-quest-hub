@@ -8,6 +8,7 @@
     "build": "echo 'Starting TypeScript build...' && tsc && echo 'Build complete!' && ls -la dist/",
     "start": "node dist/server.js",
     "seed": "ts-node src/scripts/seed-supabase.ts",
+    "update-durations": "ts-node src/scripts/update-durations.ts",
     "test": "jest",
     "test:coverage": "jest --coverage"
   },
