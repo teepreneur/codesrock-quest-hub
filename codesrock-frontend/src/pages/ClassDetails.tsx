@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, UserPlus, BookOpen, ArrowLeft, Mail, Search, Trash2, CheckCircle, BarChart, Trophy, Award, FileText } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
 import { classService, type Class, type ClassEnrollment, type ClassAnalytics } from "@/services/class.service";
@@ -14,6 +15,7 @@ import { authService } from "@/services/auth.service";
 import ProgressTracking from "@/components/classes/ProgressTracking";
 
 export default function ClassDetails() {
+  const isMobile = useIsMobile();
   const { id: classId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [cls, setCls] = useState<Class | null>(null);
@@ -150,67 +152,132 @@ export default function ClassDetails() {
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border overflow-hidden">
-                  <div className="grid grid-cols-5 p-3 bg-muted/50 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <span className="col-span-2">Student</span>
-                    <span className="text-center">Level/XP</span>
-                    <span className="text-center">Completion</span>
-                    <span className="text-right">Activity</span>
-                  </div>
-                  <div className="divide-y">
+                  {/* Desktop: 5-column table layout */}
+                  {!isMobile && (
+                    <div className="grid grid-cols-5 p-3 bg-muted/50 font-bold text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <span className="col-span-2">Student</span>
+                      <span className="text-center">Level/XP</span>
+                      <span className="text-center">Completion</span>
+                      <span className="text-right">Activity</span>
+                    </div>
+                  )}
+                  <div className={isMobile ? 'space-y-3 p-3' : 'divide-y'}>
                     {filteredStudents.length > 0 ? (
-                      filteredStudents.map((enrollment) => (
-                        <div key={enrollment.id} className="grid grid-cols-5 p-4 items-center text-sm hover:bg-muted/30 transition-colors">
-                          <div className="col-span-2 space-y-1">
-                            <div className="font-bold text-deep-purple">
-                              {enrollment.student?.first_name} {enrollment.student?.last_name}
-                            </div>
-                            <div className="text-xs text-muted-foreground flex items-center gap-1">
-                              {enrollment.student?.email.includes('@codesrock.internal') ? (
-                                <Badge variant="outline" className="text-[9px] h-4 bg-muted/30 border-none px-1">Manual Entry</Badge>
-                              ) : (
-                                <>
-                                  <Mail className="h-3 w-3" />
-                                  {enrollment.student?.email}
-                                </>
-                              )}
+                      filteredStudents.map((enrollment) => 
+                        isMobile ? (
+                          /* ─── MOBILE: Stacked Student Card ─── */
+                          <div key={enrollment.id} className="rounded-xl border border-muted/30 bg-white shadow-sm overflow-hidden">
+                            <div className="p-4 space-y-3">
+                              {/* Name + Badge Row */}
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <div className="font-bold text-deep-purple text-sm">
+                                    {enrollment.student?.first_name} {enrollment.student?.last_name}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                    {enrollment.student?.email.includes('@codesrock.internal') ? (
+                                      <Badge variant="outline" className="text-[9px] h-4 bg-muted/30 border-none px-1">Manual Entry</Badge>
+                                    ) : (
+                                      <span className="truncate text-[10px]">{enrollment.student?.email}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex gap-1 shrink-0">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-primary hover:bg-primary/10"
+                                    onClick={() => navigate(`/classes/${classId}/students/${enrollment.student_id}/report`)}
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/50 hover:text-destructive hover:bg-destructive/10">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Stats Row */}
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 bg-primary/5 rounded-lg px-3 py-1.5">
+                                  <span className="font-black text-primary text-xs">LVL {enrollment.progress?.level || 1}</span>
+                                  <span className="text-[9px] text-muted-foreground font-bold">{enrollment.progress?.xp || 0} XP</span>
+                                </div>
+                                <div className="text-[9px] font-bold text-muted-foreground uppercase">
+                                  {enrollment.progress?.last_active ? new Date(enrollment.progress.last_active).toLocaleDateString() : 'Never active'}
+                                </div>
+                              </div>
+
+                              {/* Progress Bar */}
+                              <div>
+                                <div className="flex items-center justify-between text-[10px] font-bold mb-1">
+                                  <span className="text-muted-foreground">Completion</span>
+                                  <span className="text-primary font-black">{enrollment.progress?.completion_percentage || 0}%</span>
+                                </div>
+                                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-accent rounded-full transition-all" 
+                                    style={{ width: `${enrollment.progress?.completion_percentage || 0}%` }} 
+                                  />
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          <div className="text-center">
-                            <div className="font-black text-primary">LVL {enrollment.progress?.level || 1}</div>
-                            <div className="text-[10px] text-muted-foreground font-bold">{enrollment.progress?.xp || 0} XP</div>
+                        ) : (
+                          /* ─── DESKTOP: Original 5-column row ─── */
+                          <div key={enrollment.id} className="grid grid-cols-5 p-4 items-center text-sm hover:bg-muted/30 transition-colors">
+                            <div className="col-span-2 space-y-1">
+                              <div className="font-bold text-deep-purple">
+                                {enrollment.student?.first_name} {enrollment.student?.last_name}
+                              </div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                {enrollment.student?.email.includes('@codesrock.internal') ? (
+                                  <Badge variant="outline" className="text-[9px] h-4 bg-muted/30 border-none px-1">Manual Entry</Badge>
+                                ) : (
+                                  <>
+                                    <Mail className="h-3 w-3" />
+                                    {enrollment.student?.email}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-black text-primary">LVL {enrollment.progress?.level || 1}</div>
+                              <div className="text-[10px] text-muted-foreground font-bold">{enrollment.progress?.xp || 0} XP</div>
+                            </div>
+                            <div className="px-4">
+                              <div className="flex items-center justify-between text-[10px] font-bold mb-1">
+                                <span>{enrollment.progress?.completion_percentage || 0}%</span>
+                              </div>
+                              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-accent" 
+                                  style={{ width: `${enrollment.progress?.completion_percentage || 0}%` }} 
+                                />
+                              </div>
+                            </div>
+                            <div className="text-right space-y-2">
+                              <div className="text-[10px] font-bold text-muted-foreground uppercase">
+                                {enrollment.progress?.last_active ? new Date(enrollment.progress.last_active).toLocaleDateString() : 'Never'}
+                              </div>
+                              <div className="flex justify-end gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-primary hover:bg-primary/10"
+                                  onClick={() => navigate(`/classes/${classId}/students/${enrollment.student_id}/report`)}
+                                  title="View Achievement Report"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/50 hover:text-destructive hover:bg-destructive/10">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                          <div className="px-4">
-                            <div className="flex items-center justify-between text-[10px] font-bold mb-1">
-                              <span>{enrollment.progress?.completion_percentage || 0}%</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-accent" 
-                                style={{ width: `${enrollment.progress?.completion_percentage || 0}%` }} 
-                              />
-                            </div>
-                          </div>
-                          <div className="text-right space-y-2">
-                            <div className="text-[10px] font-bold text-muted-foreground uppercase">
-                              {enrollment.progress?.last_active ? new Date(enrollment.progress.last_active).toLocaleDateString() : 'Never'}
-                            </div>
-                            <div className="flex justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-primary hover:bg-primary/10"
-                                onClick={() => navigate(`/classes/${classId}/students/${enrollment.student_id}/report`)}
-                                title="View Achievement Report"
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/50 hover:text-destructive hover:bg-destructive/10">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
+                        )
+                      )
                     ) : (
                       <div className="p-12 text-center text-muted-foreground italic">
                         <Users className="h-8 w-8 mx-auto mb-2 opacity-20" />

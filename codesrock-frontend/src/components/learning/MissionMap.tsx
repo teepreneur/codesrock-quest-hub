@@ -24,10 +24,168 @@ interface MissionMapProps {
   moduleTitle: string;
   isEvaluationPassed: boolean;
   currentTopicId?: string;
+  isMobile?: boolean;
 }
 
-export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, moduleTitle, isEvaluationPassed, currentTopicId }) => {
+export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, moduleTitle, isEvaluationPassed, currentTopicId, isMobile = false }) => {
   const navigate = useNavigate();
+
+  /* ─── MOBILE LAYOUT ─── */
+  if (isMobile) {
+    return (
+      <div className="relative w-full animate-fade-in flex flex-col">
+        {/* Mobile Header */}
+        <div className="mb-4 flex items-center gap-2 px-2">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
+            <MapPin className="h-4 w-4 text-primary" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <h2 className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Learning Journey</h2>
+            <p className="text-sm font-black text-deep-purple italic leading-none truncate">{moduleTitle}</p>
+          </div>
+        </div>
+
+        {/* Mobile Vertical Card List */}
+        <div className="relative px-2">
+          {/* Vertical connector line */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 via-primary/15 to-muted/20 -translate-x-1/2 z-0" />
+
+          <div className="relative z-10 space-y-4">
+            {nodes.map((node, index) => {
+              const isLast = index === nodes.length - 1;
+
+              return (
+                <div key={node.id} className="relative">
+                  {/* "You are here" indicator */}
+                  {node.status === 'active' && (
+                    <div className="flex items-center justify-center gap-2 mb-2 animate-bounce-subtle">
+                      <img src="/rocky_3D_idea.png" alt="Rocky" className="w-10 h-10 object-contain drop-shadow-lg" />
+                      <div className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full border-2 border-primary/30 text-[9px] font-black text-primary uppercase shadow-md">You are here! 📍</div>
+                    </div>
+                  )}
+
+                  {/* Lesson Card */}
+                  <Card
+                    className={`w-full overflow-hidden rounded-2xl transition-all duration-300 cursor-pointer border-4 group relative
+                      ${node.status === 'active' ? 'border-primary shadow-lg scale-[1.01]' : 'border-white shadow-md'}`}
+                    onClick={() => onNodeClick(node)}
+                  >
+                    <CardContent className="p-0">
+                      {/* Thumbnail */}
+                      <div className="relative aspect-video bg-muted overflow-hidden">
+                        <img
+                          src={node.thumbnail || "/assets/images/course-placeholder.jpg"}
+                          alt={node.title}
+                          className={`w-full h-full object-cover ${node.status === 'available' ? 'saturate-50 opacity-80' : ''}`}
+                          onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60"; }}
+                        />
+                        <div className={`absolute inset-0 flex items-center justify-center ${node.status === 'active' ? 'bg-black/5' : 'bg-black/20'}`}>
+                          <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-xl ${node.status === 'active' ? 'bg-primary text-white' : 'bg-white text-primary'}`}>
+                            {node.status === 'watched' ? <CheckCircle className="h-7 w-7" /> : <Play className="h-7 w-7 fill-current ml-0.5" />}
+                          </div>
+                        </div>
+                        <div className="absolute top-3 left-3">
+                          <Badge className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-full ${node.status === 'watched' ? 'bg-green-500' : node.status === 'active' ? 'bg-primary animate-pulse' : 'bg-slate-500 text-white'}`}>
+                            {node.status === 'watched' ? 'Mastered' : node.status === 'active' ? 'Learning' : 'Upcoming'}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Card Body */}
+                      <div className="p-4 bg-white space-y-3">
+                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-muted-foreground/80">
+                          <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-primary/60" /> {node.duration || 5} MINS</span>
+                          <span className="flex items-center gap-1.5 text-primary"><Star className="h-3.5 w-3.5 fill-primary" /> +{node.xpReward} XP</span>
+                        </div>
+                        <h3 className="text-sm font-black text-deep-purple leading-tight line-clamp-2 italic">{index + 1}. {node.title}</h3>
+                        <Button className={`w-full rounded-xl font-black h-11 text-xs transition-all ${node.status === 'active' ? 'bg-primary shadow-md' : 'bg-muted/10 text-muted-foreground'}`}>
+                          {node.status === 'watched' ? 'Review Lesson' : node.status === 'active' ? 'Continue Journey' : 'View Lesson'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Evaluation card after last node */}
+                  {isLast && (
+                    <>
+                      {/* Connector dot */}
+                      <div className="flex justify-center my-3">
+                        <div className="w-3 h-3 rounded-full bg-orange-400 shadow-sm" />
+                      </div>
+
+                      <Card
+                        className={`w-full overflow-hidden rounded-2xl transition-all duration-500 cursor-pointer border-4 relative
+                          ${node.status === 'watched' ? 'border-orange-400 shadow-lg' : 'border-white shadow-md opacity-80'}`}
+                        onClick={() => {
+                          if (node.status === 'watched') {
+                            const tid = node.topic_id || currentTopicId;
+                            if (tid) navigate(`/evaluation/${tid}`);
+                            else toast.error("Module ID not found. Please refresh.");
+                          } else {
+                            toast.info("Complete all lessons first! 🔒");
+                          }
+                        }}
+                      >
+                        <CardContent className="p-0 relative">
+                          <div className="h-36 bg-gradient-to-br from-orange-50 to-white flex items-center justify-center overflow-hidden relative">
+                            {node.status === 'watched' && !isEvaluationPassed && (
+                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-50 animate-bounce-subtle">
+                                <img src="/rocky_3D_idea.png" alt="Rocky" className="w-14 h-14 object-contain drop-shadow-xl" />
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-primary text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest whitespace-nowrap shadow-xl border-2 border-white/20">
+                                  Final Challenge!
+                                </div>
+                              </div>
+                            )}
+                            <img src="/rocky_3D_idea.png" alt="Evaluation" className="h-24 w-auto object-contain drop-shadow-2xl z-20" />
+                            <div className="absolute top-3 right-3 bg-orange-500 text-white text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg z-30">Module Finale</div>
+                            {node.status !== 'watched' && <div className="absolute inset-0 bg-black/5 flex items-center justify-center z-40"><Lock className="h-10 w-10 text-white/70" /></div>}
+                          </div>
+                          <div className="p-5 bg-white space-y-3">
+                            <div className="flex items-center justify-between text-[10px] font-black uppercase text-orange-600 tracking-widest">
+                              <span>Mastery Quiz</span>
+                              <span className="bg-orange-100 px-2.5 py-0.5 rounded-full text-orange-700">+500 XP</span>
+                            </div>
+                            <h3 className="text-base font-black text-slate-800 leading-tight">
+                              {moduleTitle} <span className="text-orange-500">Finale</span>
+                            </h3>
+                            <div className="flex items-center gap-2 text-slate-500 text-[9px] font-bold uppercase tracking-wider">
+                              <Clock className="h-3 w-3" /> 5-10 MINS
+                              <span className="mx-1">•</span>
+                              <Award className="h-3 w-3" /> CERTIFICATE
+                            </div>
+                            <Button
+                              className={`w-full h-11 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all
+                                ${isEvaluationPassed ? 'bg-green-500 hover:bg-green-600 text-white shadow-md' : node.status === 'watched' ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}
+                            >
+                              {isEvaluationPassed ? 'Completed ✅' : node.status === 'watched' ? 'Start Finale 🚀' : 'Locked'}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Celebration footer */}
+                      <div className="flex flex-col items-center gap-3 mt-6 mb-4">
+                        <img
+                          src="/rocky_celebration_pose.png"
+                          alt="Celebration"
+                          className={`w-28 h-28 object-contain drop-shadow-xl transition-all duration-700 ${isEvaluationPassed ? '' : 'grayscale'}`}
+                        />
+                        <p className={`text-[10px] font-black uppercase tracking-[0.15em] bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-lg border-2 transition-all ${isEvaluationPassed ? 'text-deep-purple border-primary/30' : 'text-muted-foreground border-transparent'}`}>
+                          {isEvaluationPassed ? 'Module Complete! 🏆' : 'The Finish Line'}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── DESKTOP LAYOUT (unchanged) ─── */
   const getPathSegments = () => {
     if (nodes.length <= 0) return { completed: "", locked: "" };
     
@@ -250,3 +408,4 @@ export const MissionMap: React.FC<MissionMapProps> = ({ nodes, onNodeClick, modu
     </div>
   );
 };
+

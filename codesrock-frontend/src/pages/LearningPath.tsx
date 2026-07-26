@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play, CheckCircle, Clock, Star, ChevronRight, Layout, Map as MapIcon, BookOpen, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Play, CheckCircle, Clock, Star, ChevronRight, ChevronDown, Layout, Map as MapIcon, BookOpen, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { courseService, type CourseWithProgress, type CourseDetail, type VideoItem } from "@/services/course.service";
@@ -11,8 +12,10 @@ import { authService } from "@/services/auth.service";
 import { YouTubePlayer } from "@/components/video/YouTubePlayer";
 import { MissionMap, type MissionNode } from "@/components/learning/MissionMap";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function LearningPath() {
+  const isMobile = useIsMobile();
   const [courses, setCourses] = useState<CourseWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -66,7 +69,7 @@ export default function LearningPath() {
 
   const extractYouTubeVideoId = (url: string | undefined): string | null => {
     if (!url) return null;
-    const videoIdPattern = /(?:v=|\/v\/|embed\/|youtu\.be\/|shorts\/|\/watch\?v=|\&v=)([a-zA-Z0-9_-]{11})/;
+    const videoIdPattern = /(?:v=|\/v\/|embed\/|youtu\.be\/|shorts\/|\/watch\?v=|\\&v=)([a-zA-Z0-9_-]{11})/;
     const match = url.match(videoIdPattern);
     return match ? match[1] : url.length === 11 ? url : null;
   };
@@ -135,9 +138,18 @@ export default function LearningPath() {
 
   if (loading) {
     return (
-      <div className="flex gap-6 animate-fade-in h-[calc(100vh-140px)]">
-        <Skeleton className="w-80 h-full rounded-[2rem]" />
-        <Skeleton className="flex-1 h-full rounded-[2rem]" />
+      <div className={`animate-fade-in ${isMobile ? 'space-y-4 p-4' : 'flex gap-6 h-[calc(100vh-140px)]'}`}>
+        {isMobile ? (
+          <>
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-[60vh] w-full rounded-2xl" />
+          </>
+        ) : (
+          <>
+            <Skeleton className="w-80 h-full rounded-[2rem]" />
+            <Skeleton className="flex-1 h-full rounded-[2rem]" />
+          </>
+        )}
       </div>
     );
   }
@@ -159,6 +171,149 @@ export default function LearningPath() {
     };
   });
 
+  const topics = courseDetail?.course?.topics || [];
+  const currentTopicIndex = topics.findIndex(t => t.id === selectedTopicId);
+
+  /* ─── MOBILE LAYOUT ─── */
+  if (isMobile) {
+    return (
+      <div className="flex flex-col min-h-0 animate-fade-in">
+        {/* Mobile Module Selector */}
+        <div className="px-4 pt-3 pb-2 space-y-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-deep-purple/10 flex items-center justify-center shrink-0">
+              <BookOpen className="h-3.5 w-3.5 text-deep-purple" />
+            </div>
+            <h1 className="text-[9px] font-black text-deep-purple uppercase tracking-[0.3em] opacity-80">Course Modules</h1>
+          </div>
+
+          <Select value={selectedTopicId || ""} onValueChange={(val) => setSelectedTopicId(val)}>
+            <SelectTrigger className="w-full rounded-xl border-primary/20 bg-white/80 backdrop-blur-sm h-12 text-left font-bold text-sm shadow-sm">
+              <SelectValue placeholder="Select a module">
+                {currentTopic && (
+                  <span className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-primary uppercase">Module {currentTopicIndex + 1}</span>
+                    <span className="text-muted-foreground mx-1">·</span>
+                    <span className="truncate text-deep-purple">{currentTopic.title}</span>
+                  </span>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              {topics.map((topic, idx) => {
+                const isCompleted = (topic.videos || []).every((v: any) => v.userProgress?.completed);
+                return (
+                  <SelectItem key={topic.id} value={topic.id} className="py-3 rounded-lg">
+                    <span className="flex items-center gap-2">
+                      {isCompleted ? (
+                        <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                      ) : (
+                        <Play className="h-3.5 w-3.5 text-primary shrink-0" />
+                      )}
+                      <span className="text-[10px] font-black text-primary uppercase shrink-0">M{idx + 1}</span>
+                      <span className="truncate font-bold">{topic.title}</span>
+                    </span>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+
+          {/* Other learning paths on mobile */}
+          {courses.length > 1 && (
+            <Select value={selectedCourse?.id || ""} onValueChange={(val) => { const c = courses.find(x => x.id === val); if (c) handleCourseSelect(c); }}>
+              <SelectTrigger className="w-full rounded-xl border-muted/30 bg-muted/10 h-10 text-[10px] font-bold">
+                <Layout className="h-3.5 w-3.5 text-primary opacity-60 mr-2 shrink-0" />
+                <SelectValue placeholder="Switch Course" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                {courses.map(c => (
+                  <SelectItem key={c.id} value={c.id} className="py-2 rounded-lg text-xs font-bold">{c.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+
+        {/* Mobile Mission Map — full width, scrollable */}
+        <div className="flex-1 overflow-y-auto px-2 pb-4">
+          {detailLoading ? (
+            <Skeleton className="w-full h-[60vh] rounded-2xl" />
+          ) : currentTopic ? (
+            <MissionMap 
+              nodes={missionNodes} 
+              onNodeClick={handleWatchVideo}
+              moduleTitle={currentTopic.title}
+              isEvaluationPassed={!!currentTopic?.evaluation?.evaluation_progress?.passed}
+              currentTopicId={currentTopic.id}
+              isMobile={true}
+            />
+          ) : (
+            <div className="w-full h-64 bg-muted/5 rounded-2xl border-2 border-dashed border-muted/10 flex flex-col items-center justify-center text-center p-6 gap-3">
+              <MapIcon className="h-8 w-8 text-muted-foreground/20" />
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-deep-purple italic">Ready to learn?</h3>
+                <p className="text-xs text-muted-foreground font-bold">Select a module above to begin.</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Video Player Dialog */}
+        <Dialog open={isPlayerOpen} onOpenChange={setIsPlayerOpen}>
+          <DialogContent className="max-w-[100vw] max-h-[100vh] w-[100vw] h-[100vh] rounded-none overflow-hidden border-none p-0 bg-white shadow-none flex flex-col">
+            {watchingVideo && (
+              <div className="flex flex-col h-full">
+                {/* Compact mobile header */}
+                <div className="px-4 py-3 bg-deep-purple text-white flex items-center gap-3 shrink-0 relative">
+                  <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10 rounded-full h-8 w-8 shrink-0" onClick={() => setIsPlayerOpen(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[8px] font-black uppercase tracking-[0.3em] opacity-60">Lesson</p>
+                    <DialogTitle className="text-sm font-black italic truncate">{watchingVideo.title}</DialogTitle>
+                  </div>
+                  <div className="flex gap-2 items-center shrink-0">
+                    <div className="bg-white/10 px-2 py-1 rounded-lg flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-primary" />
+                      <span className="text-[9px] font-black">{watchingVideo.duration}m</span>
+                    </div>
+                    <div className="bg-white/10 px-2 py-1 rounded-lg flex items-center gap-1">
+                      <Star className="h-3 w-3 text-primary fill-primary" />
+                      <span className="text-[9px] font-black">+{watchingVideo.xp_reward}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Full-width player with aspect ratio */}
+                <div className="flex-1 overflow-y-auto bg-muted/5">
+                  <div className="w-full aspect-video">
+                    <YouTubePlayer 
+                      videoId={extractYouTubeVideoId(watchingVideo.video_url || "") || ""} 
+                      title={watchingVideo.title} 
+                      onProgressUpdate={handleProgressUpdate} 
+                      onComplete={handleVideoComplete} 
+                      showControls={true} 
+                    />
+                  </div>
+                  <div className="p-4 flex items-center justify-center">
+                    <Button 
+                      className="rounded-2xl font-black px-8 h-12 text-base shadow-xl shadow-primary/20 w-full" 
+                      onClick={() => setIsPlayerOpen(false)}
+                    >
+                      Lesson Completed! 🤘
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  /* ─── DESKTOP LAYOUT (unchanged) ─── */
   return (
     <div className="h-[calc(100vh-120px)] overflow-hidden pb-4">
       <ResizablePanelGroup direction="horizontal" className="gap-6 animate-fade-in">
@@ -263,7 +418,7 @@ export default function LearningPath() {
         </ResizablePanel>
       </ResizablePanelGroup>
 
-      {/* Lesson Player - Perfectly Framed */}
+      {/* Lesson Player - Perfectly Framed (Desktop) */}
       <Dialog open={isPlayerOpen} onOpenChange={setIsPlayerOpen}>
         <DialogContent className="max-w-4xl max-h-[95vh] w-[95vw] rounded-[2.5rem] overflow-hidden border-none p-0 bg-transparent shadow-none flex flex-col">
           {watchingVideo && (
