@@ -239,23 +239,32 @@ export default function Evaluation() {
           </div>
 
           <div className="grid gap-4" data-tour="quiz-options">
-            {currentQuestion.options.map((option: string, idx: number) => (
-              <Button
-                key={idx}
-                variant="outline"
-                className={`h-auto py-6 px-8 justify-start text-left text-lg font-bold rounded-2xl border-2 transition-all duration-300
-                  ${selectedAnswers[currentQuestionIndex] === option 
-                    ? 'border-primary bg-primary/5 text-primary scale-[1.01] shadow-md' 
-                    : 'border-muted hover:border-primary/40 hover:bg-white'}`}
-                onClick={() => handleAnswerSelect(option)}
-              >
-                <div className={`h-8 w-8 rounded-lg flex items-center justify-center mr-4 font-black transition-all
-                  ${selectedAnswers[currentQuestionIndex] === option ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                  {String.fromCharCode(65 + idx)}
-                </div>
-                {option}
-              </Button>
-            ))}
+            {currentQuestion.options.map((option: string, idx: number) => {
+              const isSelected = selectedAnswers[currentQuestionIndex] === option;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`group w-full h-auto py-5 px-6 flex items-center justify-start text-left text-lg font-bold rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
+                    isSelected
+                      ? 'border-primary bg-primary/10 text-primary scale-[1.01] shadow-md'
+                      : 'border-slate-200 bg-white text-slate-800 hover:border-primary/60 hover:bg-primary/5 hover:text-deep-purple shadow-sm'
+                  }`}
+                  onClick={() => handleAnswerSelect(option)}
+                >
+                  <div
+                    className={`h-9 w-9 rounded-xl flex items-center justify-center mr-4 font-black text-base shrink-0 transition-colors ${
+                      isSelected
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-500 group-hover:bg-primary/20 group-hover:text-primary'
+                    }`}
+                  >
+                    {String.fromCharCode(65 + idx)}
+                  </div>
+                  <span className="flex-1 font-semibold leading-snug">{option}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex justify-between items-center pt-8 border-t border-muted/20">
