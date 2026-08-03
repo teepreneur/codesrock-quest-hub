@@ -70,14 +70,20 @@ class ResourceService {
       endpoint += `?${queryString}`;
     }
 
-    return apiService.get<Resource[]>(endpoint);
+    const response = await apiService.get<any>(endpoint);
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.resources)) return response.resources;
+    return [];
   }
 
   /**
    * Get popular resources
    */
   async getPopularResources(): Promise<Resource[]> {
-    return apiService.get<Resource[]>('/resources/popular');
+    const response = await apiService.get<any>('/resources/popular');
+    if (Array.isArray(response)) return response;
+    if (response && Array.isArray(response.data)) return response.data;
+    return [];
   }
 
   /**

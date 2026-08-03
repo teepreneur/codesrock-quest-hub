@@ -386,10 +386,19 @@ export const deleteResource = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    const resourceId = req.params.id;
+
+    // Delete associated downloads first
+    await supabase
+      .from('resource_downloads')
+      .delete()
+      .eq('resource_id', resourceId);
+
+    // Delete the resource record from database
     const { error } = await supabase
       .from('resources')
-      .update({ is_active: false })
-      .eq('id', req.params.id);
+      .delete()
+      .eq('id', resourceId);
 
     if (error) {
       throw error;
