@@ -554,12 +554,22 @@ async function seedEvaluations() {
     // 2. Delete existing questions
     await supabase.from('evaluation_questions').delete().eq('evaluation_id', evaluation.id);
 
-    // 3. Insert new objective questions
+    // Helper function to shuffle array (Fisher-Yates)
+    const shuffleArray = <T>(array: T[]): T[] => {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+
+    // 3. Insert new objective questions with randomized option positions
     const questionsToInsert = seed.questions.map((q, index) => ({
       evaluation_id: evaluation.id,
       question_text: q.questionText,
       question_type: 'multiple_choice',
-      options: q.options,
+      options: shuffleArray(q.options),
       correct_answer: q.correctAnswer,
       order_index: index
     }));

@@ -31,7 +31,21 @@ export default function Evaluation() {
       setLoading(true);
       const response = await adminService.getEvaluation(topicId!);
       if (response && response.id) {
-        setEvaluation(response);
+        // Randomize option order (A-D) for each question so correct answers are evenly mixed
+        const processedQuestions = (response.evaluation_questions || []).map((q: any) => {
+          if (!q.options || !Array.isArray(q.options)) return q;
+          // Seed-consistent or dynamic shuffle for question options
+          const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+          return {
+            ...q,
+            options: shuffledOptions
+          };
+        });
+
+        setEvaluation({
+          ...response,
+          evaluation_questions: processedQuestions
+        });
       } else {
         toast.error("No evaluation found for this module");
         navigate("/videos");
