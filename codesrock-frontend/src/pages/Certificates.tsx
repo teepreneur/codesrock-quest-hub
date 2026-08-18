@@ -1,19 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Award, Download, Eye, Share2, CheckCircle, Printer, X } from "lucide-react";
+import { Award, Download, Eye, Share2, CheckCircle, Printer, Loader2 } from "lucide-react";
 import { certificateService, Certificate } from "@/services/certificate.service";
 import { authService } from "@/services/auth.service";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AdultCertificateTemplate, AdultCertificateData } from "@/components/certificates/AdultCertificateTemplate";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 export default function Certificates() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const certRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchCertificates();
@@ -43,10 +48,65 @@ export default function Certificates() {
   };
 
   const handleShare = (certificate: Certificate) => {
-    navigator.clipboard.writeText(`${window.location.origin}/verify/${certificate.certificateId}`);
-    toast.success(`🔗 Certificate link copied!`, {
-      description: "Share your achievement on social media",
+    const url = `${window.location.origin}/verify/${certificate.certificateId}`;
+    navigator.clipboard.writeText(url);
+    toast.success(`🔗 Certificate verification link copied!`, {
+      description: "Share your achievement credential on social media",
     });
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!selectedCert || !certRef.current) return;
+    setDownloadingPdf(true);
+    const toastId = toast.loading("Generating high-resolution PDF certificate...");
+
+    try {
+      // High resolution HTML canvas capture
+      const element = certRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2.5, // 2.5x resolution scaling for crisp vector-like text
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png", 1.0);
+      // Landscape A4 proportions
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Codesrock_Certificate_${selectedCert.certificateId}.pdf`);
+
+      toast.success("Certificate downloaded successfully! 📄", { id: toastId });
+    } catch (error) {
+      console.error("Error downloading PDF via canvas:", error);
+      // Try fallback backend PDF download
+      try {
+        const blob = await certificateService.downloadBackendPDF(selectedCert.id);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Codesrock_Certificate_${selectedCert.certificateId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success("Downloaded backend PDF certificate!", { id: toastId });
+      } catch (fallbackErr) {
+        console.error("Fallback PDF download failed:", fallbackErr);
+        toast.error("Failed to generate PDF. Please try printing to PDF.", { id: toastId });
+      }
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   if (loading) {
@@ -61,13 +121,35 @@ export default function Certificates() {
   }
 
   const user = authService.getStoredUser();
+  const recipientName = user
+    ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username
+    : "STEM Educator";
+
+  const getTemplateData = (cert: Certificate): AdultCertificateData => ({
+    id: cert.id,
+    certificateId: cert.certificateId,
+    title: cert.title || "Level 1: Unplugged Computational Thinking",
+    recipientName: recipientName,
+    schoolName: cert.schoolName,
+    type: cert.type,
+    dateEarned: cert.dateEarned,
+    citation: cert.citation,
+    questsExplored: cert.questsExplored,
+    badges: cert.badges || [
+      {
+        name: cert.title ? `${cert.title} Specialist` : "Logic Master",
+        description: "Passed all module challenges & unplugged logic missions",
+        icon: "🎖️",
+      },
+    ],
+  });
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold mb-2">My Certificates 📜</h1>
+        <h1 className="text-3xl font-bold mb-2">Teacher Credentials & Certificates 📜</h1>
         <p className="text-muted-foreground">
-          View and download your earned certificates of completion
+          View and download your official Codesrock STEM coaching credentials and level certificates
         </p>
       </div>
 
@@ -76,9 +158,9 @@ export default function Certificates() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-6 w-6 text-accent" />
-            Certificate Collection
+            Teacher Certificate Collection
           </CardTitle>
-          <CardDescription>You've earned {certificates.length} certificates so far!</CardDescription>
+          <CardDescription>You've earned {certificates.length} credentials so far!</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
@@ -101,7 +183,7 @@ export default function Certificates() {
               <p className="text-2xl font-bold text-accent">
                 {certificates.filter((c) => c.type === "program").length}
               </p>
-              <p className="text-sm text-muted-foreground">Program Completion</p>
+              <p className="text-sm text-muted-foreground">Program Certification</p>
             </div>
           </div>
         </CardContent>
@@ -112,55 +194,55 @@ export default function Certificates() {
         {certificates.map((certificate) => (
           <Card
             key={certificate.id}
-            className="overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 border-accent/20"
+            className="overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 border-accent/20 flex flex-col justify-between"
           >
             <CardContent className="p-0">
-              {/* Certificate Preview */}
-              <div className="relative aspect-[4/3] bg-primary/10 flex items-center justify-center border-b border-border">
-                <div className="text-center p-6">
-                  <div className="text-6xl mb-4">📜</div>
-                  <div className="space-y-2">
-                    <div className="w-12 h-1 bg-accent mx-auto" />
-                    <h3 className="font-bold text-lg">{certificate.title}</h3>
-                    <div className="w-8 h-1 bg-secondary mx-auto" />
-                    <p className="text-sm text-muted-foreground">CodesRock Teacher Training</p>
-                    <Badge
-                      variant={
-                        certificate.type === "course"
-                          ? "default"
-                          : certificate.type === "level"
-                          ? "secondary"
-                          : "outline"
-                      }
-                      className="mt-2"
-                    >
-                      {certificate.type === "course"
-                        ? "Course Completion"
-                        : certificate.type === "level"
-                        ? "Level Achievement"
-                        : "Program Certificate"}
-                    </Badge>
+              {/* Certificate Preview Card Header */}
+              <div className="relative aspect-[16/10] bg-gradient-to-br from-purple-900/90 via-slate-900 to-indigo-950 flex flex-col justify-between p-5 text-white border-b border-border overflow-hidden">
+                {/* Rocky Thumbnail Preview */}
+                <img
+                  src="/rocky_celebration_pose.png"
+                  alt="Rocky 3D"
+                  className="absolute right-2 bottom-1 w-24 h-auto object-contain opacity-90 drop-shadow"
+                />
+
+                <div className="flex justify-between items-start z-10">
+                  <Badge variant="secondary" className="bg-amber-400 text-purple-950 font-bold">
+                    {certificate.type === "course"
+                      ? "Course Completion"
+                      : certificate.type === "level"
+                      ? "Level Milestone"
+                      : "Program Certification"}
+                  </Badge>
+                  <div className="bg-emerald-500/20 text-emerald-300 rounded-full p-1 border border-emerald-400/40">
+                    <CheckCircle className="h-4 w-4" />
                   </div>
                 </div>
-                <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
-                  <CheckCircle className="h-5 w-5" />
+
+                <div className="z-10 space-y-1">
+                  <p className="text-xs uppercase font-extrabold tracking-wider text-teal-300">
+                    CodesRock Teacher Hub
+                  </p>
+                  <h3 className="font-bold text-base leading-snug line-clamp-2">{certificate.title}</h3>
+                </div>
+
+                <div className="z-10 flex items-center justify-between text-xs text-slate-300 border-t border-white/10 pt-2">
+                  <span>ID: {certificate.certificateId}</span>
+                  <span>{new Date(certificate.dateEarned).toLocaleDateString()}</span>
                 </div>
               </div>
 
-              {/* Certificate Info */}
-              <div className="p-6 space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-muted-foreground">Date Earned</span>
-                    <span className="text-sm font-semibold">
-                      {new Date(certificate.dateEarned).toLocaleDateString()}
-                    </span>
+              {/* Certificate Info Body */}
+              <div className="p-5 space-y-4">
+                <div className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-lg">
+                    🏅
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Certificate ID</span>
-                    <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                      {certificate.certificateId}
-                    </span>
+                  <div>
+                    <p className="text-xs font-bold text-purple-900">Module Badge Conferred</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Level Badge & Official Educator Credential
+                    </p>
                   </div>
                 </div>
 
@@ -170,27 +252,28 @@ export default function Certificates() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleViewCertificate(certificate)}
-                    className="flex-col h-auto py-2 gap-1"
+                    className="flex items-center justify-center gap-1 text-xs"
                   >
-                    <Eye className="h-4 w-4" />
-                    <span className="text-xs">View</span>
+                    <Eye className="h-3.5 w-3.5" />
+                    Preview
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleShare(certificate)}
-                    className="flex-col h-auto py-2 gap-1"
+                    className="flex items-center justify-center gap-1 text-xs"
                   >
-                    <Share2 className="h-4 w-4" />
-                    <span className="text-xs">Share Link</span>
+                    <Share2 className="h-3.5 w-3.5" />
+                    Verify Link
                   </Button>
                 </div>
 
                 <Button
-                  className="w-full bg-primary hover:bg-primary/90"
+                  className="w-full bg-purple-900 hover:bg-purple-950 text-white font-bold"
                   onClick={() => handleViewCertificate(certificate)}
                 >
-                  View Full Certificate
+                  <Award className="mr-2 h-4 w-4 text-amber-400" />
+                  View & Download PDF
                 </Button>
               </div>
             </CardContent>
@@ -205,72 +288,64 @@ export default function Certificates() {
             <div className="text-6xl mb-4">🎓</div>
             <h3 className="text-xl font-semibold mb-2">No Certificates Yet</h3>
             <p className="text-muted-foreground text-center mb-6">
-              Complete courses and level up to earn certificates!
+              Complete teacher training modules and level challenges to earn your credentials!
             </p>
-            <Button className="bg-primary hover:bg-primary/90" onClick={() => window.location.href = '/learning-path'}>
-              Start Learning
+            <Button className="bg-purple-900 hover:bg-purple-950" onClick={() => window.location.href = '/learning-path'}>
+              Start Learning Path
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Certificate Modal */}
+      {/* Adult Certificate Preview & PDF Download Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-white border-8 border-double border-primary/20">
-          <div className="p-12 relative overflow-hidden print:p-0">
-            {/* Background elements for premium look */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary/5 rounded-full -ml-32 -mb-32" />
+        <DialogContent className="max-w-5xl p-0 overflow-hidden bg-slate-900 text-white border-0">
+          <DialogHeader className="p-4 bg-purple-950 border-b border-purple-800 flex flex-row items-center justify-between">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-white">
+              <Award className="h-5 w-5 text-amber-400" />
+              Teacher PDF Credential Preview
+            </DialogTitle>
+          </DialogHeader>
 
-            <div className="relative z-10 border-4 border-primary/30 p-12 text-center space-y-8 min-h-[600px] flex flex-col justify-center">
-              <div className="space-y-2">
-                <div className="flex justify-center mb-6">
-                   <img src="/assets/logo.png" alt="CodesRock" className="h-20 object-contain" />
-                </div>
-                <h1 className="text-4xl font-serif font-bold text-gray-800 uppercase tracking-widest">Certificate of Completion</h1>
-                <p className="text-xl text-muted-foreground italic">This is to certify that</p>
+          {/* Certificate Container Modal Body */}
+          <div className="p-6 bg-slate-950 flex items-center justify-center overflow-x-auto min-h-[500px]">
+            {selectedCert && (
+              <div className="shadow-2xl rounded-lg overflow-hidden border border-purple-500/30">
+                <AdultCertificateTemplate
+                  ref={certRef}
+                  data={getTemplateData(selectedCert)}
+                  scale={0.8}
+                />
               </div>
-
-              <div className="space-y-4">
-                <h2 className="text-5xl font-serif font-black text-primary border-b-2 border-primary/20 pb-4 inline-block px-12">
-                  {user?.firstName} {user?.lastName}
-                </h2>
-                <p className="text-xl text-gray-700">has successfully completed the teacher training course</p>
-                <h3 className="text-3xl font-bold text-gray-900">{selectedCert?.title}</h3>
-              </div>
-
-              <div className="pt-12 grid grid-cols-2 gap-24 text-center">
-                <div className="space-y-2">
-                  <div className="border-b border-gray-400 font-serif text-lg py-2">
-                    {new Date(selectedCert?.dateEarned || "").toLocaleDateString()}
-                  </div>
-                  <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Date Issued</p>
-                </div>
-                <div className="space-y-2">
-                  <div className="border-b border-gray-400 font-serif text-lg py-2">
-                    {selectedCert?.certificateId}
-                  </div>
-                  <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Certificate ID</p>
-                </div>
-              </div>
-
-              <div className="pt-12 flex justify-between items-end">
-                <div className="text-left opacity-30">
-                  <img src="/assets/rocky/waving-transparent.webp" alt="Rocky" className="h-24 w-24 object-contain" />
-                </div>
-                <div className="text-right">
-                  <p className="font-serif italic text-xl">The CodesRock Team</p>
-                  <p className="text-xs uppercase font-bold text-muted-foreground tracking-tighter">Verified Achievement</p>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
-          <div className="bg-muted p-4 flex justify-between print:hidden">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Close</Button>
-            <div className="flex gap-2">
-              <Button onClick={handlePrint} className="bg-primary hover:bg-primary/90">
+
+          {/* Modal Action Bar */}
+          <div className="bg-slate-900 p-4 border-t border-slate-800 flex justify-between items-center">
+            <Button variant="ghost" onClick={() => setIsModalOpen(false)} className="text-slate-300 hover:text-white">
+              Close
+            </Button>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={handlePrint} className="border-slate-700 text-slate-200 hover:bg-slate-800">
                 <Printer className="mr-2 h-4 w-4" />
-                Print / Save PDF
+                Print
+              </Button>
+              <Button
+                onClick={handleDownloadPDF}
+                disabled={downloadingPdf}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6"
+              >
+                {downloadingPdf ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Official PDF Credential
+                  </>
+                )}
               </Button>
             </div>
           </div>

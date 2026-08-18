@@ -1,5 +1,11 @@
 import { apiService } from './api.service';
 
+export interface CertificateBadge {
+  name: string;
+  description: string;
+  icon?: string;
+}
+
 export interface Certificate {
   id: string;
   userId: string;
@@ -8,6 +14,10 @@ export interface Certificate {
   type: 'course' | 'level' | 'program';
   certificateId: string;
   dateEarned: string;
+  schoolName?: string;
+  citation?: string;
+  questsExplored?: string[];
+  badges?: CertificateBadge[];
   courses?: {
     title: string;
     thumbnail: string;
@@ -29,6 +39,24 @@ class CertificateService {
   async getCertificateById(id: string): Promise<Certificate> {
     return apiService.get<Certificate>(`/certificates/detail/${id}`);
   }
+
+  /**
+   * Download certificate PDF directly from backend API
+   */
+  async downloadBackendPDF(certificateId: string): Promise<Blob> {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/certificates/${certificateId}/pdf`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to download backend PDF');
+    }
+
+    return response.blob();
+  }
 }
 
 export const certificateService = new CertificateService();
+
