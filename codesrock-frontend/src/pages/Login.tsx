@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { authService, ApiError } from "@/services";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 
 type LoginMode = 'school' | 'email';
 
@@ -17,6 +18,8 @@ export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [loginMode, setLoginMode] = useState<LoginMode>('school');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorField, setErrorField] = useState<'schoolCode' | 'username' | 'email' | 'password' | 'general' | null>(null);
 
   // School login fields
   const [schoolCode, setSchoolCode] = useState("");
@@ -57,41 +60,78 @@ export default function Login() {
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
-    // Reset the auto-hide timer on every keystroke while visible
+    clearErrors();
     if (showPassword) {
       resetHideTimer();
     }
   };
 
+  const clearErrors = () => {
+    if (errorMessage) {
+      setErrorMessage(null);
+      setErrorField(null);
+    }
+  };
+
+  const handleModeChange = (mode: LoginMode) => {
+    setLoginMode(mode);
+    clearErrors();
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearErrors();
     setLoading(true);
 
     try {
       let response;
 
       if (loginMode === 'school') {
-        // School-based login
-        if (!schoolCode || !username || !password) {
-          toast.error("Please fill in all fields");
+        // School-based login validation
+        if (!schoolCode.trim()) {
+          setErrorMessage("Please enter your School ID (e.g., SCH-XXXXXX).");
+          setErrorField("schoolCode");
+          setLoading(false);
+          return;
+        }
+
+        if (!username.trim()) {
+          setErrorMessage("Please enter your username.");
+          setErrorField("username");
+          setLoading(false);
+          return;
+        }
+
+        if (!password) {
+          setErrorMessage("Please enter your password.");
+          setErrorField("password");
           setLoading(false);
           return;
         }
 
         response = await authService.loginWithSchool({
-          schoolCode: schoolCode.toUpperCase(),
-          username,
+          schoolCode: schoolCode.toUpperCase().trim(),
+          username: username.trim(),
           password,
         });
       } else {
-        // Email-based login
-        if (!email || !password) {
-          toast.error("Please fill in all fields");
+        // Email-based login validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email.trim() || !emailRegex.test(email.trim())) {
+          setErrorMessage("Please enter a valid email address.");
+          setErrorField("email");
           setLoading(false);
           return;
         }
 
-        response = await authService.login({ email, password });
+        if (!password) {
+          setErrorMessage("Please enter your password.");
+          setErrorField("password");
+          setLoading(false);
+          return;
+        }
+
+        response = await authService.login({ email: email.trim(), password });
       }
 
       toast.success(`Welcome back, ${response.user.firstName}!`);
@@ -104,11 +144,33 @@ export default function Login() {
         navigate("/dashboard");
       }
     } catch (error) {
+      let userMessage = "An unexpected error occurred during login. Please try again.";
+      let field: 'schoolCode' | 'username' | 'email' | 'password' | 'general' = 'general';
+
       if (error instanceof ApiError) {
-        toast.error(error.message || "Login failed");
-      } else {
-        toast.error("An unexpected error occurred");
+        if (error.statusCode === 0 || error.message.toLowerCase().includes("failed to fetch")) {
+          userMessage = "Unable to connect to the server. Please check your internet connection and try again.";
+        } else if (error.message) {
+          userMessage = error.message;
+        }
+
+        const lowerMsg = userMessage.toLowerCase();
+        if (lowerMsg.includes("school id") || lowerMsg.includes("school code")) {
+          field = 'schoolCode';
+        } else if (lowerMsg.includes("username")) {
+          field = 'username';
+        } else if (lowerMsg.includes("email")) {
+          field = 'email';
+        } else if (lowerMsg.includes("password")) {
+          field = 'password';
+        }
+      } else if (error instanceof Error && error.message) {
+        userMessage = error.message;
       }
+
+      setErrorMessage(userMessage);
+      setErrorField(field);
+      toast.error(userMessage);
     } finally {
       setLoading(false);
     }
@@ -149,7 +211,7 @@ export default function Login() {
           <div className="flex mb-6 bg-muted rounded-lg p-1">
             <button
               type="button"
-              onClick={() => setLoginMode('school')}
+              onClick={() => handleModeChange('school')}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${loginMode === 'school'
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -159,7 +221,7 @@ export default function Login() {
             </button>
             <button
               type="button"
-              onClick={() => setLoginMode('email')}
+              onClick={() => handleModeChange('email')}
               className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${loginMode === 'email'
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -169,7 +231,16 @@ export default function Login() {
             </button>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          {/* Inline Error Alert Banner */}
+          {errorMessage && (
+            <Alert variant="destructive" className="mb-6 animate-fade-in border-destructive/50 bg-destructive/10 text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle className="font-bold">Login Failed</AlertTitle>
+              <AlertDescription className="text-sm font-medium">{errorMessage}</AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-6" noValidate>
             {loginMode === 'school' ? (
               <>
                 <div className="space-y-2">
@@ -179,8 +250,11 @@ export default function Login() {
                     type="text"
                     placeholder="SCH-XXXXXX"
                     value={schoolCode}
-                    onChange={(e) => setSchoolCode(formatSchoolCode(e.target.value))}
-                    className="font-mono"
+                    onChange={(e) => {
+                      setSchoolCode(formatSchoolCode(e.target.value));
+                      clearErrors();
+                    }}
+                    className={`font-mono ${errorField === 'schoolCode' ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />
                   <p className="text-xs text-muted-foreground">
@@ -195,7 +269,11 @@ export default function Login() {
                     type="text"
                     placeholder="Enter your username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                    onChange={(e) => {
+                      setUsername(e.target.value.toLowerCase());
+                      clearErrors();
+                    }}
+                    className={errorField === 'username' ? 'border-destructive focus-visible:ring-destructive' : ''}
                     required
                   />
                 </div>
@@ -208,7 +286,11 @@ export default function Login() {
                   type="email"
                   placeholder="Enter your email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    clearErrors();
+                  }}
+                  className={errorField === 'email' ? 'border-destructive focus-visible:ring-destructive' : ''}
                   required
                 />
               </div>
@@ -223,7 +305,7 @@ export default function Login() {
                   placeholder="Enter your password"
                   value={password}
                   onChange={handlePasswordChange}
-                  className="pr-10"
+                  className={`pr-10 ${errorField === 'password' ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   required
                 />
                 <button

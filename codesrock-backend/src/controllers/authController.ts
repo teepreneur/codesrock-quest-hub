@@ -197,11 +197,11 @@ export const loginWithSchool = async (
       .single();
 
     if (schoolError || !school) {
-      throw new AppError('Invalid School ID', 401);
+      throw new AppError('Invalid School ID. Please verify the school code provided by your administrator.', 401);
     }
 
     if (!school.is_active) {
-      throw new AppError('This school is currently inactive. Please contact support.', 403);
+      throw new AppError('This school account is currently inactive. Please contact support.', 403);
     }
 
     // Find profile by username and school_id
@@ -213,12 +213,12 @@ export const loginWithSchool = async (
       .single();
 
     if (profileError || !profile) {
-      throw new AppError('Invalid username or password', 401);
+      throw new AppError('Username not found under this School ID. Please check your username.', 401);
     }
 
     // Check if user is active
     if (!profile.is_active) {
-      throw new AppError('Your account has been deactivated. Please contact your administrator.', 403);
+      throw new AppError('Your account has been deactivated. Please contact your school administrator.', 403);
     }
 
     // Authenticate with Supabase using the profile's email
@@ -228,11 +228,11 @@ export const loginWithSchool = async (
     });
 
     if (error) {
-      throw new AppError('Invalid username or password', 401);
+      throw new AppError('Incorrect password. Please check your password and try again.', 401);
     }
 
     if (!data.user || !data.session) {
-      throw new AppError('Authentication failed', 401);
+      throw new AppError('Authentication failed. Please try again.', 401);
     }
 
     // Update last_login and is_online
