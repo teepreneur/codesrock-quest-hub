@@ -90,13 +90,21 @@ export const createClass = async (req: Request, res: Response): Promise<void> =>
       }
     }
 
+    // New classes follow the CodesRock 1 activity book by default
+    const { data: curriculum } = await supabase
+      .from('curricula')
+      .select('id')
+      .eq('slug', 'codesrock-1-activity-book')
+      .single();
+
     const { data: newClass, error } = await supabase
       .from('classes')
       .insert({
         name,
         teacher_id: teacherId,
         course_id: courseId || null,
-        school_id: resolvedSchoolId || null
+        school_id: resolvedSchoolId || null,
+        curriculum_id: curriculum?.id || null
       })
       .select()
       .single();

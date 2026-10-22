@@ -29,7 +29,7 @@ export const getOverview = async (
       { count: totalActivities },
     ] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').eq('is_active', true),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student').eq('is_active', true),
+      supabase.from('learners').select('*', { count: 'exact', head: true }).eq('is_active', true),
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').gte('last_login', yesterday.toISOString()).eq('is_active', true),
       supabase.from('courses').select('*', { count: 'exact', head: true }).eq('is_published', true),
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').gte('created_at', thirtyDaysAgo.toISOString()),
@@ -42,15 +42,12 @@ export const getOverview = async (
       ? allProgress.reduce((sum, p) => sum + (p.total_seconds > 0 ? (p.watched_seconds / p.total_seconds) * 100 : 0), 0) / allProgress.length
       : 0;
 
-    // Calculate average student completion rate (manual topic mastery)
-    const { data: studentMastery } = await supabase.from('student_topic_progress').select('id');
-    const { count: totalPossibleMastery } = await supabase.from('topics').select('*', { count: 'exact', head: true }).eq('is_active', true);
-    
-    // Simplified: Percentage of students who have completed at least one topic
-    const { count: progressCount } = await supabase.from('student_topic_progress').select('*', { count: 'exact', head: true });
-    const studentCompletionRate = totalStudents && totalStudents > 0 
-      ? ((progressCount || 0) / totalStudents) * 100 
-      : 0;
+    // Student outcomes: share of activity-book ratings where the child worked on their own
+    const [{ count: ratedCount }, { count: independentCount }] = await Promise.all([
+      supabase.from('learner_activity_results').select('id', { count: 'exact', head: true }),
+      supabase.from('learner_activity_results').select('id', { count: 'exact', head: true }).eq('level', 3),
+    ]);
+    const studentCompletionRate = ratedCount ? ((independentCount || 0) / ratedCount) * 100 : 0;
 
     // Get engagement trend (last 7 days)
     const sevenDaysAgo = new Date();
