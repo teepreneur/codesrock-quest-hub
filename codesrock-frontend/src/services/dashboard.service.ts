@@ -36,7 +36,7 @@ export interface DashboardData {
     completedCourses: number;
     inProgressCourses: number;
     notStartedCourses: number;
-    leaderboardPosition: number;
+    evaluationsPassed: number;
   };
   recentActivities: Array<{
     type: string;
@@ -45,29 +45,26 @@ export interface DashboardData {
     timestamp: string;
   }>;
   courseProgress: Array<{
-    course: any;
+    course: { id: string; title: string };
+    videosCompleted: number;
+    videosTotal: number;
     progressPercentage: number;
     completed: boolean;
     lastWatchedAt: string;
+    nextVideo: { id: string; title: string; topicTitle?: string } | null;
   }>;
   upcomingSessions: Array<{
-    session: any;
-    registeredAt: string;
+    session: { id: string; title: string; start_time: string; end_time?: string; type?: string; meeting_link?: string; instructor?: string };
+    isRegistered: boolean;
   }>;
-  recommendedCourses: any[];
   evaluations: Array<{
     id: string;
+    evaluation_id: string;
     evaluation: any;
-    status: string;
+    passed: boolean;
     score?: number;
-    percentage?: number;
-    submittedAt?: string;
+    completedAt?: string;
   }>;
-  classroomStats?: {
-    avgCompletion: number;
-    studentCount: number;
-    classCount: number;
-  };
 }
 
 export interface AdminStats {

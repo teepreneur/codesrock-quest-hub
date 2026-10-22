@@ -536,3 +536,41 @@ export const getOverview = async (req: Request, res: Response, next: NextFunctio
     next(error);
   }
 };
+
+/**
+ * GET /api/tracking/my-classes
+ * Every class the signed-in teacher teaches, with headline progress, a
+ * lesson-by-lesson trend and the children who need attention.
+ */
+export const getMyClasses = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { data: classes, error } = await supabase
+      .from('classes')
+      .select('id, name, teacher_id, school_id, curriculum_id')
+      .eq('teacher_id', req.user!.userId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+
+    const summaries = await Promise.all(
+      (classes || []).map(async (cls: ClassRow) => {
+        const progress = computeClassProgress(await loadProgressInput(cls));
+        return {
+          classId: cls.id,
+          name: cls.name,
+          ...progress.summary,
+          trend: progress.trend.map((t) => ({ date: t.date, independentRate: t.independentRate })),
+          needsAttention: progress.needsAttention.map((l) => ({ learnerId: l.learnerId, name: l.name, flags: l.flags })),
+        };
+      })
+    );
+
+    const needsAttention = summaries
+      .flatMap((c) => c.needsAttention.map((l) => ({ ...l, classId: c.classId, className: c.name })))
+      .sort((a, b) => b.flags.length - a.flags.length)
+      .slice(0, 5);
+
+    res.status(200).json({ success: true, data: { classes: summaries, needsAttention } });
+  } catch (error) {
+    next(error);
+  }
+};

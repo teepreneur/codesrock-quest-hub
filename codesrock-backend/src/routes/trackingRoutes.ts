@@ -40,6 +40,9 @@ router.use(protect);
 // Admin overview (super admin: all schools; school admin: own school)
 router.get('/overview', requireAdmin, tracking.getOverview);
 
+// The signed-in teacher's classes at a glance (dashboard)
+router.get('/my-classes', tracking.getMyClasses);
+
 // Curriculum for a class
 router.get('/classes/:classId/curriculum', validate([classIdParam]), tracking.getClassCurriculum);
 

@@ -120,6 +120,18 @@ describe('Class access', () => {
   });
 });
 
+describe('My classes (dashboard)', () => {
+  it('returns only the signed-in teacher\'s classes', async () => {
+    const mine = await request(app).get('/api/tracking/my-classes').set(as('teacher-token'));
+    expect(mine.status).toBe(200);
+    expect(mine.body.data.classes.map((c: Row) => c.classId)).toEqual([CLASS]);
+    expect(mine.body.data.classes[0]).toMatchObject({ name: 'KG1', learnerCount: 2, lessonCount: 0 });
+
+    const other = await request(app).get('/api/tracking/my-classes').set(as('other-teacher-token'));
+    expect(other.body.data.classes).toEqual([]);
+  });
+});
+
 describe('Logging a lesson', () => {
   const lesson = (overrides: Row = {}) => ({
     date: '2026-10-20',

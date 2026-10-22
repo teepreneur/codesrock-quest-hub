@@ -173,6 +173,28 @@ export interface SchoolOverview {
   attendanceRate: number | null;
 }
 
+export interface MyClassSummary {
+  classId: string;
+  name: string;
+  learnerCount: number;
+  lessonCount: number;
+  lastLessonDate: string | null;
+  activitiesCovered: number;
+  activitiesTotal: number;
+  coveragePercent: number | null;
+  attendanceRate: number | null;
+  avgScore: number | null;
+  independentRate: number | null;
+  ratedCount: number;
+  trend: { date: string; independentRate: number | null }[];
+  needsAttention: { learnerId: string; name: string; flags: Flag[] }[];
+}
+
+export interface MyClasses {
+  classes: MyClassSummary[];
+  needsAttention: { learnerId: string; name: string; flags: Flag[]; classId: string; className: string }[];
+}
+
 const base = (classId: string) => `/tracking/classes/${classId}`;
 
 class TrackingService {
@@ -220,6 +242,10 @@ class TrackingService {
 
   getLearnerProgress(classId: string, learnerId: string) {
     return apiService.get<LearnerProgress>(`${base(classId)}/learners/${learnerId}/progress`);
+  }
+
+  getMyClasses() {
+    return apiService.get<MyClasses>('/tracking/my-classes');
   }
 
   getOverview(schoolId?: string) {

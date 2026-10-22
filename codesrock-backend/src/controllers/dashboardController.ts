@@ -18,64 +18,67 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
       return;
     }
 
+    const nowIso = new Date().toISOString();
+
     // Fetch all data in parallel
     const [
       { data: user },
       { data: progress },
       { data: userBadges },
       { data: recentActivities },
-      { data: courseProgress },
-      { data: upcomingSessions },
+      { data: videoProgress },
+      { data: activeVideos },
+      { data: nextSessions },
+      { data: registrations },
       { data: evaluations },
+      { data: teacherClasses },
     ] = await Promise.all([
-      // User info
       supabase.from('profiles').select('id, first_name, last_name, email, role').eq('id', userId).single(),
 
-      // User progress (XP, level, streak)
-      supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', userId)
-        .single(),
+      // XP, level, streak
+      supabase.from('user_progress').select('*').eq('user_id', userId).single(),
 
-      // User badges (separate query)
-      supabase
-        .from('user_badges')
-        .select('*, badges(name, description, icon, category)')
-        .eq('user_id', userId),
+      supabase.from('user_badges').select('*, badges(name, description, icon, category)').eq('user_id', userId),
 
-      // Recent activities (last 10)
+      // Recent activities (the column is created_at)
       supabase
         .from('activities')
-        .select('type, description, xp_earned, metadata, timestamp')
+        .select('type, description, xp_earned, created_at')
         .eq('user_id', userId)
-        .order('timestamp', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(10),
 
-      // Course progress summary
+      // Every video the teacher has watched
       supabase
         .from('video_progress')
-        .select('*, courses(title, thumbnail, category)')
-        .eq('user_id', userId)
-        .order('last_watched_at', { ascending: false })
-        .limit(5),
+        .select('course_id, video_id, completed, last_watched_at')
+        .eq('user_id', userId),
 
-      // Upcoming training sessions
+      // All active training videos, in learning-path order
       supabase
-        .from('session_registrations')
-        .select('*, training_sessions(*)')
-        .eq('user_id', userId)
-        .eq('attended', false)
-        .gte('training_sessions.start_time', new Date().toISOString())
-        .limit(5),
+        .from('videos')
+        .select('id, title, course_id, order_index, topics!inner(id, title, order_index, is_active), courses!inner(id, title, is_active)')
+        .eq('is_active', true),
 
-      // Evaluation status
+      // Next live training sessions (registered or not)
+      supabase
+        .from('training_sessions')
+        .select('id, title, start_time, end_time, type, meeting_link, instructor')
+        .eq('is_active', true)
+        .gte('start_time', nowIso)
+        .order('start_time', { ascending: true })
+        .limit(3),
+
+      supabase.from('session_registrations').select('session_id').eq('user_id', userId),
+
+      // Evaluation results
       supabase
         .from('evaluation_progress')
-        .select('*, evaluations(title, description)')
+        .select('id, evaluation_id, score, passed, completed_at, evaluations(id, title, description)')
         .eq('user_id', userId)
-        .order('updated_at', { ascending: false })
-        .limit(3),
+        .order('completed_at', { ascending: false }),
+
+      supabase.from('classes').select('id, name').eq('teacher_id', userId),
     ]);
 
     if (!user) {
@@ -88,65 +91,85 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Calculate course statistics - Corrected to count unique courses
-    const { data: userVideoProgress } = await supabase
-      .from('video_progress')
-      .select('course_id, completed')
-      .eq('user_id', userId);
+    // ---- Training progress per course: completed videos / active videos ----
+    const completedVideoIds = new Set(
+      (videoProgress || []).filter((v: any) => v.completed && v.video_id).map((v: any) => v.video_id)
+    );
+    const videos = (activeVideos || []).filter((v: any) => v.topics?.is_active !== false && v.courses?.is_active !== false);
+    const lastWatched = new Map<string, string>();
+    for (const v of videoProgress || []) {
+      const prev = lastWatched.get(v.course_id);
+      if (v.course_id && (!prev || v.last_watched_at > prev)) lastWatched.set(v.course_id, v.last_watched_at);
+    }
 
-    const completedCourseIds = new Set((userVideoProgress || [])
-      .filter(p => p.completed)
-      .map(p => p.course_id));
-    
-    const inProgressCourseIds = new Set((userVideoProgress || [])
-      .filter(p => !p.completed)
-      .map(p => p.course_id));
+    const byCourse = new Map<string, any[]>();
+    for (const v of videos) {
+      byCourse.set(v.course_id, [...(byCourse.get(v.course_id) || []), v]);
+    }
+    const ordered = (list: any[]) =>
+      [...list].sort((a, b) =>
+        (a.topics?.order_index ?? 0) - (b.topics?.order_index ?? 0) || (a.order_index ?? 0) - (b.order_index ?? 0)
+      );
 
-    const { count: totalCoursesCount } = await supabase
-      .from('courses')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true);
+    const courseProgress = [...byCourse.entries()]
+      .filter(([courseId]) => lastWatched.has(courseId))
+      .map(([courseId, list]) => {
+        const sorted = ordered(list);
+        const done = sorted.filter((v) => completedVideoIds.has(v.id)).length;
+        const next = sorted.find((v) => !completedVideoIds.has(v.id));
+        return {
+          course: { id: courseId, title: sorted[0]?.courses?.title },
+          videosCompleted: done,
+          videosTotal: sorted.length,
+          progressPercentage: sorted.length ? Math.round((done / sorted.length) * 100) : 0,
+          completed: sorted.length > 0 && done === sorted.length,
+          lastWatchedAt: lastWatched.get(courseId),
+          nextVideo: next ? { id: next.id, title: next.title, topicTitle: next.topics?.title } : null,
+        };
+      })
+      .sort((a, b) => String(b.lastWatchedAt).localeCompare(String(a.lastWatchedAt)));
 
-    const totalCourses = totalCoursesCount || 0;
-    const completedCourses = completedCourseIds.size;
-    const inProgressCourses = inProgressCourseIds.size;
+    const totalCourses = byCourse.size;
+    const completedCourses = courseProgress.filter((c) => c.completed).length;
+    const inProgressCourses = courseProgress.length - completedCourses;
 
-    // Get leaderboard position
-    const { data: leaderboardData } = await supabase.rpc('get_leaderboard', { p_limit: 100 });
-    const leaderboardPosition = (leaderboardData?.findIndex((entry: any) => entry.user_id === userId) || -1) + 1;
+    // ---- Recent activity: own milestones plus lessons logged ----
+    const classIds = (teacherClasses || []).map((c: any) => c.id);
+    const classNames = new Map((teacherClasses || []).map((c: any) => [c.id, c.name]));
+    const { data: recentLessons } = classIds.length
+      ? await supabase
+          .from('lesson_sessions')
+          .select('class_id, session_date, created_at')
+          .in('class_id', classIds)
+          .order('created_at', { ascending: false })
+          .limit(5)
+      : { data: [] as any[] };
 
-    // Get recommended courses based on completed categories
-    const { data: completedProgress } = await supabase
-      .from('video_progress')
-      .select('courses(category)')
-      .eq('user_id', userId)
-      .eq('completed', true);
+    const activityFeed = [
+      ...(recentActivities || [])
+        // "Started a video" is noise next to real milestones
+        .filter((a: any) => a.type !== 'video_started')
+        .map((a: any) => ({ type: a.type, description: a.description, xpEarned: a.xp_earned || 0, timestamp: a.created_at })),
+      ...(recentLessons || []).map((l: any) => ({
+        type: 'lesson_logged',
+        description: `Lesson logged for ${classNames.get(l.class_id) || 'a class'}`,
+        xpEarned: 0,
+        timestamp: l.created_at,
+      })),
+    ]
+      .sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)))
+      .slice(0, 6);
 
-    const categories = [...new Set(completedProgress?.map((p: any) => p.courses?.category).filter(Boolean))] as string[];
+    const registered = new Set((registrations || []).map((r: any) => r.session_id));
+    const upcomingSessions = (nextSessions || []).map((s: any) => ({
+      session: s,
+      isRegistered: registered.has(s.id),
+    }));
 
-    const { data: recommendedCourses } = await supabase
-      .from('courses')
-      .select('title, thumbnail, category, difficulty, xp_reward')
-      .eq('is_active', true)
-      .in('category', categories.length > 0 ? categories : ['HTML/CSS', 'JavaScript'])
-      .order('average_rating', { ascending: false })
-      .order('completion_count', { ascending: false })
-      .limit(3);
-
-    // Filter upcoming sessions (remove null sessions)
-    const validUpcomingSessions = (upcomingSessions || [])
-      .filter((reg: any) => reg.training_sessions)
-      .map((reg: any) => ({
-        session: reg.training_sessions,
-        registeredAt: reg.registered_at,
-      }));
-
-    // Extract recent badges
     const recentBadges = (userBadges || [])
       .sort((a: any, b: any) => new Date(b.earned_at).getTime() - new Date(a.earned_at).getTime())
       .slice(0, 3);
 
-    // Construct dashboard response
     const dashboard = {
       user: {
         id: user.id,
@@ -177,96 +200,28 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
             const xpInCurrentLevel = progress.current_xp - currentLevelData.minXP;
             const xpNeededForNextLevel = nextLevel.minXP - currentLevelData.minXP;
             return Math.round((xpInCurrentLevel / xpNeededForNextLevel) * 100);
-          })()
+          })(),
         },
       },
       stats: {
-        totalCourses: totalCourses || 0,
-        completedCourses: completedCourses || 0,
-        inProgressCourses: inProgressCourses || 0,
-        notStartedCourses: (totalCourses || 0) - (completedCourses || 0) - (inProgressCourses || 0),
-        leaderboardPosition: leaderboardPosition > 0 ? leaderboardPosition : null,
+        totalCourses,
+        completedCourses,
+        inProgressCourses,
+        notStartedCourses: totalCourses - completedCourses - inProgressCourses,
+        evaluationsPassed: (evaluations || []).filter((e: any) => e.passed).length,
       },
-      recentActivities: (recentActivities || []).map((activity: any) => ({
-        type: activity.type,
-        description: activity.description,
-        xpEarned: activity.xp_earned,
-        timestamp: activity.timestamp,
+      recentActivities: activityFeed,
+      courseProgress,
+      upcomingSessions,
+      evaluations: (evaluations || []).map((e: any) => ({
+        id: e.id,
+        evaluation_id: e.evaluation_id,
+        evaluation: e.evaluations,
+        passed: e.passed,
+        score: e.score,
+        completedAt: e.completed_at,
       })),
-      courseProgress: (() => {
-        const uniqueCourses: Record<string, any> = {};
-        (courseProgress || []).forEach((cp: any) => {
-          const courseId = cp.courses?.id || cp.course_id;
-          if (!uniqueCourses[courseId]) {
-            uniqueCourses[courseId] = {
-              course: cp.courses,
-              progressPercentage: cp.total_seconds > 0 ? Math.round((cp.watched_seconds / cp.total_seconds) * 100) : 0,
-              completed: cp.completed,
-              lastWatchedAt: cp.last_watched_at,
-            };
-          } else if (new Date(cp.last_watched_at) > new Date(uniqueCourses[courseId].last_watched_at)) {
-            // Keep the most recent progress for this course
-            uniqueCourses[courseId] = {
-              course: cp.courses,
-              progressPercentage: cp.total_seconds > 0 ? Math.round((cp.watched_seconds / cp.total_seconds) * 100) : 0,
-              completed: cp.completed,
-              lastWatchedAt: cp.last_watched_at,
-            };
-          }
-        });
-        return Object.values(uniqueCourses).sort((a, b) => 
-          new Date(b.lastWatchedAt).getTime() - new Date(a.lastWatchedAt).getTime()
-        ).slice(0, 5);
-      })(),
-      upcomingSessions: validUpcomingSessions,
-      recommendedCourses: recommendedCourses || [],
-      evaluations: (evaluations || []).map((userEval: any) => ({
-        id: userEval.id,
-        evaluation: userEval.evaluations,
-        status: userEval.status,
-        score: userEval.score,
-        percentage: userEval.percentage,
-        submittedAt: userEval.submitted_at,
-      })),
-      classroomStats: null as any
     };
-
-    // If teacher, add classroom stats
-    if (user.role === 'teacher') {
-      const { data: teacherClasses } = await supabase
-        .from('classes')
-        .select('id')
-        .eq('teacher_id', userId);
-      
-      const classIds = (teacherClasses || []).map(c => c.id);
-      
-      if (classIds.length > 0) {
-        const { data: classStudents } = await supabase
-          .from('class_students')
-          .select('student_id')
-          .in('class_id', classIds);
-        
-        const studentIds = [...new Set((classStudents || []).map(cs => cs.student_id))];
-        
-        if (studentIds.length > 0) {
-          const { data: studentProgress } = await supabase
-            .from('video_progress')
-            .select('completed')
-            .in('user_id', studentIds);
-          
-          const totalVideoInteractions = studentProgress?.length || 0;
-          const completedVideos = (studentProgress || []).filter(p => p.completed).length;
-          
-          dashboard.classroomStats = {
-            avgCompletion: totalVideoInteractions > 0 
-              ? Math.round((completedVideos / totalVideoInteractions) * 100) 
-              : 0,
-            studentCount: studentIds.length,
-            classCount: classIds.length
-          };
-        }
-      }
-    }
 
     res.status(200).json({
       success: true,
