@@ -13,6 +13,13 @@ export const protect = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Several routers are mounted on '/api' and each applies `protect`, so a
+    // single request can pass through this middleware more than once. Reuse
+    // the result instead of re-verifying the token against Supabase each time.
+    if (req.user) {
+      return next();
+    }
+
     let token: string | undefined;
 
     // Check for token in Authorization header

@@ -9,8 +9,6 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AdultCertificateTemplate, AdultCertificateData } from "@/components/certificates/AdultCertificateTemplate";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 
 export default function Certificates() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
@@ -63,6 +61,10 @@ export default function Certificates() {
     try {
       // High resolution HTML canvas capture
       const element = certRef.current;
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
       const canvas = await html2canvas(element, {
         scale: 2.5, // 2.5x resolution scaling for crisp vector-like text
         useCORS: true,

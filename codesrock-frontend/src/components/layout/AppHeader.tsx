@@ -68,7 +68,7 @@ export function AppHeader() {
           <DropdownMenuContent className="w-64 rounded-2xl p-2 shadow-2xl border-muted/30 dark:border-white/10 bg-white dark:bg-slate-900" align="end" forceMount>
             <DropdownMenuLabel className="font-normal p-3">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-black text-deep-purple dark:text-white leading-none">{user?.fullName}</p>
+                <p className="text-sm font-black text-deep-purple dark:text-white leading-none">{[user?.firstName, user?.lastName].filter(Boolean).join(' ')}</p>
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{user?.role?.replace('_', ' ')}</p>
               </div>
             </DropdownMenuLabel>

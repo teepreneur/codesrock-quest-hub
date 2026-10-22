@@ -18,6 +18,7 @@ export default function Evaluation() {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({});
   const [showResults, setShowResults] = useState(false);
   const [score, setScore] = useState(0);
+  const [passed, setPassed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -77,16 +78,6 @@ export default function Evaluation() {
     }
   };
 
-  const calculateScore = () => {
-    let correctCount = 0;
-    evaluation.evaluation_questions.forEach((q: any, idx: number) => {
-      if (selectedAnswers[idx] === q.correct_answer) {
-        correctCount++;
-      }
-    });
-    return Math.round((correctCount / evaluation.evaluation_questions.length) * 100);
-  };
-
   const handleSubmit = async () => {
     if (!evaluation || !evaluation.evaluation_questions) {
       return toast.error("Evaluation data is missing");
@@ -96,10 +87,6 @@ export default function Evaluation() {
       return toast.warning("Please answer all questions before submitting");
     }
 
-    const finalScore = calculateScore();
-    setScore(finalScore);
-    const passed = finalScore >= 80;
-
     try {
       setSubmitting(true);
       const user = authService.getStoredUser();
@@ -108,14 +95,21 @@ export default function Evaluation() {
         return navigate("/login");
       }
 
-      console.log("Submitting evaluation:", { userId: user.id, evaluationId: evaluation.id, score: finalScore, passed });
-
-      await adminService.submitEvaluation({
-        userId: user.id,
-        evaluationId: evaluation.id,
-        score: finalScore,
-        passed
+      // Answers are graded on the server; send the selected option per question
+      const answers: Record<string, string> = {};
+      evaluation.evaluation_questions.forEach((q: any, idx: number) => {
+        answers[q.id] = selectedAnswers[idx];
       });
+
+      const result = await adminService.submitEvaluation({
+        evaluationId: evaluation.id,
+        answers
+      });
+
+      const finalScore = result.score;
+      const passed = result.passed;
+      setScore(finalScore);
+      setPassed(passed);
 
       setShowResults(true);
       if (passed) {
@@ -147,7 +141,6 @@ export default function Evaluation() {
   }
 
   if (showResults) {
-    const passed = score >= 80;
     return (
       <div className="max-w-3xl mx-auto py-12 px-4 animate-fade-in">
         <Card className="border-4 border-primary/20 rounded-[3rem] overflow-hidden shadow-2xl">

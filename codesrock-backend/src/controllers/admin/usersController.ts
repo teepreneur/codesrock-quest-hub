@@ -11,21 +11,23 @@ const generateSecurePassword = (length: number = 12): string => {
   const numbers = '23456789';
   const special = '!@#$%&*';
 
+  const pick = (chars: string) => chars[crypto.randomInt(chars.length)];
+
   // Ensure at least one of each required character type
-  let password = '';
-  password += uppercase[Math.floor(Math.random() * uppercase.length)];
-  password += lowercase[Math.floor(Math.random() * lowercase.length)];
-  password += numbers[Math.floor(Math.random() * numbers.length)];
-  password += special[Math.floor(Math.random() * special.length)];
+  const chars = [pick(uppercase), pick(lowercase), pick(numbers), pick(special)];
 
   // Fill the rest with random characters from all sets
   const allChars = uppercase + lowercase + numbers + special;
-  for (let i = password.length; i < length; i++) {
-    password += allChars[Math.floor(Math.random() * allChars.length)];
+  while (chars.length < length) {
+    chars.push(pick(allChars));
   }
 
-  // Shuffle the password
-  return password.split('').sort(() => Math.random() - 0.5).join('');
+  // Fisher-Yates shuffle with a cryptographically secure RNG
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = crypto.randomInt(i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join('');
 };
 
 /**

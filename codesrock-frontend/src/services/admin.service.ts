@@ -66,14 +66,17 @@ export interface PaginatedUsers {
 export interface AnalyticsOverview {
   stats: {
     totalTeachers: number;
+    totalStudents: number;
     activeToday: number;
     totalCourses: number;
-    avgCompletionRate: number;
+    avgTeacherCompletion: number;
+    studentCompletionRate: number;
+    evaluationSuccessRate?: number;
   };
   trends: {
     newUsersThisMonth: number;
     totalActivities: number;
-    engagementTrend: Array<{ id: string; count: number }>;
+    engagementCount?: number;
   };
   topSchools?: Array<{
     name: string;
@@ -411,8 +414,15 @@ class AdminService {
     return apiService.post('/admin/content/evaluations/save', data);
   }
 
-  async submitEvaluation(data: { userId: string, evaluationId: string, score: number, passed: boolean }) {
-    return apiService.post('/evaluations/submit-mastery', data);
+  async submitEvaluation(data: { evaluationId: string; answers: Record<string, string> }) {
+    return apiService.post<{
+      passed: boolean;
+      score: number;
+      correctCount: number;
+      totalQuestions: number;
+      xpReward: number;
+      alreadyPassed?: boolean;
+    }>('/evaluations/submit-mastery', data);
   }
 
   async deleteEvaluation(evaluationId: string): Promise<void> {

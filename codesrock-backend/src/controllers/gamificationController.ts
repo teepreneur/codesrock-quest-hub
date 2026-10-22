@@ -127,9 +127,10 @@ export const addXP = async (req: Request, res: Response): Promise<void> => {
   try {
     const { userId, amount, description, metadata } = req.body;
 
-    // Security Check: IDOR Protection
-    if (userId !== req.user?.userId && !['super_admin', 'content_admin'].includes(req.user?.role || '')) {
-      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to award XP to ${userId}`);
+    // Security Check: only admins may grant XP directly. Teachers earn XP
+    // through server-side actions (videos, evaluations, resources).
+    if (!['super_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`Blocked manual XP award by ${req.user?.userId} to ${userId}`);
       res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
       return;
     }
@@ -380,8 +381,9 @@ export const awardBadge = async (req: Request, res: Response): Promise<void> => 
     const { userId, badgeId } = req.body;
 
     // Security Check: IDOR Protection
-    if (userId !== req.user?.userId && !['super_admin', 'content_admin'].includes(req.user?.role || '')) {
-      logger.warn(`IDOR attempt: User ${req.user?.userId} tried to award badge to ${userId}`);
+    // Security Check: only admins may grant badges directly
+    if (!['super_admin', 'content_admin'].includes(req.user?.role || '')) {
+      logger.warn(`Blocked manual badge award by ${req.user?.userId} to ${userId}`);
       res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
       return;
     }

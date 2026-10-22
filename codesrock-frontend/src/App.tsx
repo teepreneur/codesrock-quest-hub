@@ -12,7 +12,6 @@ import { ThemeProvider } from "./components/ThemeProvider";
 // Lazy Load Pages
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
-const TestDashboard = lazy(() => import("./pages/TestDashboard"));
 const LearningPath = lazy(() => import("./pages/LearningPath"));
 const Resources = lazy(() => import("./pages/Resources"));
 const Evaluation = lazy(() => import("./pages/Evaluation"));
@@ -98,7 +97,6 @@ const App = () => (
               <Route path="/admin/teachers/:id/performance" element={<AdminRoute><TeacherPerformance /></AdminRoute>} />
             </Route>
   
-            <Route path="/test-dashboard" element={<TestDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

@@ -88,12 +88,18 @@ export const downloadCertificatePDF = async (req: Request, res: Response): Promi
 
     const { data: certificate, error } = await supabase
       .from('certificates')
-      .select('*, courses(*), profiles(first_name, last_name, school_name)')
+      .select('*, courses(*), profiles(first_name, last_name)')
       .eq('id', id)
       .single();
 
     if (error || !certificate) {
       res.status(404).json({ success: false, message: 'Certificate not found' });
+      return;
+    }
+
+    // Security Check
+    if (certificate.user_id !== req.user?.userId && !['super_admin', 'school_admin', 'content_admin'].includes(req.user?.role || '')) {
+      res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
       return;
     }
 

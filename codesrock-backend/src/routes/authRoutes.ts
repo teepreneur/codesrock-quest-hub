@@ -42,8 +42,8 @@ const registerValidation = [
     .withMessage('Last name must be between 2 and 50 characters'),
   body('role')
     .optional()
-    .isIn(['teacher', 'admin', 'student', 'school_admin', 'content_admin', 'super_admin'])
-    .withMessage('Role must be teacher, admin, student, school_admin, content_admin, or super_admin'),
+    .isIn(['teacher'])
+    .withMessage('Self-registration is only available for teacher accounts'),
 ];
 
 /**

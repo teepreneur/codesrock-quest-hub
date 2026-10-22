@@ -19,7 +19,7 @@ interface OverviewStats {
   trends: {
     newUsersThisMonth: number;
     totalActivities: number;
-    engagementTrend: Array<{ _id: string; count: number }>;
+    engagementCount?: number;
   };
 }
 

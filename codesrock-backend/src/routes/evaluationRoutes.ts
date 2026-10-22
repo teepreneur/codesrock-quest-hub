@@ -3,9 +3,6 @@ import { body, param } from 'express-validator';
 import {
   getAllEvaluations,
   getEvaluationById,
-  startEvaluation,
-  updateEvaluationProgress,
-  submitEvaluation,
   reviewEvaluation,
   getUserEvaluations,
   verifyCertificate,
@@ -13,12 +10,12 @@ import {
 } from '../controllers/evaluationController';
 import {
   getEvaluationByTopic,
-  saveEvaluation,
   submitEvaluation as submitNewEvaluation,
   deleteEvaluation,
 } from '../controllers/admin/evaluationController';
 import { protect } from '../middleware/auth';
 import { validate } from '../middleware/validator';
+import { requireAdmin, requireContentAdmin } from '../middleware/roleAuth';
 
 const router = Router();
 
@@ -39,48 +36,6 @@ const userIdParamValidation = [
     .withMessage('User ID is required')
     .isUUID()
     .withMessage('Invalid user ID format'),
-];
-
-const startEvaluationValidation = [
-  body('userId')
-    .notEmpty()
-    .withMessage('User ID is required')
-    .isUUID()
-    .withMessage('Invalid user ID format'),
-  body('evaluationId')
-    .notEmpty()
-    .withMessage('Evaluation ID is required')
-    .isUUID()
-    .withMessage('Invalid evaluation ID format'),
-];
-
-const updateProgressValidation = [
-  body('userId')
-    .notEmpty()
-    .withMessage('User ID is required')
-    .isUUID()
-    .withMessage('Invalid user ID format'),
-  body('evaluationId')
-    .notEmpty()
-    .withMessage('Evaluation ID is required')
-    .isUUID()
-    .withMessage('Invalid evaluation ID format'),
-  body('completedItems')
-    .isArray()
-    .withMessage('Completed items must be an array'),
-];
-
-const submitEvaluationValidation = [
-  body('userId')
-    .notEmpty()
-    .withMessage('User ID is required')
-    .isUUID()
-    .withMessage('Invalid user ID format'),
-  body('evaluationId')
-    .notEmpty()
-    .withMessage('Evaluation ID is required')
-    .isUUID()
-    .withMessage('Invalid evaluation ID format'),
 ];
 
 const reviewEvaluationValidation = [
@@ -104,6 +59,17 @@ const reviewEvaluationValidation = [
     .withMessage('Feedback must not exceed 2000 characters'),
 ];
 
+const submitMasteryValidation = [
+  body('evaluationId')
+    .notEmpty()
+    .withMessage('Evaluation ID is required')
+    .isUUID()
+    .withMessage('Invalid evaluation ID format'),
+  body('answers')
+    .isObject()
+    .withMessage('Answers must be an object keyed by question ID'),
+];
+
 // All routes are protected
 router.use(protect);
 
@@ -111,17 +77,13 @@ router.use(protect);
 router.get('/evaluations', getAllEvaluations);
 router.get('/evaluations/:evaluationId', validate(evaluationIdParamValidation), getEvaluationById);
 
-// User evaluation routes
-router.post('/evaluations/start', validate(startEvaluationValidation), startEvaluation);
-router.put('/evaluations/progress', validate(updateProgressValidation), updateEvaluationProgress);
-router.post('/evaluations/submit', validate(submitEvaluationValidation), submitEvaluation);
-router.post('/evaluations/review', validate(reviewEvaluationValidation), reviewEvaluation);
+// Admin review of an evaluation attempt
+router.post('/evaluations/review', requireAdmin, validate(reviewEvaluationValidation), reviewEvaluation);
 
-// New dynamic evaluation routes
+// Topic evaluation routes (answers are stripped for non-content-admins)
 router.get('/evaluations/topic/:topicId', getEvaluationByTopic);
-router.post('/evaluations/save', saveEvaluation);
-router.delete('/evaluations/:evaluationId', deleteEvaluation);
-router.post('/evaluations/submit-mastery', submitNewEvaluation);
+router.delete('/evaluations/:evaluationId', requireContentAdmin, validate(evaluationIdParamValidation), deleteEvaluation);
+router.post('/evaluations/submit-mastery', validate(submitMasteryValidation), submitNewEvaluation);
 router.get('/evaluations/user/:userId', validate(userIdParamValidation), getUserEvaluations);
 
 // Certificate routes

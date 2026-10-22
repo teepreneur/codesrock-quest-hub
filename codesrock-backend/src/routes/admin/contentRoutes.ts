@@ -13,7 +13,6 @@ import {
 import {
   getEvaluationByTopic,
   saveEvaluation,
-  submitEvaluation,
 } from '../../controllers/admin/evaluationController';
 import {
   getTopicsByCourse,

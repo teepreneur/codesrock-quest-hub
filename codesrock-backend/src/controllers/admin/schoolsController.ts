@@ -120,9 +120,14 @@ export const getAllSchools = async (
         .eq('id', req.user.userId)
         .single();
 
-      if (adminProfile?.school_id) {
-        query = query.eq('id', adminProfile.school_id);
+      if (!adminProfile?.school_id) {
+        res.status(200).json({
+          success: true,
+          data: { schools: [], pagination: { page: pageNum, limit: limitNum, total: 0, pages: 0 } },
+        });
+        return;
       }
+      query = query.eq('id', adminProfile.school_id);
     }
 
     // Apply pagination
@@ -224,6 +229,19 @@ export const getSchoolById = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
+
+    // School admins may only view their own school
+    if (req.user?.role === 'school_admin') {
+      const { data: adminProfile } = await supabase
+        .from('profiles')
+        .select('school_id')
+        .eq('id', req.user.userId)
+        .single();
+
+      if (adminProfile?.school_id !== id) {
+        throw new AppError('You do not have permission to access this school', 403);
+      }
+    }
 
     const { data: school, error } = await supabase
       .from('schools')

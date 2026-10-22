@@ -10,6 +10,7 @@ import {
   getSchoolByCode,
 } from '../../controllers/admin/schoolsController';
 import { protect } from '../../middleware/auth';
+import { requireAdmin, requireSuperAdmin, auditLog } from '../../middleware/roleAuth';
 import { validate } from '../../middleware/validator';
 
 const router = Router();
@@ -125,25 +126,26 @@ const listQueryValidation = [
 // Public route for school code lookup (used during login)
 router.get('/code/:code', validate(schoolCodeValidation), getSchoolByCode);
 
-// Protected routes - require authentication
+// Protected routes - require an admin role
 router.use(protect);
+router.use(requireAdmin);
 
-// Get all schools (admin roles)
+// Get all schools (admin roles; school admins only see their own school)
 router.get('/', validate(listQueryValidation), getAllSchools);
 
-// Get school by ID (admin roles)
+// Get school by ID (admin roles; school admins only for their own school)
 router.get('/:id', validate(schoolIdValidation), getSchoolById);
 
-// Create school (super_admin only - checked in controller or add middleware)
-router.post('/', validate(createSchoolValidation), createSchool);
+// Create school (super_admin only)
+router.post('/', requireSuperAdmin, auditLog, validate(createSchoolValidation), createSchool);
 
 // Update school (super_admin only)
-router.put('/:id', validate(updateSchoolValidation), updateSchool);
+router.put('/:id', requireSuperAdmin, auditLog, validate(updateSchoolValidation), updateSchool);
 
 // Deactivate school (super_admin only)
-router.delete('/:id', validate(schoolIdValidation), deactivateSchool);
+router.delete('/:id', requireSuperAdmin, auditLog, validate(schoolIdValidation), deactivateSchool);
 
 // Permanently delete school (super_admin only - must be deactivated first)
-router.delete('/:id/permanent', validate(schoolIdValidation), permanentDeleteSchool);
+router.delete('/:id/permanent', requireSuperAdmin, auditLog, validate(schoolIdValidation), permanentDeleteSchool);
 
 export default router;

@@ -56,6 +56,76 @@ export const requireContentAdmin = requireRole(['content_admin', 'super_admin'])
  */
 export const requireSchoolAdmin = requireRole(['school_admin', 'super_admin']);
 
+const ADMIN_ROLES = ['school_admin', 'content_admin', 'super_admin'];
+
+/**
+ * Guards user-management actions on /api/admin/users.
+ * - super_admin: unrestricted
+ * - school_admin: only teachers/students in their own school, and may only
+ *   assign the teacher or student role or their own school
+ * - anyone else (e.g. content_admin): read-only, so writes are rejected
+ * IMPORTANT: must run AFTER `protect`.
+ */
+export const guardUserManagement = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const role = req.user?.role;
+
+    if (role === 'super_admin') {
+      return next();
+    }
+
+    if (role !== 'school_admin') {
+      throw new AppError('You do not have permission to manage users', 403);
+    }
+
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('school_id')
+      .eq('id', req.user!.userId)
+      .single();
+
+    const adminSchoolId = adminProfile?.school_id;
+    if (!adminSchoolId) {
+      throw new AppError('Your account is not linked to a school', 403);
+    }
+
+    const requestedRole = req.body?.role;
+    if (requestedRole && !['teacher', 'student'].includes(requestedRole)) {
+      throw new AppError('Only a super admin can assign admin roles', 403);
+    }
+
+    const requestedSchoolId = req.body?.schoolId;
+    if (requestedSchoolId && requestedSchoolId !== adminSchoolId) {
+      throw new AppError('You can only manage users in your own school', 403);
+    }
+
+    const targetUserId = req.params.id;
+    if (targetUserId) {
+      const { data: target } = await supabase
+        .from('profiles')
+        .select('school_id, role')
+        .eq('id', targetUserId)
+        .single();
+
+      if (!target) {
+        throw new AppError('User not found', 404);
+      }
+
+      if (target.school_id !== adminSchoolId || ADMIN_ROLES.includes(target.role)) {
+        throw new AppError('You can only manage teachers and students in your own school', 403);
+      }
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * Middleware to check granular permissions.
  * IMPORTANT: This must run AFTER the `protect` middleware, which attaches

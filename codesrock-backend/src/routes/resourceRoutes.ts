@@ -10,6 +10,7 @@ import {
 } from '../controllers/resourceController';
 import { protect } from '../middleware/auth';
 import { validate } from '../middleware/validator';
+import { requireContentAdmin } from '../middleware/roleAuth';
 import { uploadResource } from '../config/cloudinary';
 
 const router = Router();
@@ -110,7 +111,7 @@ router.post('/resources/rate', validate(rateValidation), rateResource);
 router.get('/resources/downloads/:userId', validate(userIdParamValidation), getUserDownloads);
 
 // File upload route (Cloudinary)
-router.post('/resources/upload', uploadResource.single('file'), async (req, res) => {
+router.post('/resources/upload', requireContentAdmin, uploadResource.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       res.status(400).json({ success: false, message: 'No file uploaded' });

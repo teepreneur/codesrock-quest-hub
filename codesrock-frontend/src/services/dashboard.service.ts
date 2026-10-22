@@ -24,6 +24,7 @@ export interface DashboardData {
     lastActivityDate: string;
     badgeCount: number;
     recentBadges: any[];
+    onboardingStatus?: { phase: number; step: number; completed: boolean };
     levelDetails: {
       current: { level: number; name: string; minXP: number; icon: string };
       next: { level: number; name: string; minXP: number; icon: string } | null;

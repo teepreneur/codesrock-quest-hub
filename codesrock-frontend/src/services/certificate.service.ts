@@ -1,4 +1,5 @@
 import { apiService } from './api.service';
+import { getApiUrl } from '@/config/api.config';
 
 export interface CertificateBadge {
   name: string;
@@ -44,9 +45,9 @@ class CertificateService {
    * Download certificate PDF directly from backend API
    */
   async downloadBackendPDF(certificateId: string): Promise<Blob> {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/certificates/${certificateId}/pdf`, {
+    const response = await fetch(getApiUrl(`/certificates/${certificateId}/pdf`), {
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
       },
     });
 

@@ -1,8 +1,13 @@
 import { Request, Response } from 'express';
 import { supabase } from '../../config/supabase';
 
+const PASS_THRESHOLD = 80;
+const CONTENT_ADMIN_ROLES = ['content_admin', 'super_admin'];
+
 /**
  * Get evaluation for a topic
+ * Correct answers are only included for content admins; everyone else gets
+ * the questions without answers and is graded server-side on submit.
  */
 export const getEvaluationByTopic = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -18,12 +23,18 @@ export const getEvaluationByTopic = async (req: Request, res: Response): Promise
       throw error;
     }
 
+    if (evaluation && !CONTENT_ADMIN_ROLES.includes(req.user?.role || '')) {
+      evaluation.evaluation_questions = (evaluation.evaluation_questions || []).map(
+        ({ correct_answer: _omit, ...question }: any) => question
+      );
+    }
+
     res.status(200).json({
       success: true,
       data: evaluation || null
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message || 'Server error', error: error });
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
 
@@ -72,16 +83,51 @@ export const saveEvaluation = async (req: Request, res: Response): Promise<void>
       data: evaluation
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message || 'Server error', error: error });
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
 
 /**
  * Submit evaluation attempt
+ * Body: { evaluationId, answers: { [questionId]: selectedOption } }
+ * The score is calculated here from the stored correct answers, and the
+ * attempt is always recorded for the authenticated user.
  */
 export const submitEvaluation = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId, evaluationId, score, passed } = req.body;
+    const userId = req.user!.userId;
+    const { evaluationId, answers } = req.body as {
+      evaluationId: string;
+      answers: Record<string, string>;
+    };
+
+    const { data: evaluation, error: evalError } = await supabase
+      .from('evaluations')
+      .select('id, title, xp_reward, evaluation_questions(id, correct_answer)')
+      .eq('id', evaluationId)
+      .single();
+
+    if (evalError || !evaluation) {
+      res.status(404).json({ success: false, message: 'Evaluation not found' });
+      return;
+    }
+
+    const questions = (evaluation.evaluation_questions || []) as { id: string; correct_answer: string }[];
+    if (questions.length === 0) {
+      res.status(400).json({ success: false, message: 'This evaluation has no questions yet' });
+      return;
+    }
+
+    const unanswered = questions.filter((q) => typeof answers?.[q.id] !== 'string');
+    if (unanswered.length > 0) {
+      res.status(400).json({ success: false, message: 'Please answer all questions before submitting' });
+      return;
+    }
+
+    const correctCount = questions.filter((q) => answers[q.id] === q.correct_answer).length;
+    const score = Math.round((correctCount / questions.length) * 100);
+    const passed = score >= PASS_THRESHOLD;
+    const result = { passed, score, correctCount, totalQuestions: questions.length, xpReward: evaluation.xp_reward };
 
     const { data: existingProgress } = await supabase
       .from('evaluation_progress')
@@ -91,7 +137,11 @@ export const submitEvaluation = async (req: Request, res: Response): Promise<voi
       .single();
 
     if (existingProgress?.passed) {
-      res.status(200).json({ success: true, message: 'Evaluation already passed' });
+      res.status(200).json({
+        success: true,
+        message: 'Evaluation already passed',
+        data: { ...result, passed: true, alreadyPassed: true },
+      });
       return;
     }
 
@@ -111,35 +161,27 @@ export const submitEvaluation = async (req: Request, res: Response): Promise<voi
 
     // Award XP if passed
     if (passed) {
-      const { data: evaluation } = await supabase
-        .from('evaluations')
-        .select('title, xp_reward')
-        .eq('id', evaluationId)
-        .single();
+      await supabase.rpc('award_xp', {
+        p_user_id: userId,
+        p_xp_amount: evaluation.xp_reward,
+        p_activity_type: 'evaluation_completed',
+        p_description: `Passed evaluation: ${evaluation.title}`,
+        p_metadata: { evaluationId, score }
+      });
 
-      if (evaluation) {
-        await supabase.rpc('award_xp', {
-          p_user_id: userId,
-          p_xp_amount: evaluation.xp_reward,
-          p_activity_type: 'evaluation_completed',
-          p_description: `Passed evaluation: ${evaluation.title}`,
-          p_metadata: { evaluationId, score }
-        });
-
-        await supabase
-          .from('evaluation_progress')
-          .update({ xp_awarded: true })
-          .eq('id', progress.id);
-      }
+      await supabase
+        .from('evaluation_progress')
+        .update({ xp_awarded: true })
+        .eq('id', progress.id);
     }
 
     res.status(200).json({
       success: true,
       message: passed ? 'Congratulations! You passed the evaluation.' : 'Evaluation submitted.',
-      data: { passed, score }
+      data: result
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message || 'Server error', error: error });
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
 
@@ -162,6 +204,6 @@ export const deleteEvaluation = async (req: Request, res: Response): Promise<voi
       message: 'Evaluation deleted successfully'
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message || 'Server error', error: error });
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };

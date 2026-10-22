@@ -13,13 +13,32 @@ if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error(`Missing Supabase environment variables: ${missing.join(', ')}`);
 }
 
-// Create Supabase client with service key for backend operations
+// Create Supabase client with service key for backend operations.
+// Never call signUp / signInWithPassword / refreshSession / signOut on this
+// client: supabase-js stores the resulting user session in memory and then
+// sends that user's JWT instead of the service key on every later query,
+// which would run all backend queries as the last user who logged in.
+// Use createAuthClient() for those calls instead.
 export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false
   }
 });
+
+/**
+ * Create a short-lived client for user authentication flows (sign up, sign
+ * in, refresh). Create one per request so a user's session never leaks into
+ * the shared service client or into another request.
+ */
+export const createAuthClient = () =>
+  createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
 
 // Database types for TypeScript
 export interface Database {

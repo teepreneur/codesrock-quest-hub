@@ -55,6 +55,18 @@ export const activateTeacher = async (req: Request, res: Response): Promise<void
       return;
     }
 
+    // Activation is earned by passing at least one module evaluation
+    const { count: passedCount } = await supabase
+      .from('evaluation_progress')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('passed', true);
+
+    if (!passedCount) {
+      res.status(400).json({ success: false, message: 'Pass a module evaluation to activate your account' });
+      return;
+    }
+
     // 2. Perform activation update
     const { error: updateError } = await supabase
       .from('user_progress')

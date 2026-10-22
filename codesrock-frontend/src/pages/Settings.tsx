@@ -68,7 +68,7 @@ export default function Settings() {
                 </div>
                 
                 <h3 className="text-xl font-black text-deep-purple dark:text-white mt-4 leading-none">
-                  {user?.fullName}
+                  {[user?.firstName, user?.lastName].filter(Boolean).join(' ')}
                 </h3>
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2 bg-primary/10 dark:bg-primary/20 text-primary px-3 py-1 rounded-full">
                   {user?.role?.replace("_", " ")}

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 import { classService, type Class } from "@/services/class.service";
-import { courseService, type Course } from "@/services/course.service";
+import { courseService, type CourseWithProgress as Course } from "@/services/course.service";
 import { authService } from "@/services/auth.service";
 
 export default function Classes() {

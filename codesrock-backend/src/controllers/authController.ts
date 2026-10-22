@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { supabase } from '../config/supabase';
+import { supabase, createAuthClient } from '../config/supabase';
 import { AppError } from '../middleware/errorHandler';
 
 /**
@@ -13,7 +13,9 @@ export const register = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, role } = req.body;
+    // `role` is deliberately ignored: public sign-up always creates a teacher.
+    // Admin and student accounts are created through the admin portal.
+    const { email, password, firstName, lastName } = req.body;
 
     // Validate input
     if (!email || !password || !firstName || !lastName) {
@@ -21,7 +23,7 @@ export const register = async (
     }
 
     // Create auth user with Supabase
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await createAuthClient().auth.signUp({
       email,
       password,
       options: {
@@ -40,21 +42,7 @@ export const register = async (
       throw new AppError('Failed to create user', 500);
     }
 
-    // Create profile (the trigger will handle initial creation, but we'll update with role if needed)
-    if (role && role !== 'teacher') {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          role: role,
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) {
-        console.error('Profile update error:', profileError);
-      }
-    }
-
-    // Get the created profile
+    // Get the created profile (created by the handle_new_user trigger)
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
@@ -101,7 +89,7 @@ export const login = async (
     }
 
     // Authenticate with Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await createAuthClient().auth.signInWithPassword({
       email,
       password,
     });
@@ -222,7 +210,7 @@ export const loginWithSchool = async (
     }
 
     // Authenticate with Supabase using the profile's email
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await createAuthClient().auth.signInWithPassword({
       email: profile.email,
       password,
     });
@@ -303,7 +291,7 @@ export const refreshAccessToken = async (
     }
 
     // Refresh session with Supabase
-    const { data, error } = await supabase.auth.refreshSession({
+    const { data, error } = await createAuthClient().auth.refreshSession({
       refresh_token: refreshToken
     });
 
@@ -335,16 +323,24 @@ export const logout = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Update is_online status if user is authenticated
-    if (req.user?.userId) {
-      await supabase
-        .from('profiles')
-        .update({ is_online: false })
-        .eq('id', req.user.userId);
-    }
+    // This route is public so an expired token can still log out; identify
+    // the user from the bearer token when one is provided.
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : undefined;
 
-    // Sign out from Supabase
-    await supabase.auth.signOut();
+    if (token) {
+      const { data: { user } } = await supabase.auth.getUser(token);
+
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ is_online: false })
+          .eq('id', user.id);
+
+        // Revoke this session's refresh token
+        await supabase.auth.admin.signOut(token);
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -482,15 +478,25 @@ export const changePassword = async (
       throw new AppError('User not found', 401);
     }
 
-    const { newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body;
 
-    if (!newPassword) {
-      throw new AppError('New password is required', 400);
+    if (!currentPassword || !newPassword) {
+      throw new AppError('Current and new password are required', 400);
     }
 
-    // Update password with Supabase
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
+    // Verify the current password on a throwaway client
+    const { error: verifyError } = await createAuthClient().auth.signInWithPassword({
+      email: req.user.email,
+      password: currentPassword,
+    });
+
+    if (verifyError) {
+      throw new AppError('Current password is incorrect', 401);
+    }
+
+    // Update the password of the authenticated user only
+    const { error } = await supabase.auth.admin.updateUserById(req.user.userId, {
+      password: newPassword,
     });
 
     if (error) {
@@ -500,83 +506,6 @@ export const changePassword = async (
     res.status(200).json({
       success: true,
       message: 'Password changed successfully',
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * @desc    Request password reset
- * @route   POST /api/auth/forgot-password
- * @access  Public
- */
-export const forgotPassword = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      throw new AppError('Email is required', 400);
-    }
-
-    // Send password reset email via Supabase
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.FRONTEND_URL}/reset-password`,
-    });
-
-    if (error) {
-      throw new AppError(error.message, 400);
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Password reset email sent',
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * @desc    Reset password
- * @route   POST /api/auth/reset-password
- * @access  Public (with reset token)
- */
-export const resetPassword = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { password } = req.body;
-
-    if (!password) {
-      throw new AppError('Password is required', 400);
-    }
-
-    // Get token from header
-    const token = req.headers.authorization?.replace('Bearer ', '');
-
-    if (!token) {
-      throw new AppError('Reset token is required', 400);
-    }
-
-    // Update password
-    const { error } = await supabase.auth.updateUser({
-      password: password
-    });
-
-    if (error) {
-      throw new AppError(error.message, 400);
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Password reset successful',
     });
   } catch (error) {
     next(error);
