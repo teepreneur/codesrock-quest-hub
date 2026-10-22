@@ -1,4 +1,4 @@
-import { Home, Play, BookOpen, CheckSquare, Trophy, Award, Calendar, Shield, Users, FileText, BarChart, Building2, Settings as SettingsIcon } from "lucide-react";
+import { Home, Play, BookOpen, CheckSquare, Trophy, Award, Calendar, Shield, Users, FileText, BarChart, Building2, GraduationCap, Settings as SettingsIcon } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import codesrockLogo from "@/assets/codesrock-logo.png";
 import { authService } from "@/services";
@@ -32,6 +32,7 @@ const adminMenuItems = [
   { title: "Schools", url: "/admin/schools", icon: Building2, roles: ['super_admin'] },
   { title: "User Management", url: "/admin/users", icon: Users, roles: ['super_admin', 'school_admin'] },
   { title: "Content Management", url: "/admin/content", icon: FileText, roles: ['super_admin', 'content_admin'] },
+  { title: "Student Progress", url: "/admin/progress", icon: GraduationCap, roles: ['super_admin', 'school_admin', 'content_admin'] },
   { title: "Analytics", url: "/admin/analytics", icon: BarChart, roles: ['super_admin', 'school_admin', 'content_admin'] },
   { title: "Settings", url: "/profile", icon: SettingsIcon, roles: ['super_admin', 'school_admin', 'content_admin'] },
 ];

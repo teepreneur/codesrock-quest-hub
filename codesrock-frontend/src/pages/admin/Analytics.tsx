@@ -211,7 +211,7 @@ export default function Analytics() {
 
         <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Topics Mastered</CardTitle>
+            <CardTitle className="text-sm font-medium">On Their Own</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -219,7 +219,7 @@ export default function Analytics() {
               {safeValue(overview?.stats?.studentCompletionRate, 0)}%
             </div>
             <p className="text-xs text-muted-foreground">
-              Student outcomes
+              Activity-book ratings
             </p>
           </CardContent>
         </Card>

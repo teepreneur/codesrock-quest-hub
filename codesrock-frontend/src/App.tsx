@@ -29,7 +29,9 @@ const Analytics = lazy(() => import("./pages/admin/Analytics"));
 const SchoolManagement = lazy(() => import("./pages/admin/SchoolManagement"));
 const SchoolPerformance = lazy(() => import("./pages/admin/SchoolPerformance"));
 const TeacherPerformance = lazy(() => import("./pages/admin/TeacherPerformance"));
-const StudentReport = lazy(() => import("./pages/StudentReport"));
+const LogLesson = lazy(() => import("./pages/LogLesson"));
+const LearnerProgress = lazy(() => import("./pages/LearnerProgress"));
+const StudentProgressOverview = lazy(() => import("./pages/admin/StudentProgressOverview"));
 const SearchResults = lazy(() => import("./pages/SearchResults"));
 const Settings = lazy(() => import("./pages/Settings"));
 
@@ -82,7 +84,9 @@ const App = () => (
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/classes" element={<Classes />} />
               <Route path="/classes/:id" element={<ClassDetails />} />
-              <Route path="/classes/:classId/students/:studentId/report" element={<StudentReport />} />
+              <Route path="/classes/:id/lessons/new" element={<LogLesson />} />
+              <Route path="/classes/:id/lessons/:sessionId" element={<LogLesson />} />
+              <Route path="/classes/:id/learners/:learnerId" element={<LearnerProgress />} />
               <Route path="/search" element={<SearchResults />} />
               <Route path="/profile" element={<Settings />} />
               <Route path="/settings" element={<Settings />} />
@@ -92,6 +96,7 @@ const App = () => (
               <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
               <Route path="/admin/content" element={<AdminRoute><ContentManagement /></AdminRoute>} />
               <Route path="/admin/analytics" element={<AdminRoute><Analytics /></AdminRoute>} />
+              <Route path="/admin/progress" element={<AdminRoute><StudentProgressOverview /></AdminRoute>} />
               <Route path="/admin/schools" element={<AdminRoute><SchoolManagement /></AdminRoute>} />
               <Route path="/admin/schools/:id/performance" element={<AdminRoute><SchoolPerformance /></AdminRoute>} />
               <Route path="/admin/teachers/:id/performance" element={<AdminRoute><TeacherPerformance /></AdminRoute>} />

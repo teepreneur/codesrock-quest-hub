@@ -186,6 +186,7 @@ export const computeClassProgress = (input: ProgressInput) => {
     .map((u) => {
       const ids = new Set(u.activities.map((a) => a.id));
       const rs = latest.filter((r) => ids.has(r.activity_id));
+      const gap = modeGap(rs);
       return {
         unitId: u.id,
         position: u.position,
@@ -193,6 +194,9 @@ export const computeClassProgress = (input: ProgressInput) => {
         unitType: u.unit_type,
         activitiesTotal: u.activities.length,
         activitiesCovered: u.activities.filter((a) => coveredIds.has(a.id)).length,
+        hasBothModes: u.activities.some((a) => a.modes.length === 2),
+        practicalScore: gap.practicalScore,
+        bookScore: gap.bookScore,
         ...summarize(rs),
       };
     });
@@ -321,6 +325,7 @@ export const computeLearnerProgress = (input: ProgressInput, learnerId: string) 
         results: rs.map((r) => ({
           activityId: r.activity_id,
           activityTitle: activityById.get(r.activity_id)?.title || '',
+          bothModes: (activityById.get(r.activity_id)?.modes.length || 0) > 1,
           mode: r.mode,
           level: r.level,
         })),

@@ -35,6 +35,17 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 240 5.9% 90%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Progress charts (validated with the dataviz palette checks).
+       Ratings are ordinal: one teal hue, darkest = On their own. */
+    --chart-level-1: #56b3c0; /* Not yet */
+    --chart-level-2: #28889a; /* With help */
+    --chart-level-3: #0f5560; /* On their own */
+    --chart-practical: #5D3B98; /* Deep Purple */
+    --chart-book: #FF7340; /* Rocky Orange - always shown with a label */
+    --chart-series: #28889a;
+    --chart-empty: #e5e7eb;
+    --chart-grid: #e5e7eb;
   }
 
   .dark {
@@ -66,6 +77,16 @@
     --sidebar-accent-foreground: 210 20% 98%;
     --sidebar-border: 216 34% 17%;
     --sidebar-ring: 187 61% 55%;
+
+    /* Dark: the ramp flips so On their own is the brightest step */
+    --chart-level-1: #1f8fa0;
+    --chart-level-2: #46C5D5;
+    --chart-level-3: #9be0ea;
+    --chart-practical: #8466cc;
+    --chart-book: #e2652f;
+    --chart-series: #46C5D5;
+    --chart-empty: #1f2937;
+    --chart-grid: #1f2937;
   }
 }
 
@@ -120,4 +141,10 @@
 /* V2.0 Sidebar Force Update Marker */
 .sidebar-v2-marker {
   animation: none !important;
+}
+
+/* Printing a child's progress report: hide the app chrome */
+@media print {
+  [data-sidebar="sidebar"], [data-sidebar], header, .print\:hidden { display: none !important; }
+  main { overflow: visible !important; padding: 0 !important; }
 }
