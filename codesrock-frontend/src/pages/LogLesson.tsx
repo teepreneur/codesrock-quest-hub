@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, Loader2, Sparkles, Trash2, UserX } from "lucide-react";
 import { toast } from "sonner";
@@ -138,7 +139,8 @@ export default function LogLesson() {
     }
     if (target === "ratings") setSlotIndex((i) => Math.min(i, Math.max(slots.length - 1, 0)));
     setStep(target);
-    // The app scrolls inside <main>, not the window
+    // Depending on layout height either the window or <main> scrolls
+    window.scrollTo({ top: 0 });
     document.querySelector("main")?.scrollTo({ top: 0 });
   };
 
@@ -286,7 +288,7 @@ export default function LogLesson() {
                                 </Badge>
                               )}
                               {a.modes.length === 2 && (
-                                <Badge variant="secondary" className="text-[10px]">Practical + book</Badge>
+                                <Badge variant="outline" className="text-[10px] text-muted-foreground">Practical + book</Badge>
                               )}
                               {a.book_page && <span className="text-xs text-muted-foreground w-12 text-right">p. {a.book_page}</span>}
                             </label>
@@ -500,7 +502,11 @@ export default function LogLesson() {
       )}
 
       {/* Sticky action bar */}
-      <div className="sticky bottom-0 z-20 -mx-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 rounded-t-xl">
+      {/* Floating action bar. Portalled to <body>: the layout wrapper keeps a CSS
+          transform after its entrance animation, which would trap position: fixed. */}
+      <div className="h-20" aria-hidden />
+      {createPortal(
+      <div className="fixed bottom-4 right-4 left-4 sm:left-auto z-30 sm:max-w-xl rounded-2xl border bg-background/95 backdrop-blur shadow-lg supports-[backdrop-filter]:bg-background/85">
         <div className="px-4 py-3 flex items-center gap-3">
           {isEdit && (
             <AlertDialog>
@@ -538,7 +544,9 @@ export default function LogLesson() {
             </Button>
           )}
         </div>
-      </div>
+      </div>,
+      document.body
+      )}
     </div>
   );
 }

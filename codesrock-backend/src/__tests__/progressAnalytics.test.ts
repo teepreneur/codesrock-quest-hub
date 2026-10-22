@@ -127,6 +127,15 @@ describe('computeClassProgress', () => {
     expect(p.trend[0]).toMatchObject({ attendanceRate: 100, independentRate: 25 });
   });
 
+  it('leaves children who were removed from the class out of class figures', () => {
+    const input = baseInput();
+    input.learners = input.learners.filter((l) => l.id !== 'kojo');
+    const p = computeClassProgress(input);
+    // Ama only: sing 3, trace 2, mat1 P3 B3 -> 3 of 4 on their own
+    expect(p.summary.independentRate).toBe(75);
+    expect(p.summary.attendanceRate).toBe(100);
+  });
+
   it('handles a class with no lessons yet', () => {
     const p = computeClassProgress({ ...baseInput(), sessions: [], sessionActivities: [], attendance: [], results: [] });
     expect(p.summary).toMatchObject({ lessonCount: 0, activitiesCovered: 0, avgScore: null, lastLessonDate: null });

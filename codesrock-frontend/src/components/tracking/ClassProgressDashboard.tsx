@@ -131,7 +131,7 @@ export default function ClassProgressDashboard({
               {learners.map((l) => (
                 <tr key={l.learnerId}>
                   <th scope="row" className="text-left font-semibold sticky left-0 bg-card pr-2">
-                    <Link to={`/classes/${classId}/learners/${l.learnerId}`} className="hover:underline text-primary">
+                    <Link to={`/classes/${classId}/learners/${l.learnerId}`} className="hover:underline text-deep-purple dark:text-white">
                       {l.name}
                     </Link>
                   </th>

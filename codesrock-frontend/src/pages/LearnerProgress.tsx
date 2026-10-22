@@ -102,7 +102,7 @@ export default function LearnerProgress() {
           <CardHeader>
             <CardTitle className="text-base font-heading">Can do it hands-on, not yet in the book</CardTitle>
             <CardDescription>
-              Missions where {learner.name.split(" ")[0]} did better with the mats or robot than when writing the code in the book.
+              Missions where {learner.name} did better with the mats or robot than when writing the code in the book.
               Practise writing these sequences.
             </CardDescription>
           </CardHeader>

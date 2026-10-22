@@ -14,6 +14,9 @@ import { LEVELS, MODE_COLORS, MODE_LABELS, SKILL_LABELS, formatDate, scoreText }
 const AXIS = { fontSize: 12, fill: "hsl(var(--muted-foreground))" };
 const GRID = "var(--chart-grid)";
 
+/** Legend label in the normal text colour; the swatch carries the series colour. */
+export const legendText = (value: string) => <span style={{ color: "hsl(var(--foreground))" }}>{value}</span>;
+
 /** Card with a Chart/Table toggle so every value is readable without colour. */
 export function ChartCard({
   title, description, chart, table, empty,
@@ -176,7 +179,7 @@ export function ModeGapChart({ units }: { units: UnitProgress[] }) {
       empty={!anyRated && "No mat or robot missions rated in both ways yet."}
       chart={
         <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 4 }} barGap={2}>
+          <BarChart data={data} margin={{ left: 0, right: 8, top: 20, bottom: 4 }} barGap={2}>
             <CartesianGrid vertical={false} stroke={GRID} />
             <XAxis dataKey="name" tick={AXIS} axisLine={false} tickLine={false} />
             <YAxis domain={[0, 100]} tick={AXIS} tickFormatter={(v) => `${v}%`} axisLine={false} tickLine={false} width={44} />
@@ -191,7 +194,7 @@ export function ModeGapChart({ units }: { units: UnitProgress[] }) {
                 ) : null
               }
             />
-            <Legend iconType="square" wrapperStyle={{ fontSize: 12 }} />
+            <Legend iconType="square" wrapperStyle={{ fontSize: 12 }} formatter={legendText} />
             <Bar dataKey="practical" name={MODE_LABELS.practical} fill={MODE_COLORS.practical} radius={[4, 4, 0, 0]} maxBarSize={36} label={{ position: "top", fontSize: 11, fill: "hsl(var(--foreground))", formatter: (v: number | null) => (v === null ? "" : `${v}%`) }} />
             <Bar dataKey="book" name={MODE_LABELS.book} fill={MODE_COLORS.book} radius={[4, 4, 0, 0]} maxBarSize={36} label={{ position: "top", fontSize: 11, fill: "hsl(var(--foreground))", formatter: (v: number | null) => (v === null ? "" : `${v}%`) }} />
           </BarChart>
@@ -262,7 +265,16 @@ export function TrendChart({ points, title = "Lesson by lesson" }: {
   points: { date: string; independentRate: number | null; avgScore: number | null; attendanceRate?: number | null }[];
   title?: string;
 }) {
-  const data = points.filter((p) => p.independentRate !== null).map((p) => ({ ...p, label: formatDate(p.date) }));
+  // Number lessons that share a date so every point has its own label
+  const seen = new Map<string, number>();
+  const data = points
+    .filter((p) => p.independentRate !== null)
+    .map((p) => {
+      const n = (seen.get(p.date) || 0) + 1;
+      seen.set(p.date, n);
+      const sameDay = points.filter((q) => q.date === p.date && q.independentRate !== null).length > 1;
+      return { ...p, label: sameDay ? `${formatDate(p.date)} (${n})` : formatDate(p.date) };
+    });
   return (
     <ChartCard
       title={title}

@@ -394,7 +394,11 @@ AS $$
        WHERE cu.curriculum_id = c.curriculum_id),
     r.avg_level, r.independent_rate, r.practical_avg, r.book_avg,
     (SELECT round(avg(CASE WHEN la.present THEN 1 ELSE 0 END)::numeric, 3)
-       FROM lesson_attendance la JOIN lesson_sessions ls ON ls.id = la.session_id WHERE ls.class_id = c.id)
+       FROM lesson_attendance la
+       JOIN lesson_sessions ls ON ls.id = la.session_id
+       -- only children still in the class
+       JOIN class_learners cl ON cl.class_id = c.id AND cl.learner_id = la.learner_id
+       WHERE ls.class_id = c.id)
   FROM classes c
   LEFT JOIN schools s ON s.id = c.school_id
   LEFT JOIN profiles t ON t.id = c.teacher_id
@@ -406,6 +410,7 @@ AS $$
       round(avg(lr.level) FILTER (WHERE lr.mode = 'book')::numeric, 2) AS book_avg
     FROM learner_activity_results lr
     JOIN lesson_sessions ls ON ls.id = lr.session_id
+    JOIN class_learners cl ON cl.class_id = c.id AND cl.learner_id = lr.learner_id
     WHERE ls.class_id = c.id
   ) r ON true
   WHERE p_school_id IS NULL OR c.school_id = p_school_id

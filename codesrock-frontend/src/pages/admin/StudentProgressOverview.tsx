@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { authService } from "@/services/auth.service";
 import { trackingService, type OverviewRow, type SchoolOverview } from "@/services/tracking.service";
-import { ChartCard, StatTile } from "@/components/tracking/charts";
+import { ChartCard, StatTile, legendText } from "@/components/tracking/charts";
 import { MODE_COLORS, MODE_LABELS, formatDate, scoreText } from "@/components/tracking/labels";
 
 const STALE_DAYS = 14;
@@ -134,12 +134,12 @@ export default function StudentProgressOverview() {
           empty={!schoolChartData.some((d) => d.practical !== null || d.book !== null) && "No mat or robot missions rated yet."}
           chart={
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={schoolChartData} margin={{ left: 0, right: 8, top: 8, bottom: 4 }} barGap={2}>
+              <BarChart data={schoolChartData} margin={{ left: 0, right: 8, top: 20, bottom: 4 }} barGap={2}>
                 <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
                 <XAxis dataKey="name" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={44} />
                 <Tooltip cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }} formatter={(v: number | null) => scoreText(v)} />
-                <Legend iconType="square" wrapperStyle={{ fontSize: 12 }} />
+                <Legend iconType="square" wrapperStyle={{ fontSize: 12 }} formatter={legendText} />
                 <Bar dataKey="practical" name={MODE_LABELS.practical} fill={MODE_COLORS.practical} radius={[4, 4, 0, 0]} maxBarSize={36} />
                 <Bar dataKey="book" name={MODE_LABELS.book} fill={MODE_COLORS.book} radius={[4, 4, 0, 0]} maxBarSize={36} />
               </BarChart>

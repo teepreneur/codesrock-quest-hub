@@ -169,7 +169,11 @@ export const FLAG_RULES = {
 };
 
 export const computeClassProgress = (input: ProgressInput) => {
-  const { units, learners, sessions, sessionActivities, attendance, results } = input;
+  const { units, learners, sessions, sessionActivities } = input;
+  // Only children currently in the class count towards class figures
+  const current = new Set(learners.map((l) => l.id));
+  const attendance = input.attendance.filter((a) => current.has(a.learner_id));
+  const results = input.results.filter((r) => current.has(r.learner_id));
   const ordered = sortSessions(sessions);
   const activities = flattenActivities(units);
   const activityById = new Map(activities.map((a) => [a.id, a]));
