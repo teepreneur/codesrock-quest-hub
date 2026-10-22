@@ -141,47 +141,22 @@ export const getAllSchools = async (
       throw new AppError('Failed to fetch schools', 500);
     }
 
-    const schoolsWithStats = await Promise.all(
-      (schools || []).map(async (school) => {
-        const [
-          { count: teacherCount },
-          { data: studentProfiles }
-        ] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('school_id', school.id)
-            .eq('role', 'teacher'),
-          supabase
-            .from('profiles')
-            .select('id')
-            .eq('school_id', school.id)
-            .eq('role', 'student')
-        ]);
+    // Teachers per school and book coverage from logged lessons, in two queries
+    const schoolIds = (schools || []).map((s) => s.id);
+    const [{ data: schoolTeachers }, { data: classProgress }] = await Promise.all([
+      schoolIds.length
+        ? supabase.from('profiles').select('school_id').eq('role', 'teacher').in('school_id', schoolIds)
+        : Promise.resolve({ data: [] as any[] }),
+      supabase.rpc('class_progress_overview', { p_school_id: null }),
+    ]);
 
-        const studentIds = (studentProfiles || []).map(p => p.id);
-        let avgProgress = 0;
-
-        if (studentIds.length > 0) {
-          const [
-            { count: completedCount },
-            { count: totalProgressCount }
-          ] = await Promise.all([
-            supabase
-              .from('video_progress')
-              .select('*', { count: 'exact', head: true })
-              .in('user_id', studentIds)
-              .eq('completed', true),
-            supabase
-              .from('video_progress')
-              .select('*', { count: 'exact', head: true })
-              .in('user_id', studentIds)
-          ]);
-
-          avgProgress = totalProgressCount && totalProgressCount > 0
-            ? Math.round(((completedCount || 0) / totalProgressCount) * 100)
-            : 0;
-        }
+    const schoolsWithStats = (schools || []).map((school) => {
+        const teacherCount = (schoolTeachers || []).filter((t: any) => t.school_id === school.id).length;
+        const coverages = ((classProgress || []) as any[])
+          .filter((c) => c.school_id === school.id && Number(c.activities_total) > 0)
+          .map((c) => (Number(c.activities_covered) / Number(c.activities_total)) * 100);
+        // Average share of the activity book covered across the school's classes
+        const avgProgress = coverages.length ? Math.round(coverages.reduce((x, y) => x + y, 0) / coverages.length) : 0;
 
         return {
           id: school.id,
@@ -191,14 +166,13 @@ export const getAllSchools = async (
           region: school.region,
           district: school.district,
           contactEmail: school.contact_email,
-          teacherCount: teacherCount || 0,
+          teacherCount,
           avgProgress,
           isActive: school.is_active,
           createdAt: school.created_at,
           updatedAt: school.updated_at,
         };
-      })
-    );
+      });
 
     res.status(200).json({
       success: true,

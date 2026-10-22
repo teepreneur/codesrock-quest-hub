@@ -52,9 +52,6 @@ export interface UpdateUserData {
 
 export interface PaginatedUsers {
   users: User[];
-  total: number;
-  page: number;
-  totalPages: number;
   pagination: {
     currentPage: number;
     totalPages: number;
@@ -63,27 +60,125 @@ export interface PaginatedUsers {
   };
 }
 
+export interface SchoolSummary {
+  id: string;
+  name: string;
+  schoolCode: string | null;
+  isActive: boolean;
+  teacherCount: number;
+  activeTeachers: number;
+  neverLoggedIn: number;
+  classCount: number;
+  learnerCount: number;
+  lessonCount: number;
+  lastLessonDate: string | null;
+  coveragePercent: number | null;
+  independentRate: number | null;
+}
+
+export type TeacherStatus = 'never_logged_in' | 'inactive' | 'active';
+
+export interface TeacherSummary {
+  id: string;
+  name: string;
+  email: string;
+  schoolId: string | null;
+  lastLogin: string | null;
+  status: TeacherStatus;
+  videosCompleted: number;
+  quizzesPassed: number;
+  classCount: number;
+  learnerCount: number;
+  lessonCount: number;
+  lastLessonDate: string | null;
+}
+
+/** null = not measured yet (no data), never a placeholder */
 export interface AnalyticsOverview {
   stats: {
     totalTeachers: number;
+    activeTeachers: number;
+    neverLoggedIn: number;
     totalStudents: number;
     activeToday: number;
     totalCourses: number;
-    avgTeacherCompletion: number;
-    studentCompletionRate: number;
-    evaluationSuccessRate?: number;
+    avgTeacherCompletion: number | null;
+    studentCompletionRate: number | null;
+    evaluationSuccessRate: number | null;
+    lessonsLast30Days: number;
+    classCount: number;
   };
   trends: {
     newUsersThisMonth: number;
     totalActivities: number;
-    engagementCount?: number;
+    engagementCount: number;
   };
-  topSchools?: Array<{
+  topSchools: SchoolSummary[];
+}
+
+export interface CourseAnalytics {
+  courses: {
+    courseId: string;
+    title: string;
+    videosTotal: number;
+    teachersStarted: number;
+    teachersCompleted: number;
+    videoCompletions: number;
+    avgCompletion: number | null;
+  }[];
+  totalViews: number;
+  avgProgress: number | null;
+}
+
+export interface EngagementMetrics {
+  days: number;
+  dailyActiveUsers: { date: string; count: number }[];
+  lessonsLogged: { date: string; count: number }[];
+  activityBreakdown: { type: string; count: number }[];
+  teacherCount: number;
+  activeTeachers: number;
+  activeTeacherRate: number | null;
+  neverLoggedIn: number;
+  totalDownloads: number;
+  quizAttempts: number;
+  quizzesPassed: number;
+  certificatesIssued: number;
+  badgesEarned: number;
+  lessonCount: number;
+}
+
+export interface SchoolPerformance {
+  school: { id: string; name: string; school_code: string | null; district?: string | null; region?: string | null };
+  summary: SchoolSummary;
+  teachers: TeacherSummary[];
+}
+
+export interface TeacherPerformance {
+  teacher: { id: string; name: string; email: string; school: string | null; lastLogin: string | null; status: TeacherStatus };
+  training: {
+    courses: { courseId: string; title: string; videosCompleted: number; videosTotal: number; completed: boolean }[];
+    quizzes: { title: string; score: number | null; passed: boolean; completedAt: string | null }[];
+    certificates: { title: string; dateEarned: string | null }[];
+  };
+  classes: {
+    classId: string;
     name: string;
-    progress: number;
-    active: number;
-    trend: 'up' | 'down';
-  }>;
+    learnerCount: number;
+    lessonCount: number;
+    lastLessonDate: string | null;
+    coveragePercent: number | null;
+    independentRate: number | null;
+    attendanceRate: number | null;
+    learners: {
+      learnerId: string;
+      name: string;
+      avgScore: number | null;
+      independentRate: number | null;
+      attendanceRate: number | null;
+      flags: string[];
+    }[];
+  }[];
+  activeWindowDays: number;
 }
 
 // School types
@@ -202,24 +297,24 @@ class AdminService {
     return apiService.get(`/admin/analytics/teachers/${teacherId}`);
   }
 
-  async getCourseAnalytics(): Promise<any> {
-    return apiService.get('/admin/analytics/courses');
+  async getCourseAnalytics(): Promise<CourseAnalytics> {
+    return apiService.get<CourseAnalytics>('/admin/analytics/courses');
   }
 
-  async getEngagementMetrics(days = 30): Promise<any> {
-    return apiService.get(`/admin/analytics/engagement?days=${days}`);
+  async getEngagementMetrics(days = 30): Promise<EngagementMetrics> {
+    return apiService.get<EngagementMetrics>(`/admin/analytics/engagement?days=${days}`);
   }
 
-  async getSchoolAnalytics(): Promise<any> {
-    return apiService.get('/admin/analytics/schools');
+  async getSchoolAnalytics(): Promise<{ schools: SchoolSummary[] }> {
+    return apiService.get<{ schools: SchoolSummary[] }>('/admin/analytics/schools');
   }
 
-  async getSchoolPerformance(schoolId: string): Promise<any> {
-    return apiService.get(`/admin/analytics/schools/${schoolId}/performance`);
+  async getSchoolPerformance(schoolId: string): Promise<SchoolPerformance> {
+    return apiService.get<SchoolPerformance>(`/admin/analytics/schools/${schoolId}/performance`);
   }
 
-  async getTeacherDetailedPerformance(teacherId: string): Promise<any> {
-    return apiService.get(`/admin/analytics/teachers/${teacherId}/performance`);
+  async getTeacherDetailedPerformance(teacherId: string): Promise<TeacherPerformance> {
+    return apiService.get<TeacherPerformance>(`/admin/analytics/teachers/${teacherId}/performance`);
   }
 
   async searchUsersByContact(query: string): Promise<any> {

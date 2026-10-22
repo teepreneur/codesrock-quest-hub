@@ -22,7 +22,7 @@ import {
 
 const DEFAULT_CURRICULUM_SLUG = 'codesrock-1-activity-book';
 
-interface ClassRow {
+export interface ClassRow {
   id: string;
   name: string;
   teacher_id: string;
@@ -109,7 +109,7 @@ const getClassLearners = async (classId: string): Promise<Learner[]> => {
     .sort((a: Learner, b: Learner) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`));
 };
 
-const loadProgressInput = async (cls: ClassRow): Promise<ProgressInput> => {
+export const loadProgressInput = async (cls: ClassRow): Promise<ProgressInput> => {
   const [units, learners, sessionsRes] = await Promise.all([
     resolveCurriculumId(cls).then(loadCurriculum),
     getClassLearners(cls.id),

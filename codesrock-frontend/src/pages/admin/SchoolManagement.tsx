@@ -335,7 +335,7 @@ export default function SchoolManagement() {
                       <TableHead>School ID</TableHead>
                       <TableHead>Region</TableHead>
                       <TableHead>Teachers</TableHead>
-                      <TableHead>Avg. Progress</TableHead>
+                      <TableHead>Book covered</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="text-right">Actions</TableHead>

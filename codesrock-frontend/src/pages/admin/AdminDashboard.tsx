@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Shield, Users, TrendingUp, BookOpen, AlertCircle, Activity, ArrowRight, Settings, PlusCircle } from "lucide-react";
+import { Shield, Users, TrendingUp, BookOpen, AlertCircle, Activity, ArrowRight, Settings, PlusCircle , AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { adminService } from "@/services/admin.service";
 import { toast } from "sonner";
@@ -81,17 +81,13 @@ export default function AdminDashboard() {
 
             {/* Welcome Text & System Status */}
             <div className="flex-1 space-y-4 text-center md:text-left">
-               <div className="glass-panel bg-white/10 border-white/20 rounded-2xl p-4 inline-block mb-2 backdrop-blur-xl animate-scale-in">
-                  <p className="text-white font-bold text-sm flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-secondary animate-pulse" />
-                    SYSTEM STATUS: ALL SYSTEMS NOMINAL 🤘
-                  </p>
-               </div>
               <h1 className="text-3xl md:text-5xl font-heading font-extrabold tracking-tight">
                 Admin Control Center
               </h1>
               <p className="text-white/80 text-lg max-w-2xl font-medium">
-                Monitoring activity across <span className="text-secondary font-bold">{stats.totalTeachers} teachers</span> and <span className="text-secondary font-bold">{stats.totalCourses} modules</span>.
+                <span className="text-secondary font-bold">{stats.activeTeachers} of {stats.totalTeachers} teachers</span> active in the last 30 days
+                {stats.neverLoggedIn > 0 && <> · <span className="text-secondary font-bold">{stats.neverLoggedIn} never logged in</span></>}
+                {" "}· {stats.totalCourses} training courses.
               </p>
             </div>
             
@@ -115,41 +111,50 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-black text-deep-purple flex items-center gap-2">
             <Shield className="h-6 w-6 text-primary" />
-            School Success Metrics
+            Schools at a glance
           </h2>
           <Button variant="outline" size="sm" onClick={() => navigate('/admin/schools')} className="rounded-xl font-bold">
             View All Schools
           </Button>
         </div>
         
-        <div className="grid gap-6 md:grid-cols-3">
-          {(topSchools || []).map((school, i) => (
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {(topSchools || []).map((school) => (
             <Card 
-              key={i} 
+              key={school.id} 
               className="glass-panel overflow-hidden group hover:border-primary/40 transition-all cursor-pointer active:scale-95"
-              onClick={() => navigate('/admin/schools')}
+              onClick={() => navigate(`/admin/schools/${school.id}/performance`)}
             >
               <CardContent className="p-6 space-y-4">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-black text-deep-purple">{school.name}</h3>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{school.active} Students Active</p>
+                    <p className="text-xs text-muted-foreground">
+                      {school.activeTeachers} of {school.teacherCount} teachers active · {school.learnerCount} children
+                    </p>
                   </div>
-                  <Badge className={school.trend === 'up' ? 'bg-green-500' : 'bg-orange-500'}>
-                    {school.trend === 'up' ? '↑ Increasing' : '↓ Static'}
-                  </Badge>
+                  {!school.isActive && <Badge variant="outline">Inactive</Badge>}
                 </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span>Curriculum Completion</span>
-                    <span className="text-primary">{school.progress}%</span>
+
+                {school.neverLoggedIn > 0 && (
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                    <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> {school.neverLoggedIn} teacher{school.neverLoggedIn === 1 ? "" : "s"} never logged in
+                  </p>
+                )}
+                {school.teacherCount > 0 && school.classCount === 0 && (
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                    <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> No classes set up yet
+                  </p>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="rounded-lg bg-muted/50 p-2">
+                    <p className="text-lg font-black">{school.lessonCount}</p>
+                    <p className="text-[10px] text-muted-foreground">lessons logged</p>
                   </div>
-                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000" 
-                      style={{ width: `${school.progress}%` }} 
-                    />
+                  <div className="rounded-lg bg-muted/50 p-2">
+                    <p className="text-lg font-black">{school.coveragePercent === null ? "—" : `${school.coveragePercent}%`}</p>
+                    <p className="text-[10px] text-muted-foreground">book covered</p>
                   </div>
                 </div>
               </CardContent>

@@ -1,156 +1,79 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../../config/supabase';
+import { AppError } from '../../middleware/errorHandler';
+import {
+  ACTIVE_WINDOW_DAYS,
+  loadPlatform,
+  rankSchools,
+  summarizeCourses,
+  summarizeSchools,
+  summarizeTeachers,
+} from '../../services/adminStats';
+import { computeClassProgress } from '../../services/progressAnalytics';
+import { ClassRow, loadProgressInput } from '../trackingController';
+
+/*
+ * Admin analytics. Figures come from recorded data only; anything not yet
+ * measured is returned as null so the UI can say "No data yet".
+ */
+
+/** School admins only see their own school; other admins see everything. */
+const scopeFor = async (req: Request): Promise<string | null> => {
+  if (req.user?.role !== 'school_admin') return null;
+  const { data } = await supabase.from('profiles').select('school_id').eq('id', req.user.userId).single();
+  if (!data?.school_id) throw new AppError('Your account is not linked to a school', 403);
+  return data.school_id;
+};
+
+const daysAgoIso = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
 
 /**
- * @desc    Get admin dashboard overview
+ * @desc    Admin overview (dashboard and analytics headline figures)
  * @route   GET /api/admin/analytics/overview
- * @access  Private/Admin
  */
-export const getOverview = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const getOverview = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    // Get date for 30 days ago
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    // Get yesterday for active today
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const [
-      { count: totalTeachers },
-      { count: totalStudents },
-      { count: activeToday },
-      { count: totalCourses },
-      { count: newUsersThisMonth },
-      { count: totalActivities },
-    ] = await Promise.all([
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').eq('is_active', true),
-      supabase.from('learners').select('*', { count: 'exact', head: true }).eq('is_active', true),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').gte('last_login', yesterday.toISOString()).eq('is_active', true),
-      supabase.from('courses').select('*', { count: 'exact', head: true }).eq('is_published', true),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').gte('created_at', thirtyDaysAgo.toISOString()),
-      supabase.from('activities').select('*', { count: 'exact', head: true }).gte('created_at', thirtyDaysAgo.toISOString()),
+    const [platform, activities30, recentActivities, lessons30, ratings, courses] = await Promise.all([
+      loadPlatform(await scopeFor(req)),
+      supabase.from('activities').select('id', { count: 'exact', head: true }).gte('created_at', daysAgoIso(30)),
+      supabase.from('activities').select('id', { count: 'exact', head: true }).gte('created_at', daysAgoIso(7)),
+      supabase.from('lesson_sessions').select('id', { count: 'exact', head: true }).gte('session_date', daysAgoIso(30).slice(0, 10)),
+      supabase.from('learner_activity_results').select('level'),
+      supabase.from('courses').select('id', { count: 'exact', head: true }).eq('is_active', true),
     ]);
 
-    // Calculate average teacher completion rate
-    const { data: allProgress } = await supabase.from('video_progress').select('watched_seconds, total_seconds');
-    const avgTeacherCompletion = allProgress && allProgress.length > 0
-      ? allProgress.reduce((sum, p) => sum + (p.total_seconds > 0 ? (p.watched_seconds / p.total_seconds) * 100 : 0), 0) / allProgress.length
-      : 0;
+    const teachers = summarizeTeachers(platform);
+    const schools = summarizeSchools(platform, teachers);
+    const courseStats = summarizeCourses(platform);
+    const levels = (ratings.data || []).map((r: any) => r.level);
+    const attempts = platform.evalProgress.length;
+    const oneDayAgo = Date.now() - 86_400_000;
+    const monthAgo = daysAgoIso(30);
 
-    // Student outcomes: share of activity-book ratings where the child worked on their own
-    const [{ count: ratedCount }, { count: independentCount }] = await Promise.all([
-      supabase.from('learner_activity_results').select('id', { count: 'exact', head: true }),
-      supabase.from('learner_activity_results').select('id', { count: 'exact', head: true }).eq('level', 3),
-    ]);
-    const studentCompletionRate = ratedCount ? ((independentCount || 0) / ratedCount) * 100 : 0;
-
-    // Get engagement trend (last 7 days)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const { data: recentActivities } = await supabase
-      .from('activities')
-      .select('created_at')
-      .gte('created_at', sevenDaysAgo.toISOString());
-
-    // Get evaluation success rate
-    const { data: allAttempts } = await supabase.from('evaluation_progress').select('passed');
-    const passedCount = (allAttempts || []).filter(a => a.passed).length;
-    const totalAttempts = (allAttempts || []).length;
-    const evaluationSuccessRate = totalAttempts > 0 ? (passedCount / totalAttempts) * 100 : 0;
-
-    // Get top 3 schools for the dashboard
-    // Only fetch active schools for the dashboard
-    const { data: schoolsForOverview } = await supabase
-      .from('schools')
-      .select('id, name')
-      .eq('is_active', true)
-      .limit(10);
-    
-    const schoolSuccessMetrics = await Promise.all(
-      (schoolsForOverview || []).map(async (school) => {
-        // Count active students
-        const { data: studentProfiles } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('school_id', school.id)
-          .eq('role', 'student');
-        
-        // Count active teachers
-        const { count: teacherCount } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('school_id', school.id)
-          .eq('role', 'teacher');
-        
-        const studentIds = (studentProfiles || []).map(p => p.id);
-        let avgProgress = 0;
-        let totalInteractions = 0;
-        
-        if (studentIds.length > 0) {
-          const { count: completedCount } = await supabase
-            .from('video_progress')
-            .select('*', { count: 'exact', head: true })
-            .in('user_id', studentIds)
-            .eq('completed', true);
-          
-          const { count: totalProgressCount } = await supabase
-            .from('video_progress')
-            .select('*', { count: 'exact', head: true })
-            .in('user_id', studentIds);
-          
-          avgProgress = totalProgressCount && totalProgressCount > 0 
-            ? Math.round(((completedCount || 0) / totalProgressCount) * 100) 
-            : 0;
-          
-          totalInteractions = totalProgressCount || 0;
-        }
-        
-        return {
-          name: school.name,
-          progress: avgProgress,
-          active: studentIds.length,
-          teachers: teacherCount || 0,
-          interactions: totalInteractions,
-          trend: avgProgress > 50 ? 'up' : 'down'
-        };
-      })
-    );
-    
-    // Sort by most active: prioritize schools with more activity (students + interactions + progress)
-    const topSchools = schoolSuccessMetrics
-      .sort((a, b) => {
-        // Primary: total activity score (students + teachers + interactions)
-        const activityA = a.active + a.teachers + a.interactions;
-        const activityB = b.active + b.teachers + b.interactions;
-        if (activityB !== activityA) return activityB - activityA;
-        // Secondary: curriculum progress
-        return b.progress - a.progress;
-      })
-      .slice(0, 3);
+    const startedPcts = courseStats.flatMap((c) => (c.avgCompletion === null ? [] : [c.avgCompletion]));
 
     res.status(200).json({
       success: true,
       data: {
         stats: {
-          totalTeachers: totalTeachers || 0,
-          totalStudents: totalStudents || 0,
-          activeToday: activeToday || 0,
-          totalCourses: totalCourses || 0,
-          avgTeacherCompletion: Math.round(avgTeacherCompletion),
-          studentCompletionRate: Math.round(studentCompletionRate),
-          evaluationSuccessRate: Math.round(evaluationSuccessRate),
+          totalTeachers: teachers.length,
+          activeTeachers: teachers.filter((t) => t.status === 'active').length,
+          neverLoggedIn: teachers.filter((t) => t.status === 'never_logged_in').length,
+          totalStudents: platform.learners.length,
+          activeToday: teachers.filter((t) => t.lastLogin && new Date(t.lastLogin).getTime() >= oneDayAgo).length,
+          totalCourses: courses.count || 0,
+          avgTeacherCompletion: startedPcts.length ? Math.round(startedPcts.reduce((a, b) => a + b, 0) / startedPcts.length) : null,
+          studentCompletionRate: levels.length ? Math.round((levels.filter((l: number) => l === 3).length / levels.length) * 100) : null,
+          evaluationSuccessRate: attempts ? Math.round((platform.evalProgress.filter((e: any) => e.passed).length / attempts) * 100) : null,
+          lessonsLast30Days: lessons30.count || 0,
+          classCount: platform.classes.length,
         },
         trends: {
-          newUsersThisMonth: newUsersThisMonth || 0,
-          totalActivities: totalActivities || 0,
-          engagementCount: recentActivities?.length || 0,
+          newUsersThisMonth: platform.teachers.filter((t: any) => t.created_at >= monthAgo).length,
+          totalActivities: activities30.count || 0,
+          engagementCount: recentActivities.count || 0,
         },
-        topSchools
+        topSchools: rankSchools(schools).slice(0, 4),
       },
     });
   } catch (error) {
@@ -159,406 +82,114 @@ export const getOverview = async (
 };
 
 /**
- * @desc    Get individual teacher analytics
+ * @desc    Individual teacher analytics (summary)
  * @route   GET /api/admin/analytics/teachers/:id
- * @access  Private/Admin
  */
-export const getTeacherAnalytics = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const getTeacherAnalytics = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const userId = req.params.id;
+    const platform = await loadPlatform(await scopeFor(req));
+    const teacher = summarizeTeachers(platform).find((t) => t.id === req.params.id);
+    if (!teacher) throw new AppError('Teacher not found', 404);
 
-    const { data: user, error: userError } = await supabase
-      .from('profiles')
-      .select('*, schools(name)')
-      .eq('id', userId)
-      .single();
-
-    if (userError || !user) {
-      res.status(404).json({ success: false, message: 'Teacher not found' });
-      return;
-    }
-
-    const [
-      { data: progress },
-      { count: completedCourses },
-      { count: totalActivities },
-      { data: recentActivity },
-    ] = await Promise.all([
-      supabase.from('user_progress').select('*').eq('user_id', userId).single(),
-      supabase.from('video_progress').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('completed', true),
-      supabase.from('activities').select('*', { count: 'exact', head: true }).eq('user_id', userId),
-      supabase.from('activities').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          name: `${user.first_name} ${user.last_name}`,
-          email: user.email,
-          school: user.schools,
-          lastLogin: user.last_login,
-        },
-        progress,
-        stats: {
-          completedCourses: completedCourses || 0,
-          totalActivities: totalActivities || 0,
-        },
-        trends: {
-          recentActivity: recentActivity || [],
-        },
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * @desc    Get course completion analytics
- * @route   GET /api/admin/analytics/courses
- * @access  Private/Admin
- */
-export const getCourseAnalytics = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { data: courses } = await supabase.from('courses').select('*').eq('is_published', true);
-
-    const courseStats = await Promise.all(
-      (courses || []).map(async (course) => {
-        const [
-          { count: totalViews },
-          { count: completions },
-        ] = await Promise.all([
-          supabase.from('video_progress').select('*', { count: 'exact', head: true }).eq('course_id', course.id),
-          supabase.from('video_progress').select('*', { count: 'exact', head: true }).eq('course_id', course.id).eq('completed', true),
-        ]);
-
-        return {
-          courseId: course.id,
-          title: course.title,
-          category: course.category,
-          totalViews: totalViews || 0,
-          completions: completions || 0,
-          completionRate: totalViews && totalViews > 0 ? ((completions || 0) / totalViews) * 100 : 0,
-        };
-      })
-    );
-
-    // Sort by completion rate
-    courseStats.sort((a, b) => b.completionRate - a.completionRate);
-
-    // Compute dynamic sum/average metrics at root level
-    const { data: allVideoProgress } = await supabase
-      .from('video_progress')
-      .select('watched_seconds, total_seconds');
-
-    const totalViewsSum = courseStats.reduce((sum, c) => sum + c.totalViews, 0);
-
-    let avgProgress = 0;
-    if (allVideoProgress && allVideoProgress.length > 0) {
-      const validProgress = allVideoProgress.filter(p => p.total_seconds > 0);
-      if (validProgress.length > 0) {
-        avgProgress = Math.round(
-          (validProgress.reduce((sum, p) => sum + (p.watched_seconds / p.total_seconds) * 100, 0) / validProgress.length)
-        );
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        courses: courseStats,
-        totalViews: totalViewsSum,
-        avgProgress,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * @desc    Get engagement metrics
- * @route   GET /api/admin/analytics/engagement
- * @access  Private/Admin
- */
-export const getEngagementMetrics = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { days = 30 } = req.query;
-    const daysAgo = new Date();
-    daysAgo.setDate(daysAgo.getDate() - Number(days));
-
-    // Get activities for the period using created_at instead of timestamp
-    const { data: activities } = await supabase
+    const { data: recentActivity } = await supabase
       .from('activities')
-      .select('user_id, type, created_at')
-      .gte('created_at', daysAgo.toISOString());
+      .select('type, description, xp_earned, created_at')
+      .eq('user_id', teacher.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
 
-    // Calculate unique users per day
+    res.status(200).json({ success: true, data: { teacher, recentActivity: recentActivity || [] } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Teacher training progress per course
+ * @route   GET /api/admin/analytics/courses
+ */
+export const getCourseAnalytics = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const platform = await loadPlatform(await scopeFor(req));
+    const courses = summarizeCourses(platform).sort((a, b) => b.teachersStarted - a.teachersStarted);
+    const started = courses.filter((c) => c.avgCompletion !== null);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        courses,
+        // Videos teachers have started, across all courses
+        totalViews: platform.videoProgress.filter((v: any) => platform.activeVideoIds.has(v.video_id)).length,
+        avgProgress: started.length
+          ? Math.round(started.reduce((a, c) => a + (c.avgCompletion || 0), 0) / started.length)
+          : null,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Engagement over a period
+ * @route   GET /api/admin/analytics/engagement?days=30
+ */
+export const getEngagementMetrics = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const days = Math.min(Math.max(Number(req.query.days) || 30, 1), 365);
+    const since = daysAgoIso(days);
+
+    const [activities, downloads, quizAttempts, quizzesPassed, certificates, badges, lessons, platform] = await Promise.all([
+      supabase.from('activities').select('user_id, type, created_at').gte('created_at', since),
+      supabase.from('resource_downloads').select('id', { count: 'exact', head: true }).gte('downloaded_at', since),
+      supabase.from('evaluation_progress').select('id', { count: 'exact', head: true }).gte('completed_at', since),
+      supabase.from('evaluation_progress').select('id', { count: 'exact', head: true }).eq('passed', true).gte('completed_at', since),
+      supabase.from('certificates').select('id', { count: 'exact', head: true }).gte('date_earned', since),
+      supabase.from('user_badges').select('id', { count: 'exact', head: true }).gte('earned_at', since),
+      supabase.from('lesson_sessions').select('session_date').gte('session_date', since.slice(0, 10)),
+      loadPlatform(await scopeFor(req)),
+    ]);
+    if (activities.error) throw activities.error;
+
+    // Unique active users per day
     const dailyUsers = new Map<string, Set<string>>();
     const typeBreakdown = new Map<string, number>();
-
-    (activities || []).forEach((activity) => {
-      const date = activity.created_at ? activity.created_at.split('T')[0] : '';
-      if (date) {
-        if (!dailyUsers.has(date)) {
-          dailyUsers.set(date, new Set());
-        }
-        dailyUsers.get(date)!.add(activity.user_id);
-      }
-
-      typeBreakdown.set(activity.type, (typeBreakdown.get(activity.type) || 0) + 1);
-    });
-
-    const dailyActiveUsers = Array.from(dailyUsers.entries()).map(([date, users]) => ({
-      date,
-      count: users.size,
-    }));
-
-    const activityBreakdown = Array.from(typeBreakdown.entries()).map(([type, count]) => ({
-      _id: type,
-      count,
-    }));
-
-    // Concurrently fetch all engagement metrics from database tables
-    const [
-      { count: totalDownloads },
-      { count: quizAttempts },
-      { count: certificatesIssued },
-      { count: skillsMastered },
-      { count: badgesEarned },
-      { data: xpData },
-      { data: resourceRatings },
-      { data: sessionRatings },
-      { data: topPerformers }
-    ] = await Promise.all([
-      supabase.from('resource_downloads').select('*', { count: 'exact', head: true }),
-      supabase.from('evaluation_progress').select('*', { count: 'exact', head: true }),
-      supabase.from('certificates').select('*', { count: 'exact', head: true }),
-      supabase.from('evaluation_progress').select('*', { count: 'exact', head: true }).eq('passed', true),
-      supabase.from('user_badges').select('*', { count: 'exact', head: true }),
-      supabase.from('user_progress').select('total_xp'),
-      supabase.from('resource_downloads').select('rating').not('rating', 'is', null),
-      supabase.from('session_registrations').select('rating').not('rating', 'is', null),
-      supabase
-        .from('user_progress')
-        .select('*, profiles(first_name, last_name, email)')
-        .order('total_xp', { ascending: false })
-        .limit(10)
-    ]);
-
-    const totalXP = (xpData || []).reduce((sum, p) => sum + (p.total_xp || 0), 0);
-    const avgXP = xpData && xpData.length > 0 ? Math.round(totalXP / xpData.length) : 0;
-
-    const allRatings = [
-      ...(resourceRatings || []).map(r => r.rating),
-      ...(sessionRatings || []).map(s => s.rating)
-    ].filter(r => typeof r === 'number' && r > 0);
-
-    const satisfaction = allRatings.length > 0
-      ? Math.round((allRatings.reduce((sum, r) => sum + r, 0) / allRatings.length) * 10) / 10
-      : 4.5;
-
-    res.status(200).json({
-      success: true,
-      data: {
-        dailyActiveUsers,
-        activityBreakdown,
-        topPerformers: topPerformers || [],
-        totalDownloads: totalDownloads || 0,
-        quizAttempts: quizAttempts || 0,
-        certificatesIssued: certificatesIssued || 0,
-        skillsMastered: skillsMastered || 0,
-        badgesEarned: badgesEarned || 0,
-        avgXP,
-        satisfaction
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * @desc    Get school performance analytics
- * @route   GET /api/admin/analytics/schools
- * @access  Private/Admin
- */
-export const getSchoolAnalytics = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    // Get all schools with their teachers and students progress
-    const { data: schools, error: schoolError } = await supabase
-      .from('schools')
-      .select('id, name, school_code');
-
-    if (schoolError) throw schoolError;
-
-    const schoolStats = await Promise.all(
-      (schools || []).map(async (school) => {
-        // Get all profiles for this school
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, role')
-          .eq('school_id', school.id);
-
-        const profileIds = (profiles || []).map(p => p.id);
-        const teacherCount = (profiles || []).filter(p => p.role === 'teacher').length;
-        const studentCount = (profiles || []).filter(p => p.role === 'student').length;
-
-        let totalXP = 0;
-        let completions = 0;
-
-        if (profileIds.length > 0) {
-          // Get total XP for these profiles
-          const { data: progress } = await supabase
-            .from('user_progress')
-            .select('total_xp')
-            .in('user_id', profileIds);
-
-          totalXP = (progress || []).reduce((sum, p) => sum + (p.total_xp || 0), 0);
-
-          // Get completions
-          const { count: completionCount } = await supabase
-            .from('video_progress')
-            .select('*', { count: 'exact', head: true })
-            .in('user_id', profileIds)
-            .eq('completed', true);
-          
-          completions = completionCount || 0;
-        }
-
-        return {
-          id: school.id,
-          name: school.name,
-          schoolCode: school.school_code,
-          teacherCount,
-          studentCount,
-          totalXP,
-          completions,
-        };
-      })
-    );
-
-    // Sort by total XP
-    schoolStats.sort((a, b) => b.totalXP - a.totalXP);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        schools: schoolStats,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * @desc    Get detailed school performance
- * @route   GET /api/admin/analytics/schools/:id/performance
- * @access  Private/Admin
- */
-export const getSchoolPerformance = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const schoolId = req.params.id;
-
-    const { data: school, error: schoolError } = await supabase
-      .from('schools')
-      .select('*')
-      .eq('id', schoolId)
-      .single();
-
-    if (schoolError || !school) {
-      res.status(404).json({ success: false, message: 'School not found' });
-      return;
+    for (const a of activities.data || []) {
+      const date = a.created_at.slice(0, 10);
+      if (!dailyUsers.has(date)) dailyUsers.set(date, new Set());
+      dailyUsers.get(date)!.add(a.user_id);
+      typeBreakdown.set(a.type, (typeBreakdown.get(a.type) || 0) + 1);
     }
 
-    // Get all teachers in this school
-    const { data: teachers } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, email, last_login')
-      .eq('school_id', schoolId)
-      .eq('role', 'teacher');
+    const lessonsByDate = new Map<string, number>();
+    for (const l of lessons.data || []) lessonsByDate.set(l.session_date, (lessonsByDate.get(l.session_date) || 0) + 1);
 
-    const teacherStats = await Promise.all(
-      (teachers || []).map(async (teacher) => {
-        // Teacher's own progress
-        const { data: progress } = await supabase
-          .from('video_progress')
-          .select('completed')
-          .eq('user_id', teacher.id);
-        
-        const ownCompletions = (progress || []).filter(p => p.completed).length;
-
-        // Students under this teacher (via classes)
-        const { data: teacherClasses } = await supabase
-          .from('classes')
-          .select('id')
-          .eq('teacher_id', teacher.id);
-        
-        const classIds = (teacherClasses || []).map(c => c.id);
-        
-        let studentCount = 0;
-        let avgStudentXP = 0;
-
-        if (classIds.length > 0) {
-          const { data: classStudents } = await supabase
-            .from('class_students')
-            .select('student_id')
-            .in('class_id', classIds);
-          
-          const studentIds = (classStudents || []).map(cs => cs.student_id);
-          studentCount = studentIds.length;
-
-          if (studentCount > 0) {
-            const { data: studentXP } = await supabase
-              .from('user_progress')
-              .select('total_xp')
-              .in('user_id', studentIds);
-            
-            const totalXP = (studentXP || []).reduce((sum, p) => sum + (p.total_xp || 0), 0);
-            avgStudentXP = totalXP / studentCount;
-          }
-        }
-
-        return {
-          id: teacher.id,
-          name: `${teacher.first_name} ${teacher.last_name}`,
-          email: teacher.email,
-          ownCompletions,
-          studentCount,
-          avgStudentXP: Math.round(avgStudentXP),
-          lastLogin: teacher.last_login
-        };
-      })
-    );
+    const teachers = summarizeTeachers(platform);
+    const activeInPeriod = teachers.filter((t) => t.lastLogin && t.lastLogin >= since).length;
 
     res.status(200).json({
       success: true,
       data: {
-        school,
-        teachers: teacherStats,
+        days,
+        dailyActiveUsers: [...dailyUsers.entries()]
+          .map(([date, users]) => ({ date, count: users.size }))
+          .sort((a, b) => a.date.localeCompare(b.date)),
+        lessonsLogged: [...lessonsByDate.entries()]
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => a.date.localeCompare(b.date)),
+        activityBreakdown: [...typeBreakdown.entries()]
+          .map(([type, count]) => ({ type, count }))
+          .sort((a, b) => b.count - a.count),
+        teacherCount: teachers.length,
+        activeTeachers: activeInPeriod,
+        activeTeacherRate: teachers.length ? Math.round((activeInPeriod / teachers.length) * 100) : null,
+        neverLoggedIn: teachers.filter((t) => t.status === 'never_logged_in').length,
+        totalDownloads: downloads.count || 0,
+        quizAttempts: quizAttempts.count || 0,
+        quizzesPassed: quizzesPassed.count || 0,
+        certificatesIssued: certificates.count || 0,
+        badgesEarned: badges.count || 0,
+        lessonCount: (lessons.data || []).length,
       },
     });
   } catch (error) {
@@ -567,99 +198,135 @@ export const getSchoolPerformance = async (
 };
 
 /**
- * @desc    Get detailed teacher performance & students
- * @route   GET /api/admin/analytics/teachers/:id/performance
- * @access  Private/Admin
+ * @desc    All schools, ranked by teaching activity
+ * @route   GET /api/admin/analytics/schools
  */
-export const getTeacherDetailedPerformance = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const getSchoolAnalytics = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const platform = await loadPlatform(await scopeFor(req));
+    const schools = rankSchools(summarizeSchools(platform, summarizeTeachers(platform)));
+    res.status(200).json({ success: true, data: { schools } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    One school: summary and every teacher's activation and activity
+ * @route   GET /api/admin/analytics/schools/:id/performance
+ */
+export const getSchoolPerformance = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const [{ data: school }, platform] = await Promise.all([
+      supabase.from('schools').select('*').eq('id', req.params.id).single(),
+      loadPlatform(await scopeFor(req)),
+    ]);
+    if (!school) throw new AppError('School not found', 404);
+    if (!platform.schools.some((s: any) => s.id === school.id)) {
+      throw new AppError('You do not have access to this school', 403);
+    }
+
+    const teachers = summarizeTeachers(platform);
+    const summary = summarizeSchools(platform, teachers).find((s) => s.id === school.id)!;
+    const staff = teachers
+      .filter((t) => t.schoolId === school.id)
+      .sort((a, b) => b.lessonCount - a.lessonCount || (b.lastLogin || '').localeCompare(a.lastLogin || ''));
+
+    res.status(200).json({ success: true, data: { school, summary, teachers: staff } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    One teacher: training, classes and every child they teach
+ * @route   GET /api/admin/analytics/teachers/:id/performance
+ */
+export const getTeacherDetailedPerformance = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const teacherId = req.params.id;
+    const [{ data: profile }, platform, quizzes, certificates, classesRes] = await Promise.all([
+      supabase.from('profiles').select('id, first_name, last_name, email, last_login, schools(name)').eq('id', teacherId).single(),
+      loadPlatform(await scopeFor(req)),
+      supabase
+        .from('evaluation_progress')
+        .select('score, passed, completed_at, evaluations(title)')
+        .eq('user_id', teacherId)
+        .order('completed_at', { ascending: false }),
+      supabase.from('certificates').select('title, date_earned').eq('user_id', teacherId).order('date_earned', { ascending: false }),
+      supabase.from('classes').select('id, name, teacher_id, school_id, curriculum_id').eq('teacher_id', teacherId),
+    ]);
+    if (!profile) throw new AppError('Teacher not found', 404);
 
-    const { data: teacher, error: teacherError } = await supabase
-      .from('profiles')
-      .select('*, schools(name)')
-      .eq('id', teacherId)
-      .single();
+    const summary = summarizeTeachers(platform).find((t) => t.id === teacherId);
+    if (!summary) throw new AppError('You do not have access to this teacher', 403);
 
-    if (teacherError || !teacher) {
-      res.status(404).json({ success: false, message: 'Teacher not found' });
-      return;
+    // Training: completed videos per course the teacher has started
+    const byCourse = new Map<string, { title: string; total: number; done: number; started: boolean }>();
+    for (const v of platform.activeVideos as any[]) {
+      const entry = byCourse.get(v.course_id) || { title: (v.courses?.title || '').trim(), total: 0, done: 0, started: false };
+      entry.total += 1;
+      byCourse.set(v.course_id, entry);
+    }
+    for (const vp of platform.videoProgress as any[]) {
+      if (vp.user_id !== teacherId || !platform.activeVideoIds.has(vp.video_id)) continue;
+      const entry = byCourse.get(vp.course_id);
+      if (!entry) continue;
+      entry.started = true;
+      if (vp.completed) entry.done += 1;
     }
 
-    // Teacher's own progress details
-    const { data: ownProgress } = await supabase
-      .from('video_progress')
-      .select('*, courses(title)')
-      .eq('user_id', teacherId);
-
-    // Get all students under this teacher
-    const { data: teacherClasses } = await supabase
-      .from('classes')
-      .select('id, name')
-      .eq('teacher_id', teacherId);
-    
-    const classIds = (teacherClasses || []).map(c => c.id);
-    
-    let students: any[] = [];
-
-    if (classIds.length > 0) {
-      const { data: classStudents } = await supabase
-        .from('class_students')
-        .select('student_id, classes(name)')
-        .in('class_id', classIds);
-      
-      const studentIds = (classStudents || []).map(cs => cs.student_id);
-
-      if (studentIds.length > 0) {
-        const { data: studentProfiles } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, email, last_login')
-          .in('id', studentIds);
-        
-        const { data: studentXP } = await supabase
-          .from('user_progress')
-          .select('user_id, total_xp, current_level')
-          .in('user_id', studentIds);
-
-        const { data: studentMastery } = await supabase
-          .from('student_topic_progress')
-          .select('student_id')
-          .in('student_id', studentIds);
-
-        students = (studentProfiles || []).map(profile => {
-          const xpData = (studentXP || []).find(x => x.user_id === profile.id);
-          const masteryCount = (studentMastery || []).filter(m => m.student_id === profile.id).length;
-          const classInfo = (classStudents || []).find(cs => cs.student_id === profile.id);
-
-          return {
-            id: profile.id,
-            name: `${profile.first_name} ${profile.last_name}`,
-            email: profile.email,
-            xp: xpData?.total_xp || 0,
-            level: xpData?.current_level || 1,
-            masteryCount,
-            className: (classInfo?.classes as any)?.name || 'Unknown',
-            lastLogin: profile.last_login
-          };
-        });
-      }
-    }
+    // Classes and children, from logged lessons
+    const classes = await Promise.all(
+      (classesRes.data || []).map(async (cls: ClassRow) => {
+        const progress = computeClassProgress(await loadProgressInput(cls));
+        return {
+          classId: cls.id,
+          name: cls.name,
+          ...progress.summary,
+          learners: progress.learners.map((l) => ({
+            learnerId: l.learnerId,
+            name: l.name,
+            avgScore: l.avgScore,
+            independentRate: l.independentRate,
+            attendanceRate: l.attendanceRate,
+            flags: l.flags,
+          })),
+        };
+      })
+    );
 
     res.status(200).json({
       success: true,
       data: {
         teacher: {
-          id: teacher.id,
-          name: `${teacher.first_name} ${teacher.last_name}`,
-          school: teacher.schools?.name || 'Independent',
+          id: profile.id,
+          name: `${profile.first_name} ${profile.last_name}`.trim(),
+          email: profile.email,
+          school: (profile.schools as any)?.name || null,
+          lastLogin: profile.last_login,
+          status: summary?.status || 'never_logged_in',
         },
-        ownProgress: ownProgress || [],
-        students,
-        classes: teacherClasses || []
+        training: {
+          courses: [...byCourse.entries()]
+            .filter(([, c]) => c.started)
+            .map(([courseId, c]) => ({
+              courseId,
+              title: c.title,
+              videosCompleted: c.done,
+              videosTotal: c.total,
+              completed: c.total > 0 && c.done === c.total,
+            })),
+          quizzes: (quizzes.data || []).map((q: any) => ({
+            title: q.evaluations?.title || 'Quiz',
+            score: q.score,
+            passed: q.passed,
+            completedAt: q.completed_at,
+          })),
+          certificates: (certificates.data || []).map((c: any) => ({ title: (c.title || '').trim(), dateEarned: c.date_earned })),
+        },
+        classes,
+        activeWindowDays: ACTIVE_WINDOW_DAYS,
       },
     });
   } catch (error) {

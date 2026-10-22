@@ -57,8 +57,9 @@ export default function UserManagement() {
 
       const response = await adminService.getUsers(filters);
       setUsers(response.users);
-      setTotalPages(response.totalPages);
-      setTotalUsers(response.total);
+      // The API returns paging details under `pagination`
+      setTotalPages(response.pagination?.totalPages || 1);
+      setTotalUsers(response.pagination?.totalUsers ?? response.users.length);
     } catch (err: any) {
       console.error('Error loading users:', err);
       setError(err.message || 'Failed to load users');
