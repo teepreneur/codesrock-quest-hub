@@ -7,6 +7,7 @@ import {
   getSchoolAnalytics,
   getSchoolPerformance,
   getTeacherDetailedPerformance,
+  getActivationOverview,
 } from '../../controllers/admin/analyticsController';
 import { protect } from '../../middleware/auth';
 import { requireAdmin } from '../../middleware/roleAuth';
@@ -19,6 +20,7 @@ router.use(requireAdmin);
 
 // Analytics routes
 router.get('/overview', getOverview);
+router.get('/activation', getActivationOverview);
 router.get('/teachers/:id', getTeacherAnalytics);
 router.get('/courses', getCourseAnalytics);
 router.get('/engagement', getEngagementMetrics);

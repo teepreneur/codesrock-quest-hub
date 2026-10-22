@@ -3,7 +3,12 @@ import { supabase } from '../../config/supabase';
 import { AppError } from '../../middleware/errorHandler';
 import {
   ACTIVE_WINDOW_DAYS,
+  FUNNEL_STAGES,
+  REGULAR_LOGGING_DAYS,
+  activationFunnel,
+  followUps,
   loadPlatform,
+  weeklyLessons,
   rankSchools,
   summarizeCourses,
   summarizeSchools,
@@ -326,6 +331,71 @@ export const getTeacherDetailedPerformance = async (req: Request, res: Response,
           certificates: (certificates.data || []).map((c: any) => ({ title: (c.title || '').trim(), dateEarned: c.date_earned })),
         },
         classes,
+        activeWindowDays: ACTIVE_WINDOW_DAYS,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Admin Overview: activation funnel (overall and per school),
+ *          follow-up list and lessons logged per week
+ * @route   GET /api/admin/analytics/activation?schoolId=
+ */
+export const getActivationOverview = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    // School admins are always limited to their school; others may filter
+    const scope = (await scopeFor(req)) || (typeof req.query.schoolId === 'string' && req.query.schoolId) || null;
+    const platform = await loadPlatform(scope);
+    const now = Date.now();
+    const teachers = summarizeTeachers(platform, now);
+    const schools = rankSchools(summarizeSchools(platform, teachers));
+
+    const twelveWeeksAgo = new Date(now - 12 * 7 * 86_400_000).toISOString().slice(0, 10);
+    const classIds = platform.classes.map((c: any) => c.id);
+    const [{ data: lessons, error }, { data: ratings }] = await Promise.all([
+      classIds.length
+        ? supabase.from('lesson_sessions').select('class_id, session_date').in('class_id', classIds).gte('session_date', twelveWeeksAgo)
+        : Promise.resolve({ data: [] as any[], error: null }),
+      classIds.length
+        ? supabase.from('learner_activity_results').select('level, lesson_sessions!inner(class_id)').in('lesson_sessions.class_id', classIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    if (error) throw error;
+
+    const regularClasses = platform.classOverview.filter((c) => {
+      if (!c.last_lesson_date) return false;
+      return now - new Date(`${c.last_lesson_date}T00:00:00Z`).getTime() <= REGULAR_LOGGING_DAYS * 86_400_000;
+    }).length;
+    const levels = (ratings || []).map((r: any) => r.level);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        scope: scope ? { schoolId: scope, schoolName: schools[0]?.name || null } : null,
+        kpis: {
+          activeSchools: schools.filter((s) => s.isActive && s.teacherCount > 0).length,
+          totalTeachers: teachers.length,
+          activeTeachers: teachers.filter((t) => t.status === 'active').length,
+          classes: platform.classOverview.length,
+          classesLoggingRegularly: regularClasses,
+          children: platform.learners.length,
+          independentRate: levels.length ? Math.round((levels.filter((l: number) => l === 3).length / levels.length) * 100) : null,
+        },
+        stages: FUNNEL_STAGES,
+        funnel: activationFunnel(teachers, now),
+        schools: schools.map((s) => ({
+          id: s.id,
+          name: s.name,
+          isActive: s.isActive,
+          teacherCount: s.teacherCount,
+          funnel: activationFunnel(teachers.filter((t) => t.schoolId === s.id), now),
+        })),
+        followUps: followUps(platform, teachers, now),
+        weekly: weeklyLessons(lessons || [], 12, now),
+        regularLoggingDays: REGULAR_LOGGING_DAYS,
         activeWindowDays: ACTIVE_WINDOW_DAYS,
       },
     });

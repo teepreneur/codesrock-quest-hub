@@ -28,7 +28,7 @@ const teacherMenuItems = [
 ];
 
 const adminMenuItems = [
-  { title: "Admin Dashboard", url: "/admin", icon: Shield, roles: ['super_admin', 'school_admin', 'content_admin'] },
+  { title: "Overview", url: "/admin", icon: Shield, roles: ['super_admin', 'school_admin', 'content_admin'] },
   { title: "Schools", url: "/admin/schools", icon: Building2, roles: ['super_admin'] },
   { title: "User Management", url: "/admin/users", icon: Users, roles: ['super_admin', 'school_admin'] },
   { title: "Content Management", url: "/admin/content", icon: FileText, roles: ['super_admin', 'content_admin'] },
@@ -82,6 +82,8 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title} className="flex justify-center">
                     <NavLink
                     to={item.url}
+                    // "/admin" is a prefix of every admin page; only highlight it on the page itself
+                    end={item.url === "/admin"}
                     data-tour={
                       item.title === 'My Classes' ? 'sidebar-classes' : 
                       item.title === 'Learning Path' ? 'sidebar-learning' : 

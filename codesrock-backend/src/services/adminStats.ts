@@ -20,6 +20,8 @@ export interface TeacherSummary {
   schoolId: string | null;
   lastLogin: string | null;
   status: TeacherStatus;
+  createdAt: string | null;
+  startedTraining: boolean;
   videosCompleted: number;
   quizzesPassed: number;
   classCount: number;
@@ -113,11 +115,13 @@ export const summarizeTeachers = (p: Platform, now = Date.now()): TeacherSummary
 
     return {
       id: t.id,
-      name: `${t.first_name || ''} ${t.last_name || ''}`.trim(),
+      name: `${t.first_name || ''} ${t.last_name || ''}`.replace(/\s+/g, ' ').trim(),
       email: t.email,
       schoolId: t.school_id,
       lastLogin: t.last_login,
       status: teacherStatus(t.last_login, now),
+      createdAt: t.created_at || null,
+      startedTraining: p.videoProgress.some((v: any) => v.user_id === t.id),
       videosCompleted: completed.size,
       quizzesPassed: p.evalProgress.filter((e: any) => e.user_id === t.id && e.passed).length,
       classCount: myClasses.length,
@@ -189,5 +193,147 @@ export const summarizeCourses = (p: Platform) => {
       videoCompletions: rows.filter((r: any) => r.completed).length,
       avgCompletion: avg(completionPcts),
     };
+  });
+};
+
+// ---------------------------------------------------------------------------
+// Activation funnel, follow-ups and weekly lessons (admin Overview)
+// ---------------------------------------------------------------------------
+
+/** A class counts as "logging regularly" with a lesson in the last two weeks. */
+export const REGULAR_LOGGING_DAYS = 14;
+/** Grace period before a new teacher who hasn't logged in is flagged. */
+export const NEW_TEACHER_GRACE_DAYS = 3;
+/** Grace period after first login before "no class yet" is flagged. */
+export const NO_CLASS_GRACE_DAYS = 7;
+
+export const FUNNEL_STAGES = [
+  { key: 'invited', label: 'Accounts created' },
+  { key: 'loggedIn', label: 'Logged in' },
+  { key: 'startedTraining', label: 'Started training' },
+  { key: 'passedQuiz', label: 'Passed a quiz' },
+  { key: 'createdClass', label: 'Set up a class' },
+  { key: 'loggedLesson', label: 'Logged a lesson' },
+  { key: 'loggingRegularly', label: `Logging regularly (last ${REGULAR_LOGGING_DAYS} days)` },
+] as const;
+
+export type FunnelKey = (typeof FUNNEL_STAGES)[number]['key'];
+
+const daysSince = (iso: string | null | undefined, now: number) =>
+  iso ? Math.floor((now - new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso).getTime()) / DAY) : null;
+
+/** Teachers reaching each stage. Each stage only counts teachers who reached the previous ones. */
+export const activationFunnel = (teachers: TeacherSummary[], now = Date.now()) => {
+  const reached: Record<FunnelKey, (t: TeacherSummary) => boolean> = {
+    invited: () => true,
+    loggedIn: (t) => t.status !== 'never_logged_in',
+    startedTraining: (t) => t.startedTraining,
+    passedQuiz: (t) => t.quizzesPassed > 0,
+    createdClass: (t) => t.classCount > 0,
+    loggedLesson: (t) => t.lessonCount > 0,
+    loggingRegularly: (t) => {
+      const d = daysSince(t.lastLessonDate, now);
+      return d !== null && d <= REGULAR_LOGGING_DAYS;
+    },
+  };
+  let pool = teachers;
+  return FUNNEL_STAGES.map((stage) => {
+    pool = pool.filter(reached[stage.key]);
+    return {
+      key: stage.key,
+      label: stage.label,
+      count: pool.length,
+      percent: teachers.length ? Math.round((pool.length / teachers.length) * 100) : null,
+    };
+  });
+};
+
+export type FollowUpType = 'never_logged_in' | 'no_class' | 'class_never_logged' | 'class_quiet' | 'school_no_classes';
+
+export interface FollowUp {
+  type: FollowUpType;
+  schoolId: string | null;
+  schoolName: string;
+  teacherId?: string;
+  teacherName?: string;
+  classId?: string;
+  className?: string;
+  /** Days since the relevant event (account created, last login, last lesson) */
+  days: number | null;
+}
+
+/** Things an admin should act on, most urgent first. */
+export const followUps = (p: Platform, teachers: TeacherSummary[], now = Date.now()): FollowUp[] => {
+  const schoolName = new Map(p.schools.map((s: any) => [s.id, s.name]));
+  const items: FollowUp[] = [];
+
+  for (const t of teachers) {
+    const base = { schoolId: t.schoolId, schoolName: schoolName.get(t.schoolId) || 'No school', teacherId: t.id, teacherName: t.name };
+    if (t.status === 'never_logged_in') {
+      const age = daysSince(t.createdAt, now);
+      if (age === null || age >= NEW_TEACHER_GRACE_DAYS) items.push({ type: 'never_logged_in', ...base, days: age });
+    } else if (t.classCount === 0) {
+      const sinceLogin = daysSince(t.lastLogin, now);
+      if (sinceLogin !== null && (daysSince(t.createdAt, now) ?? 0) >= NO_CLASS_GRACE_DAYS) {
+        items.push({ type: 'no_class', ...base, days: daysSince(t.createdAt, now) });
+      }
+    }
+  }
+
+  for (const c of p.classOverview) {
+    if (Number(c.learner_count) === 0) continue;
+    const base = {
+      schoolId: c.school_id,
+      schoolName: c.school_name || 'No school',
+      teacherId: c.teacher_id,
+      teacherName: c.teacher_name || undefined,
+      classId: c.class_id,
+      className: c.class_name,
+    };
+    if (!c.last_lesson_date) {
+      items.push({ type: 'class_never_logged', ...base, days: null });
+    } else {
+      const d = daysSince(c.last_lesson_date, now)!;
+      if (d > REGULAR_LOGGING_DAYS) items.push({ type: 'class_quiet', ...base, days: d });
+    }
+  }
+
+  for (const s of p.schools as any[]) {
+    if (s.is_active === false) continue;
+    const hasTeachers = teachers.some((t) => t.schoolId === s.id);
+    const hasClasses = p.classOverview.some((c) => c.school_id === s.id);
+    if (hasTeachers && !hasClasses) items.push({ type: 'school_no_classes', schoolId: s.id, schoolName: s.name, days: null });
+  }
+
+  const order: FollowUpType[] = ['school_no_classes', 'never_logged_in', 'no_class', 'class_never_logged', 'class_quiet'];
+  return items.sort(
+    (a, b) => order.indexOf(a.type) - order.indexOf(b.type) || (b.days ?? 9999) - (a.days ?? 9999) || a.schoolName.localeCompare(b.schoolName)
+  );
+};
+
+/** Monday (UTC) of the week containing the date, as YYYY-MM-DD. */
+export const weekStart = (iso: string) => {
+  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
+  const day = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - day);
+  return d.toISOString().slice(0, 10);
+};
+
+/** Lessons logged per week for the last `weeks` weeks, including empty weeks. */
+export const weeklyLessons = (
+  lessons: { class_id: string; session_date: string }[],
+  weeks = 12,
+  now = Date.now()
+) => {
+  const thisWeek = weekStart(new Date(now).toISOString());
+  const starts: string[] = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const d = new Date(`${thisWeek}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - i * 7);
+    starts.push(d.toISOString().slice(0, 10));
+  }
+  return starts.map((start) => {
+    const inWeek = lessons.filter((l) => weekStart(l.session_date) === start);
+    return { weekStart: start, lessons: inWeek.length, classes: new Set(inWeek.map((l) => l.class_id)).size };
   });
 };

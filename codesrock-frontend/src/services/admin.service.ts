@@ -147,6 +147,43 @@ export interface EngagementMetrics {
   lessonCount: number;
 }
 
+export type FollowUpType = 'never_logged_in' | 'no_class' | 'class_never_logged' | 'class_quiet' | 'school_no_classes';
+
+export interface FunnelStage {
+  key: string;
+  label: string;
+  count: number;
+  percent: number | null;
+}
+
+export interface ActivationOverview {
+  scope: { schoolId: string; schoolName: string | null } | null;
+  kpis: {
+    activeSchools: number;
+    totalTeachers: number;
+    activeTeachers: number;
+    classes: number;
+    classesLoggingRegularly: number;
+    children: number;
+    independentRate: number | null;
+  };
+  funnel: FunnelStage[];
+  schools: { id: string; name: string; isActive: boolean; teacherCount: number; funnel: FunnelStage[] }[];
+  followUps: {
+    type: FollowUpType;
+    schoolId: string | null;
+    schoolName: string;
+    teacherId?: string;
+    teacherName?: string;
+    classId?: string;
+    className?: string;
+    days: number | null;
+  }[];
+  weekly: { weekStart: string; lessons: number; classes: number }[];
+  regularLoggingDays: number;
+  activeWindowDays: number;
+}
+
 export interface SchoolPerformance {
   school: { id: string; name: string; school_code: string | null; district?: string | null; region?: string | null };
   summary: SchoolSummary;
@@ -311,6 +348,10 @@ class AdminService {
 
   async getSchoolPerformance(schoolId: string): Promise<SchoolPerformance> {
     return apiService.get<SchoolPerformance>(`/admin/analytics/schools/${schoolId}/performance`);
+  }
+
+  async getActivationOverview(schoolId?: string): Promise<ActivationOverview> {
+    return apiService.get<ActivationOverview>(`/admin/analytics/activation${schoolId ? `?schoolId=${schoolId}` : ''}`);
   }
 
   async getTeacherDetailedPerformance(teacherId: string): Promise<TeacherPerformance> {

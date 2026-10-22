@@ -1,275 +1,395 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  AlertTriangle, BookOpenCheck, Building2, CheckCircle2, ChevronRight, ClipboardList, Copy, KeyRound, LayoutDashboard, UserX,
+} from "lucide-react";
+import { toast } from "sonner";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Shield, Users, TrendingUp, BookOpen, AlertCircle, Activity, ArrowRight, Settings, PlusCircle , AlertTriangle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { adminService } from "@/services/admin.service";
-import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+import { authService } from "@/services/auth.service";
+import { adminService, type ActivationOverview, type UserCredentials } from "@/services/admin.service";
+import { ChartCard, StatTile } from "@/components/tracking/charts";
+
+const AXIS = { fontSize: 12, fill: "hsl(var(--muted-foreground))" };
+const GRID = "var(--chart-grid)";
+
+type FollowUp = ActivationOverview["followUps"][number];
+
+const FOLLOW_UP_INFO: Record<FollowUp["type"], { icon: typeof UserX; title: (f: FollowUp) => string; detail: (f: FollowUp, days: number) => string }> = {
+  school_no_classes: {
+    icon: Building2,
+    title: (f) => `${f.schoolName} has no classes yet`,
+    detail: () => "Teachers have accounts but no class has been set up, so no children are being tracked.",
+  },
+  never_logged_in: {
+    icon: UserX,
+    title: (f) => `${f.teacherName} has never logged in`,
+    detail: (f) => `${f.schoolName}${f.days !== null ? ` · account created ${f.days} days ago` : ""}. Their login details may need resending.`,
+  },
+  no_class: {
+    icon: ClipboardList,
+    title: (f) => `${f.teacherName} hasn't set up a class`,
+    detail: (f) => `${f.schoolName} · has logged in but no class or children yet.`,
+  },
+  class_never_logged: {
+    icon: BookOpenCheck,
+    title: (f) => `${f.className}: no lessons logged yet`,
+    detail: (f) => `${f.teacherName || "Teacher"} · ${f.schoolName}. The class has children but no lesson has been recorded.`,
+  },
+  class_quiet: {
+    icon: BookOpenCheck,
+    title: (f) => `${f.className}: no lesson for ${f.days} days`,
+    detail: (f, days) => `${f.teacherName || "Teacher"} · ${f.schoolName}. Classes should log a lesson at least every ${days} days.`,
+  },
+};
+
+const weekLabel = (iso: string) =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const user = authService.getStoredUser();
+  const canFilter = user?.role === "super_admin" || user?.role === "content_admin";
+  const [schoolId, setSchoolId] = useState<string>("all");
+  const [showAll, setShowAll] = useState(false);
+  const [resetTarget, setResetTarget] = useState<FollowUp | null>(null);
+  const [credentials, setCredentials] = useState<(UserCredentials & { name: string }) | null>(null);
+  const [resetting, setResetting] = useState(false);
 
-  // Use TanStack Query for high-performance analytics
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['admin-analytics'],
-    queryFn: () => adminService.getAnalyticsOverview(),
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
-    gcTime: 15 * 60 * 1000, // 15 minutes garbage collection
-    retry: 3
+  // Always fetch all schools once (for the filter list); refetch for a selected school
+  const allQuery = useQuery({ queryKey: ["admin-activation", "all"], queryFn: () => adminService.getActivationOverview() });
+  const schoolQuery = useQuery({
+    queryKey: ["admin-activation", schoolId],
+    queryFn: () => adminService.getActivationOverview(schoolId),
+    enabled: schoolId !== "all",
   });
+  const query = schoolId === "all" ? allQuery : schoolQuery;
+  const data = query.data;
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6 animate-fade-in-up">
-        <Skeleton className="h-48 w-full rounded-3xl" />
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32 w-full rounded-2xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const resetLogin = async () => {
+    if (!resetTarget?.teacherId) return;
+    try {
+      setResetting(true);
+      const res = await adminService.resetUserPassword(resetTarget.teacherId);
+      setCredentials({ ...res.credentials, name: resetTarget.teacherName || "" });
+      setResetTarget(null);
+    } catch (error: any) {
+      toast.error(error.message || "Could not reset the login");
+    } finally {
+      setResetting(false);
+    }
+  };
 
-  if (error || !data) {
-    const errorMsg = error instanceof Error ? error.message : "Failed to load dashboard";
-    return (
-      <div className="space-y-6 animate-fade-in">
-        <Card className="border-destructive glass-panel">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-5 w-5" />
-              Error Loading Dashboard
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              {errorMsg || 'Unable to load admin dashboard. Please try again.'}
-            </p>
-            <Button onClick={() => window.location.reload()} variant="default">
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const { stats, trends, topSchools } = data;
+  const copyCredentials = () => {
+    if (!credentials) return;
+    const text = `CodesRock Teacher Hub login for ${credentials.name}\nSchool ID: ${credentials.schoolCode}\nUsername: ${credentials.username}\nPassword: ${credentials.password}`;
+    navigator.clipboard.writeText(text).then(() => toast.success("Login details copied"));
+  };
 
   return (
-    <div className="space-y-8 animate-fade-in-up pb-10">
-      {/* Admin Header with Rocky System Guide */}
-      <section className="relative overflow-visible mt-10 mb-12">
-        <div className="bg-gradient-to-br from-deep-purple via-deep-purple/90 to-primary/80 p-8 md:p-12 rounded-[2rem] text-white shadow-2xl relative overflow-hidden group">
-          {/* Decorative background elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl group-hover:scale-110 transition-transform duration-700" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-secondary/10 rounded-full -ml-20 -mb-20 blur-3xl" />
-          
-          <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-            {/* Rocky 3D Image - Professional Poses */}
-            <div className="relative shrink-0 animate-float">
-              <div className="absolute -inset-4 bg-white/10 rounded-full blur-2xl" />
-              <img 
-                src="/assets/rocky/idea-transparent.webp" 
-                alt="Rocky System Guide" 
-                className="w-40 h-40 md:w-48 md:h-48 object-contain relative z-10 drop-shadow-2xl brightness-110"
-              />
-            </div>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-heading font-black text-deep-purple dark:text-white flex items-center gap-2">
+            <LayoutDashboard className="h-7 w-7 text-primary" /> Overview
+          </h1>
+          <p className="text-muted-foreground">
+            {data?.scope?.schoolName && !canFilter ? `${data.scope.schoolName} · ` : ""}
+            Are teachers getting started, and are lessons happening?
+          </p>
+        </div>
+        {canFilter && (allQuery.data?.schools.length || 0) > 1 && (
+          <Select value={schoolId} onValueChange={setSchoolId}>
+            <SelectTrigger className="w-64" aria-label="Filter by school">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All schools</SelectItem>
+              {allQuery.data!.schools.map((s) => (
+                <SelectItem key={s.id} value={s.id}>{s.name}{!s.isActive ? " (inactive)" : ""}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
-            {/* Welcome Text & System Status */}
-            <div className="flex-1 space-y-4 text-center md:text-left">
-              <h1 className="text-3xl md:text-5xl font-heading font-extrabold tracking-tight">
-                Admin Control Center
-              </h1>
-              <p className="text-white/80 text-lg max-w-2xl font-medium">
-                <span className="text-secondary font-bold">{stats.activeTeachers} of {stats.totalTeachers} teachers</span> active in the last 30 days
-                {stats.neverLoggedIn > 0 && <> · <span className="text-secondary font-bold">{stats.neverLoggedIn} never logged in</span></>}
-                {" "}· {stats.totalCourses} training courses.
-              </p>
-            </div>
-            
-            <div className="flex flex-col gap-3 shrink-0">
-               <Button onClick={() => navigate('/admin/users')} className="bg-secondary hover:bg-secondary/90 text-white font-black rounded-xl px-6 py-6 shadow-lg shadow-secondary/20 group">
-                  <Users className="mr-2 h-5 w-5" />
-                  Manage Users
-                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-               </Button>
-               <Button onClick={() => navigate('/admin/content')} className="bg-white/10 hover:bg-white/20 text-white border-white/20 border font-bold rounded-xl px-6 py-6 backdrop-blur-md">
-                  <PlusCircle className="mr-2 h-5 w-5 text-primary" />
-                  New Content
-               </Button>
-            </div>
+      {query.isLoading || !data ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
           </div>
+          <Skeleton className="h-72 w-full rounded-2xl" />
         </div>
-      </section>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <StatTile label="Schools" value={String(data.kpis.activeSchools)} caption="active, with teachers" />
+            <StatTile
+              label="Teachers active"
+              value={`${data.kpis.activeTeachers} / ${data.kpis.totalTeachers}`}
+              caption={`logged in within ${data.activeWindowDays} days`}
+            />
+            <StatTile
+              label="Classes logging"
+              value={`${data.kpis.classesLoggingRegularly} / ${data.kpis.classes}`}
+              caption={`a lesson in the last ${data.regularLoggingDays} days`}
+            />
+            <StatTile label="Children tracked" value={String(data.kpis.children)} caption="in teachers' class rosters" />
+            <StatTile
+              label="On their own"
+              value={data.kpis.independentRate === null ? "No data yet" : `${data.kpis.independentRate}%`}
+              caption="of activity-book ratings"
+            />
+          </div>
 
-      {/* School Progress Highlights */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-black text-deep-purple flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
-            Schools at a glance
-          </h2>
-          <Button variant="outline" size="sm" onClick={() => navigate('/admin/schools')} className="rounded-xl font-bold">
-            View All Schools
-          </Button>
-        </div>
-        
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {(topSchools || []).map((school) => (
-            <Card 
-              key={school.id} 
-              className="glass-panel overflow-hidden group hover:border-primary/40 transition-all cursor-pointer active:scale-95"
-              onClick={() => navigate(`/admin/schools/${school.id}/performance`)}
-            >
-              <CardContent className="p-6 space-y-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-black text-deep-purple">{school.name}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {school.activeTeachers} of {school.teacherCount} teachers active · {school.learnerCount} children
-                    </p>
-                  </div>
-                  {!school.isActive && <Badge variant="outline">Inactive</Badge>}
-                </div>
+          <div className="grid gap-6 xl:grid-cols-5">
+            <div className="xl:col-span-3 space-y-6">
+              <ChartCard
+                title="Teacher activation"
+                description="How far teachers have got, from account to logging lessons regularly. Each step counts teachers who also reached the steps before it."
+                empty={data.kpis.totalTeachers === 0 && "No teacher accounts yet."}
+                chart={
+                  <ResponsiveContainer width="100%" height={data.funnel.length * 40 + 30}>
+                    <BarChart data={data.funnel} layout="vertical" margin={{ left: 8, right: 56, top: 4, bottom: 4 }} barCategoryGap={8}>
+                      <CartesianGrid horizontal={false} stroke={GRID} />
+                      <XAxis type="number" allowDecimals={false} domain={[0, data.kpis.totalTeachers]} tick={AXIS} axisLine={false} tickLine={false} />
+                      <YAxis type="category" dataKey="label" width={190} tick={AXIS} axisLine={false} tickLine={false} />
+                      <Tooltip
+                        cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
+                        content={({ active, payload }) =>
+                          active && payload?.length ? (
+                            <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md">
+                              <p className="font-bold">{(payload[0].payload as any).label}</p>
+                              <p>{(payload[0].payload as any).count} teachers ({(payload[0].payload as any).percent ?? 0}%)</p>
+                            </div>
+                          ) : null
+                        }
+                      />
+                      <Bar dataKey="count" fill="var(--chart-series)" radius={[0, 4, 4, 0]} maxBarSize={20}>
+                        <LabelList
+                          dataKey="count"
+                          position="right"
+                          formatter={(v: number) => `${v}`}
+                          style={{ fontSize: 12, fill: "hsl(var(--foreground))", fontWeight: 600 }}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                }
+                table={
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                        <th className="py-2">Step</th><th className="py-2 text-right">Teachers</th><th className="py-2 text-right">Of all</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.funnel.map((f) => (
+                        <tr key={f.key} className="border-b last:border-0">
+                          <td className="py-2">{f.label}</td>
+                          <td className="py-2 text-right tabular-nums">{f.count}</td>
+                          <td className="py-2 text-right tabular-nums">{f.percent === null ? "—" : `${f.percent}%`}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                }
+              />
 
-                {school.neverLoggedIn > 0 && (
-                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                    <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> {school.neverLoggedIn} teacher{school.neverLoggedIn === 1 ? "" : "s"} never logged in
+              {schoolId === "all" && data.schools.length > 1 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base font-heading">Activation by school</CardTitle>
+                    <CardDescription>Teachers at each step. Click a school to see its teachers.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                          <th className="py-2 pr-3">School</th>
+                          {data.funnel.map((f) => (
+                            <th key={f.key} className="py-2 px-2 text-right font-semibold max-w-[90px] leading-tight">{f.label.replace(/ \(.*\)/, "")}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.schools.filter((s) => s.teacherCount > 0 || s.isActive).map((s) => (
+                          <tr
+                            key={s.id}
+                            className="border-b last:border-0 hover:bg-muted/40 cursor-pointer"
+                            onClick={() => navigate(`/admin/schools/${s.id}/performance`)}
+                          >
+                            <td className="py-2 pr-3 font-semibold">{s.name}</td>
+                            {s.funnel.map((f, i) => {
+                              // Highlight steps where teachers drop off
+                              const prev = i === 0 ? null : s.funnel[i - 1].count;
+                              const drop = prev !== null && prev > 0 && f.count < prev;
+                              return (
+                                <td key={f.key} className={`py-2 px-2 text-right tabular-nums ${drop ? "text-amber-700 dark:text-amber-400 font-semibold" : ""}`}>
+                                  {f.count}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p className="text-[11px] text-muted-foreground mt-2">Amber = fewer teachers than the step before.</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              <ChartCard
+                title="Lessons logged per week"
+                description="CodesRock lessons teachers recorded in the last 12 weeks"
+                chart={
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={data.weekly.map((w) => ({ ...w, label: weekLabel(w.weekStart) }))} margin={{ left: 0, right: 8, top: 16, bottom: 4 }}>
+                      <CartesianGrid vertical={false} stroke={GRID} />
+                      <XAxis dataKey="label" tick={AXIS} axisLine={false} tickLine={false} />
+                      <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} width={32} />
+                      <Tooltip
+                        cursor={{ fill: "hsl(var(--muted))", opacity: 0.5 }}
+                        content={({ active, payload }) =>
+                          active && payload?.length ? (
+                            <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md">
+                              <p className="font-bold">Week of {(payload[0].payload as any).label}</p>
+                              <p>{(payload[0].payload as any).lessons} lessons · {(payload[0].payload as any).classes} classes</p>
+                            </div>
+                          ) : null
+                        }
+                      />
+                      <Bar dataKey="lessons" fill="var(--chart-series)" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                }
+                table={
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                        <th className="py-2">Week of</th><th className="py-2 text-right">Lessons</th><th className="py-2 text-right">Classes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.weekly.map((w) => (
+                        <tr key={w.weekStart} className="border-b last:border-0">
+                          <td className="py-2">{weekLabel(w.weekStart)}</td>
+                          <td className="py-2 text-right tabular-nums">{w.lessons}</td>
+                          <td className="py-2 text-right tabular-nums">{w.classes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                }
+              />
+              {data.weekly.every((w) => w.lessons === 0) && (
+                <p className="text-sm text-muted-foreground -mt-4 px-1">
+                  No lessons logged in the last 12 weeks. Teachers log lessons from their class page after each CodesRock session.
+                </p>
+              )}
+            </div>
+
+            <Card className="xl:col-span-2 h-fit">
+              <CardHeader>
+                <CardTitle className="text-base font-heading flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" aria-hidden /> Needs follow-up
+                  {data.followUps.length > 0 && <Badge variant="outline" className="ml-auto">{data.followUps.length}</Badge>}
+                </CardTitle>
+                <CardDescription>Most urgent first</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {data.followUps.length === 0 && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary" aria-hidden /> Nothing needs following up right now.
                   </p>
                 )}
-                {school.teacherCount > 0 && school.classCount === 0 && (
-                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                    <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> No classes set up yet
-                  </p>
+                {(showAll ? data.followUps : data.followUps.slice(0, 8)).map((f, i) => {
+                  const info = FOLLOW_UP_INFO[f.type];
+                  const Icon = info.icon;
+                  const link =
+                    f.type === "school_no_classes" ? `/admin/schools/${f.schoolId}/performance`
+                    : f.classId ? `/classes/${f.classId}`
+                    : f.teacherId ? `/admin/teachers/${f.teacherId}/performance`
+                    : null;
+                  return (
+                    <div key={`${f.type}-${f.teacherId || f.classId || f.schoolId}-${i}`} className="rounded-xl border p-3 flex gap-3">
+                      <Icon className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" aria-hidden />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold">{info.title(f)}</p>
+                        <p className="text-xs text-muted-foreground">{info.detail(f, data.regularLoggingDays)}</p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {f.type === "never_logged_in" && f.teacherId && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setResetTarget(f)}>
+                              <KeyRound className="h-3.5 w-3.5 mr-1" /> Reset login
+                            </Button>
+                          )}
+                          {link && (
+                            <Button size="sm" variant="ghost" className="h-7 text-xs" asChild>
+                              <Link to={link}>Open <ChevronRight className="h-3.5 w-3.5 ml-0.5" /></Link>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {data.followUps.length > 8 && (
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => setShowAll((v) => !v)}>
+                    {showAll ? "Show fewer" : `Show all ${data.followUps.length}`}
+                  </Button>
                 )}
-
-                <div className="grid grid-cols-2 gap-2 text-center">
-                  <div className="rounded-lg bg-muted/50 p-2">
-                    <p className="text-lg font-black">{school.lessonCount}</p>
-                    <p className="text-[10px] text-muted-foreground">lessons logged</p>
-                  </div>
-                  <div className="rounded-lg bg-muted/50 p-2">
-                    <p className="text-lg font-black">{school.coveragePercent === null ? "—" : `${school.coveragePercent}%`}</p>
-                    <p className="text-[10px] text-muted-foreground">book covered</p>
-                  </div>
-                </div>
               </CardContent>
             </Card>
-          ))}
-          {(!topSchools || topSchools.length === 0) && (
-            <div className="col-span-full py-12 text-center bg-muted/20 rounded-3xl border border-dashed border-muted-foreground/20">
-               <p className="text-muted-foreground font-bold">No school data available yet. Add schools to start tracking success!</p>
-            </div>
+          </div>
+        </>
+      )}
+
+      {/* Reset login: confirm, then show the new details once */}
+      <AlertDialog open={!!resetTarget} onOpenChange={(open) => !open && setResetTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset {resetTarget?.teacherName}'s login?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A new password is created and their old one stops working. You'll see the new details once, to share with them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); resetLogin(); }} disabled={resetting}>
+              {resetting ? "Resetting…" : "Reset login"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={!!credentials} onOpenChange={(open) => !open && setCredentials(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New login for {credentials?.name}</DialogTitle>
+            <DialogDescription>Share these with the teacher. They won't be shown again.</DialogDescription>
+          </DialogHeader>
+          {credentials && (
+            <dl className="grid grid-cols-3 gap-y-2 text-sm">
+              <dt className="text-muted-foreground">School ID</dt><dd className="col-span-2 font-mono">{credentials.schoolCode}</dd>
+              <dt className="text-muted-foreground">Username</dt><dd className="col-span-2 font-mono">{credentials.username}</dd>
+              <dt className="text-muted-foreground">Password</dt><dd className="col-span-2 font-mono">{credentials.password}</dd>
+            </dl>
           )}
-        </div>
-      </section>
-
-      {/* Analytics & Actions */}
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Card className="glass-panel overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-secondary/5 rounded-full -mr-24 -mt-24 blur-3xl" />
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-2xl font-black text-deep-purple">
-              <TrendingUp className="h-6 w-6 text-secondary" />
-              Platform Trends
-            </CardTitle>
-            <CardDescription className="font-bold text-muted-foreground uppercase tracking-wider text-xs">Activity overview for the last 30 days</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 relative z-10">
-            <div className="flex items-center justify-between p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-3xl border border-primary/10 hover:border-primary/30 transition-all duration-300 group">
-              <div>
-                <p className="font-black text-deep-purple text-lg">New Teachers</p>
-                <p className="text-sm font-bold text-muted-foreground/70 uppercase">Joined this month</p>
-              </div>
-              <div className="text-4xl font-black text-primary group-hover:scale-110 transition-transform">+{trends.newUsersThisMonth}</div>
-            </div>
-            
-            <div className="flex items-center justify-between p-6 bg-gradient-to-br from-secondary/5 to-secondary/10 rounded-3xl border border-secondary/10 hover:border-secondary/30 transition-all duration-300 group">
-              <div>
-                <p className="font-black text-deep-purple text-lg">Total Interactions</p>
-                <p className="text-sm font-bold text-muted-foreground/70 uppercase">Learning activities logged</p>
-              </div>
-              <div className="text-4xl font-black text-secondary group-hover:scale-110 transition-transform">{trends.totalActivities.toLocaleString()}</div>
-            </div>
-            
-            <Button 
-              variant="ghost" 
-              className="w-full text-secondary font-black hover:bg-secondary/5 py-6 rounded-2xl"
-              onClick={() => navigate('/admin/analytics')}
-            >
-               View Full Analytics Report
-               <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-panel">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-2xl font-black text-deep-purple">
-              <Settings className="h-6 w-6 text-primary" />
-              Operational Hub
-            </CardTitle>
-            <CardDescription className="font-bold text-muted-foreground uppercase tracking-wider text-xs">Direct access to administrative tools</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <Button
-              className="w-full justify-between h-16 px-6 rounded-2xl bg-white hover:bg-muted/30 border-muted text-deep-purple font-black shadow-sm group"
-              variant="outline"
-              onClick={() => navigate('/admin/users')}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Users className="h-5 w-5 text-primary" />
-                </div>
-                <span>Teacher Directory</span>
-              </div>
-              <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
-            </Button>
-            
-            <Button
-              className="w-full justify-between h-16 px-6 rounded-2xl bg-white hover:bg-muted/30 border-muted text-deep-purple font-black shadow-sm group"
-              variant="outline"
-              onClick={() => navigate('/admin/content')}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <BookOpen className="h-5 w-5 text-accent" />
-                </div>
-                <span>Content Library</span>
-              </div>
-              <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
-            </Button>
-            
-            <Button
-              className="w-full justify-between h-16 px-6 rounded-2xl bg-white hover:bg-muted/30 border-muted text-deep-purple font-black shadow-sm group"
-              variant="outline"
-              onClick={() => navigate('/admin/schools')}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Activity className="h-5 w-5 text-secondary" />
-                </div>
-                <span>School Partners</span>
-              </div>
-              <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
-            </Button>
-
-            <div className="pt-4 mt-4 border-t border-muted/50">
-               <Button
-                  className="w-full h-14 rounded-2xl bg-deep-purple hover:bg-deep-purple/90 text-white font-black shadow-lg shadow-deep-purple/20"
-                  onClick={() => navigate('/dashboard')}
-                >
-                  <Activity className="mr-2 h-5 w-5 text-secondary" />
-                  Experience Teacher View
-                </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Button onClick={copyCredentials}><Copy className="h-4 w-4 mr-1" /> Copy login details</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

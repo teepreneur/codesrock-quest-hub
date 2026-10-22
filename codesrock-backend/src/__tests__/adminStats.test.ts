@@ -2,7 +2,9 @@
  * Admin statistics tests
  */
 
-import { rankSchools, summarizeCourses, summarizeSchools, summarizeTeachers, teacherStatus, Platform } from '../services/adminStats';
+import {
+  activationFunnel, followUps, rankSchools, summarizeCourses, summarizeSchools, summarizeTeachers, teacherStatus, weekStart, weeklyLessons, Platform,
+} from '../services/adminStats';
 
 const NOW = new Date('2026-10-22T12:00:00Z').getTime();
 const daysAgo = (d: number) => new Date(NOW - d * 86_400_000).toISOString();
@@ -83,5 +85,74 @@ describe('summarizeCourses', () => {
     const [c1] = summarizeCourses(platform());
     // Ama 2/2 = 100%, Kofi 0/2 = 0% -> average 50
     expect(c1).toMatchObject({ title: 'Codesrock 1', videosTotal: 2, teachersStarted: 2, teachersCompleted: 1, avgCompletion: 50 });
+  });
+});
+
+describe('activationFunnel', () => {
+  it('only counts teachers who reached every earlier step', () => {
+    const funnel = activationFunnel(summarizeTeachers(platform(), NOW), NOW);
+    const counts = Object.fromEntries(funnel.map((f) => [f.key, f.count]));
+    // Ama: logged in, training, quiz, class, lessons (last 2 days ago) -> all steps
+    // Kofi: logged in, started training, no quiz; Esi: never logged in
+    expect(counts).toEqual({
+      invited: 3, loggedIn: 2, startedTraining: 2, passedQuiz: 1, createdClass: 1, loggedLesson: 1, loggingRegularly: 1,
+    });
+    expect(funnel[1].percent).toBe(67);
+  });
+
+  it('returns null percentages when there are no teachers', () => {
+    expect(activationFunnel([], NOW)[0]).toMatchObject({ count: 0, percent: null });
+  });
+});
+
+describe('followUps', () => {
+  it('lists the things an admin should act on, most urgent first', () => {
+    const p = platform();
+    // Kofi's account is old enough to be flagged for having no class
+    const items = followUps(p, summarizeTeachers(p, NOW), NOW);
+    expect(items.map((i) => i.type)).toEqual(['school_no_classes', 'never_logged_in', 'no_class']);
+    expect(items[0]).toMatchObject({ schoolId: 'quiet' });
+    expect(items[1]).toMatchObject({ teacherId: 't3', days: 10 });
+    expect(items[2]).toMatchObject({ teacherId: 't2' });
+  });
+
+  it('gives new teachers a few days before flagging them', () => {
+    const p = platform();
+    (p.teachers as any[])[2].created_at = daysAgo(1);
+    const items = followUps(p, summarizeTeachers(p, NOW), NOW);
+    expect(items.some((i) => i.type === 'never_logged_in')).toBe(false);
+  });
+
+  it('flags quiet classes and classes that never logged a lesson', () => {
+    const p = platform();
+    p.classOverview.push(
+      { class_id: 'k2', class_name: 'KG2', school_id: 'busy', school_name: 'Busy School', learner_count: 8, last_lesson_date: null },
+      { class_id: 'k3', class_name: 'KG3', school_id: 'busy', school_name: 'Busy School', learner_count: 8, last_lesson_date: daysAgo(20).slice(0, 10) },
+      // empty classes are not flagged
+      { class_id: 'k4', class_name: 'Empty', school_id: 'busy', school_name: 'Busy School', learner_count: 0, last_lesson_date: null }
+    );
+    const types = followUps(p, summarizeTeachers(p, NOW), NOW).map((i) => `${i.type}:${i.classId || ''}`);
+    expect(types).toEqual(expect.arrayContaining(['class_never_logged:k2', 'class_quiet:k3']));
+    expect(types.some((t) => t.endsWith(':k4'))).toBe(false);
+  });
+});
+
+describe('weeklyLessons', () => {
+  it('buckets lessons into Monday-start weeks, including empty weeks', () => {
+    expect(weekStart('2026-10-22')).toBe('2026-10-19'); // Thursday -> Monday
+    const weeks = weeklyLessons(
+      [
+        { class_id: 'a', session_date: '2026-10-20' },
+        { class_id: 'b', session_date: '2026-10-21' },
+        { class_id: 'a', session_date: '2026-10-13' },
+      ],
+      3,
+      NOW
+    );
+    expect(weeks).toEqual([
+      { weekStart: '2026-10-05', lessons: 0, classes: 0 },
+      { weekStart: '2026-10-12', lessons: 1, classes: 1 },
+      { weekStart: '2026-10-19', lessons: 2, classes: 2 },
+    ]);
   });
 });
