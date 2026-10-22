@@ -12,6 +12,7 @@ import {
 } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 import { validate } from '../middleware/validator';
+import { loginLimiter, registerLimiter } from '../middleware/rateLimit';
 
 const router = Router();
 
@@ -120,9 +121,9 @@ const changePasswordValidation = [
 ];
 
 // Public routes
-router.post('/register', validate(registerValidation), register);
-router.post('/login', validate(loginValidation), login);
-router.post('/login-school', validate(loginSchoolValidation), loginWithSchool);
+router.post('/register', registerLimiter, validate(registerValidation), register);
+router.post('/login', loginLimiter, validate(loginValidation), login);
+router.post('/login-school', loginLimiter, validate(loginSchoolValidation), loginWithSchool);
 router.post('/refresh', validate(refreshTokenValidation), refreshAccessToken);
 
 // Protected routes

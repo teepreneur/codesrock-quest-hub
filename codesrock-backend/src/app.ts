@@ -2,34 +2,11 @@ import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import logger from './utils/logger';
+import { ipLimiter, userLimiter } from './middleware/rateLimit';
+import { sanitizeErrors } from './middleware/sanitizeErrors';
 
-// Rate limiting configuration
-// General API rate limit: 500 requests per 15 minutes
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500,
-  message: {
-    success: false,
-    message: 'Too many requests, please try again later.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Stricter rate limit for authentication endpoints: 10 requests per 15 minutes
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
-  message: {
-    success: false,
-    message: 'Too many authentication attempts, please try again later.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 import authRoutes from './routes/authRoutes';
 import gamificationRoutes from './routes/gamificationRoutes';
 import courseRoutes from './routes/courseRoutes';
@@ -87,11 +64,12 @@ app.use(morgan('combined', {
   stream: { write: (message: string) => logger.info(message.trim()) } 
 })); // Request logging
 app.use(cors(corsOptions));
+app.use(sanitizeErrors);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Apply general rate limiting to all API routes
-app.use('/api', generalLimiter);
+// Rate limiting: a per-network ceiling plus a per-user limit (see middleware/rateLimit.ts)
+app.use('/api', ipLimiter, userLimiter);
 
 // Health check route
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -103,8 +81,8 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 // API Routes
-// Apply stricter rate limiting to auth endpoints
-app.use('/api/auth', authLimiter, authRoutes);
+// Login and sign-up have their own stricter limits in authRoutes
+app.use('/api/auth', authRoutes);
 app.use('/api', gamificationRoutes);
 app.use('/api', courseRoutes);
 app.use('/api', resourceRoutes);

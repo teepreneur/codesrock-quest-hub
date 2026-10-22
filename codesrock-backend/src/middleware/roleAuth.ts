@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from './errorHandler';
 import { supabase } from '../config/supabase';
+import { getClientIp } from './rateLimit';
 import '../types/express';
 
 /**
@@ -211,7 +212,7 @@ export const auditLog = async (
         xp_earned: 0,
         metadata: {
           action: `${req.method} ${req.originalUrl}`,
-          ip: req.ip,
+          ip: getClientIp(req),
           userAgent: req.get('user-agent'),
           timestamp: new Date().toISOString(),
         },

@@ -41,9 +41,12 @@ export const errorHandler = (
   // Handle Supabase/Postgres errors
   if ('code' in err && typeof (err as any).code === 'string' && (err as any).code.startsWith('P')) {
     // PostgreSQL error codes start with numbers but Supabase wraps them
+    console.error('DATABASE ERROR:', err);
     res.status(400).json({
       success: false,
-      message: (err as any).message || 'Database error',
+      message: process.env.NODE_ENV === 'production'
+        ? 'The request could not be completed'
+        : (err as any).message || 'Database error',
     });
     return;
   }
