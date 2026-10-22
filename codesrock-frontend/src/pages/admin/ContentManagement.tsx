@@ -16,6 +16,7 @@ import { VideoFormDialog } from "@/components/admin/VideoFormDialog";
 import { ResourceFormDialog } from "@/components/admin/ResourceFormDialog";
 import { EvaluationFormDialog } from "@/components/admin/EvaluationFormDialog";
 import { TrainingSessionFormDialog } from "@/components/admin/TrainingSessionFormDialog";
+import { ActivityBookEditor } from "@/components/admin/ActivityBookEditor";
 import type { Course, Resource } from "@/types/content.types";
 import { HelpCircle } from "lucide-react";
 
@@ -31,6 +32,8 @@ export default function ContentManagement() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [courseSearchTerm, setCourseSearchTerm] = useState("");
+  // Retired placeholder courses are hidden unless asked for
+  const [showInactiveCourses, setShowInactiveCourses] = useState(false);
   const [courseDialogOpen, setCourseDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: string; item: any } | null>(null);
@@ -227,27 +230,33 @@ export default function ContentManagement() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="relative max-w-md mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search courses..." value={courseSearchTerm} onChange={(e) => setCourseSearchTerm(e.target.value)} className="pl-9" />
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="relative max-w-md flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search courses..." value={courseSearchTerm} onChange={(e) => setCourseSearchTerm(e.target.value)} className="pl-9" />
+          </div>
+          {courses.some((c: any) => !c.is_active) && (
+            <Button variant="ghost" size="sm" onClick={() => setShowInactiveCourses((v) => !v)}>
+              {showInactiveCourses ? "Hide inactive courses" : `Show ${courses.filter((c: any) => !c.is_active).length} inactive`}
+            </Button>
+          )}
         </div>
         <div className="rounded-md border">
           <Table>
             <TableHeader><TableRow>
-              <TableHead className="w-16">Order</TableHead><TableHead>Course</TableHead><TableHead>Topics</TableHead><TableHead>Videos</TableHead><TableHead>Views</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-16">Order</TableHead><TableHead>Course</TableHead><TableHead>Topics</TableHead><TableHead>Videos</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {coursesLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8">Loading...</TableCell></TableRow>
-              ) : courses.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No courses found</TableCell></TableRow>
-              ) : courses.map((course: any) => (
+                <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
+              ) : courses.filter((c: any) => showInactiveCourses || c.is_active).length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No courses found</TableCell></TableRow>
+              ) : courses.filter((c: any) => showInactiveCourses || c.is_active).map((course: any) => (
                 <TableRow key={course.id || course._id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigateToTopics(course)}>
                   <TableCell className="font-mono text-center">{course.order_index ?? 0}</TableCell>
                   <TableCell className="font-medium"><div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" />{course.title}</div></TableCell>
                   <TableCell><Badge variant="outline"><Layers className="h-3 w-3 mr-1" />{course.stats?.topicCount ?? "—"}</Badge></TableCell>
                   <TableCell><Badge variant="outline"><Video className="h-3 w-3 mr-1" />{course.stats?.videoCount ?? "—"}</Badge></TableCell>
-                  <TableCell>{course.view_count || 0}</TableCell>
                   <TableCell>{course.is_active ? <Badge className="bg-green-500">Active</Badge> : <Badge variant="secondary">Inactive</Badge>}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
@@ -377,6 +386,7 @@ export default function ContentManagement() {
           <TabsTrigger value="resources">Resources</TabsTrigger>
           <TabsTrigger value="sessions">Live Sessions</TabsTrigger>
           <TabsTrigger value="evaluations">Evaluations</TabsTrigger>
+          <TabsTrigger value="activity-book">Activity Book</TabsTrigger>
         </TabsList>
 
         <TabsContent value="courses" className="space-y-4">
@@ -610,6 +620,9 @@ export default function ContentManagement() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+        <TabsContent value="activity-book" className="space-y-4">
+          <ActivityBookEditor />
         </TabsContent>
       </Tabs>
 

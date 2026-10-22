@@ -27,6 +27,17 @@ import {
   updateVideo,
   deleteVideo,
 } from '../../controllers/admin/videoController';
+import {
+  getCurricula,
+  createUnit,
+  updateUnit,
+  moveUnit,
+  deleteUnit,
+  createActivity,
+  updateActivity,
+  moveActivity,
+  deleteActivity,
+} from '../../controllers/admin/curriculumController';
 import { protect } from '../../middleware/auth';
 import { requireContentAdmin, auditLog } from '../../middleware/roleAuth';
 
@@ -60,5 +71,16 @@ router.route('/resources/:id').put(updateResource).delete(deleteResource);
 // Evaluation routes
 router.get('/evaluations/topic/:topicId', getEvaluationByTopic);
 router.post('/evaluations/save', saveEvaluation);
+
+// Activity books (the curriculum teachers log lessons against)
+router.get('/curriculum', getCurricula);
+router.post('/curriculum/:curriculumId/units', createUnit);
+router.patch('/curriculum/units/:id', updateUnit);
+router.post('/curriculum/units/:id/move', moveUnit);
+router.delete('/curriculum/units/:id', deleteUnit);
+router.post('/curriculum/units/:unitId/activities', createActivity);
+router.patch('/curriculum/activities/:id', updateActivity);
+router.post('/curriculum/activities/:id/move', moveActivity);
+router.delete('/curriculum/activities/:id', deleteActivity);
 
 export default router;

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { authService } from "@/services/auth.service";
 import { trackingService, type OverviewRow, type SchoolOverview } from "@/services/tracking.service";
 import { ChartCard, StatTile, legendText } from "@/components/tracking/charts";
+import { ExportMenu } from "@/components/admin/ExportMenu";
 import { MODE_COLORS, MODE_LABELS, formatDate, scoreText } from "@/components/tracking/labels";
 
 const STALE_DAYS = 14;
@@ -101,6 +102,8 @@ export default function StudentProgressOverview() {
             How children are doing in the CodesRock 1 activity book, from the lessons teachers log.
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <ExportMenu types={["children"]} schoolId={schoolFilter === "all" || schoolFilter === "none" ? undefined : schoolFilter} />
         {isSuperAdmin && schools.length > 1 && (
           <Select value={schoolFilter} onValueChange={setSchoolFilter}>
             <SelectTrigger className="w-64" aria-label="Filter by school">
@@ -114,6 +117,7 @@ export default function StudentProgressOverview() {
             </SelectContent>
           </Select>
         )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

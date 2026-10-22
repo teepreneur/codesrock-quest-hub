@@ -63,6 +63,9 @@ const getClassForUser = async (req: Request, classId: string, write = false): Pr
 const curriculumCache = new Map<string, { at: number; units: Unit[] }>();
 const CACHE_MS = 5 * 60 * 1000;
 
+/** Call after editing the book so teachers see the change straight away */
+export const clearCurriculumCache = () => curriculumCache.clear();
+
 const resolveCurriculumId = async (cls: ClassRow): Promise<string> => {
   if (cls.curriculum_id) return cls.curriculum_id;
   const { data } = await supabase.from('curricula').select('id').eq('slug', DEFAULT_CURRICULUM_SLUG).single();

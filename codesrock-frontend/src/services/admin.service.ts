@@ -3,6 +3,7 @@
  * Handles all admin-related API calls
  */
 
+import type { Mode, Skill } from './tracking.service';
 import { apiService } from './api.service';
 
 // Types
@@ -154,6 +155,47 @@ export interface FunnelStage {
   label: string;
   count: number;
   percent: number | null;
+}
+
+export interface BookActivity {
+  id: string;
+  position: number;
+  title: string;
+  bookPage: number | null;
+  skills: Skill[];
+  modes: Mode[];
+  ratingCount: number;
+  lessonCount: number;
+}
+
+export interface BookUnit {
+  id: string;
+  position: number;
+  title: string;
+  unitType: string;
+  bookPages: string | null;
+  summary: string | null;
+  activities: BookActivity[];
+}
+
+export interface Curriculum {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  isActive: boolean;
+  units: BookUnit[];
+}
+
+export type UnitInput = Partial<Pick<BookUnit, 'title' | 'unitType' | 'bookPages' | 'summary'>>;
+export type ActivityInput = Partial<Pick<BookActivity, 'title' | 'bookPage' | 'skills' | 'modes'>>;
+
+export type ExportType = 'schools' | 'teachers' | 'children';
+
+export interface ExportData {
+  filename: string;
+  columns: string[];
+  rows: (string | number | null)[][];
 }
 
 export interface ActivationOverview {
@@ -352,6 +394,48 @@ class AdminService {
 
   async getActivationOverview(schoolId?: string): Promise<ActivationOverview> {
     return apiService.get<ActivationOverview>(`/admin/analytics/activation${schoolId ? `?schoolId=${schoolId}` : ''}`);
+  }
+
+  async getCurricula(): Promise<Curriculum[]> {
+    return apiService.get<Curriculum[]>('/admin/content/curriculum');
+  }
+
+  async createUnit(curriculumId: string, input: UnitInput) {
+    return apiService.post(`/admin/content/curriculum/${curriculumId}/units`, input);
+  }
+
+  async updateUnit(id: string, input: UnitInput) {
+    return apiService.patch(`/admin/content/curriculum/units/${id}`, input);
+  }
+
+  async moveUnit(id: string, direction: 'up' | 'down') {
+    return apiService.post(`/admin/content/curriculum/units/${id}/move`, { direction });
+  }
+
+  async deleteUnit(id: string) {
+    return apiService.delete(`/admin/content/curriculum/units/${id}`);
+  }
+
+  async createActivity(unitId: string, input: ActivityInput) {
+    return apiService.post(`/admin/content/curriculum/units/${unitId}/activities`, input);
+  }
+
+  async updateActivity(id: string, input: ActivityInput) {
+    return apiService.patch(`/admin/content/curriculum/activities/${id}`, input);
+  }
+
+  async moveActivity(id: string, direction: 'up' | 'down') {
+    return apiService.post(`/admin/content/curriculum/activities/${id}/move`, { direction });
+  }
+
+  async deleteActivity(id: string) {
+    return apiService.delete(`/admin/content/curriculum/activities/${id}`);
+  }
+
+  async getExport(type: ExportType, schoolId?: string): Promise<ExportData> {
+    const params = new URLSearchParams({ type });
+    if (schoolId) params.set('schoolId', schoolId);
+    return apiService.get<ExportData>(`/admin/analytics/export?${params}`);
   }
 
   async getTeacherDetailedPerformance(teacherId: string): Promise<TeacherPerformance> {

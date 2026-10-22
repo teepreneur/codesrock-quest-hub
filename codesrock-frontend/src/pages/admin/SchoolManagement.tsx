@@ -14,6 +14,12 @@ import { Building2, Search, Plus, Edit, Trash2, RefreshCw, Copy, AlertCircle, Us
 import { adminService, type School, type CreateSchoolData, type UpdateSchoolData } from "@/services/admin.service";
 import { toast } from "sonner";
 
+/** Ghana's 16 administrative regions */
+const GHANA_REGIONS = [
+  "Ahafo", "Ashanti", "Bono", "Bono East", "Central", "Eastern", "Greater Accra", "North East",
+  "Northern", "Oti", "Savannah", "Upper East", "Upper West", "Volta", "Western", "Western North",
+];
+
 export default function SchoolManagement() {
   const navigate = useNavigate();
   const [schools, setSchools] = useState<School[]>([]);
@@ -337,7 +343,6 @@ export default function SchoolManagement() {
                       <TableHead>Teachers</TableHead>
                       <TableHead>Book covered</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -345,7 +350,16 @@ export default function SchoolManagement() {
                     {schools.map((school) => (
                       <TableRow key={school.id}>
                         <TableCell className="font-medium">
-                          {school.name}
+                          <button
+                            type="button"
+                            className="text-left hover:underline"
+                            onClick={() => navigate(`/admin/schools/${school.id}/performance`)}
+                          >
+                            {school.name}
+                          </button>
+                          <p className="text-xs font-normal text-muted-foreground">
+                            Added {school.createdAt ? formatDate(school.createdAt) : "—"}
+                          </p>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -383,9 +397,6 @@ export default function SchoolManagement() {
                           <Badge variant={school.isActive ? "default" : "secondary"}>
                             {school.isActive ? "Active" : "Inactive"}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {school.createdAt ? formatDate(school.createdAt) : "-"}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
@@ -505,12 +516,20 @@ export default function SchoolManagement() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="region">Region</Label>
-                <Input
-                  id="region"
-                  value={formData.region}
-                  onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                  placeholder="Region"
-                />
+                <Select value={formData.region || undefined} onValueChange={(v) => setFormData({ ...formData, region: v })}>
+                  <SelectTrigger id="region">
+                    <SelectValue placeholder="Choose a region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* Keep an older free-text value selectable until it is changed */}
+                    {formData.region && !GHANA_REGIONS.includes(formData.region) && (
+                      <SelectItem value={formData.region}>{formData.region}</SelectItem>
+                    )}
+                    {GHANA_REGIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

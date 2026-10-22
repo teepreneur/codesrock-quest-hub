@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { authService } from "@/services/auth.service";
 import { adminService, type ActivationOverview, type UserCredentials } from "@/services/admin.service";
 import { ChartCard, StatTile } from "@/components/tracking/charts";
+import { ExportMenu } from "@/components/admin/ExportMenu";
 
 const AXIS = { fontSize: 12, fill: "hsl(var(--muted-foreground))" };
 const GRID = "var(--chart-grid)";
@@ -110,6 +111,8 @@ export default function AdminDashboard() {
             Are teachers getting started, and are lessons happening?
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        <ExportMenu schoolId={schoolId === "all" ? undefined : schoolId} />
         {canFilter && (allQuery.data?.schools.length || 0) > 1 && (
           <Select value={schoolId} onValueChange={setSchoolId}>
             <SelectTrigger className="w-64" aria-label="Filter by school">
@@ -123,6 +126,7 @@ export default function AdminDashboard() {
             </SelectContent>
           </Select>
         )}
+        </div>
       </div>
 
       {query.isLoading || !data ? (

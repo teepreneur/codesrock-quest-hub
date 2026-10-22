@@ -403,3 +403,101 @@ export const getActivationOverview = async (req: Request, res: Response, next: N
     next(error);
   }
 };
+
+const STATUS_TEXT: Record<string, string> = {
+  active: 'Active',
+  inactive: 'Not active in 30 days',
+  never_logged_in: 'Never logged in',
+};
+
+const FLAG_TEXT: Record<string, string> = {
+  repeated_not_yet: 'Several "Not yet" in recent lessons',
+  low_attendance: 'Missed many recent lessons',
+  book_gap: 'Can do it hands-on, struggles in the book',
+};
+
+const dateOnly = (iso: string | null | undefined) => (iso ? iso.slice(0, 10) : '');
+const pctCell = (v: number | null | undefined) => (v === null || v === undefined ? '' : v);
+
+/**
+ * @desc    Rows for a CSV export (built client-side)
+ * @route   GET /api/admin/analytics/export?type=teachers|children|schools&schoolId=
+ */
+export const getExport = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const type = String(req.query.type || '');
+    if (!['teachers', 'children', 'schools'].includes(type)) throw new AppError('Unknown export type', 400);
+
+    const scope = (await scopeFor(req)) || (typeof req.query.schoolId === 'string' && req.query.schoolId) || null;
+    const platform = await loadPlatform(scope);
+    const teachers = summarizeTeachers(platform);
+    const schoolName = new Map(platform.schools.map((s: any) => [s.id, s.name]));
+    const stamp = new Date().toISOString().slice(0, 10);
+
+    if (type === 'schools') {
+      const rows = rankSchools(summarizeSchools(platform, teachers)).map((s) => [
+        s.name, s.schoolCode || '', s.isActive ? 'Active' : 'Inactive', s.teacherCount, s.activeTeachers, s.neverLoggedIn,
+        s.classCount, s.learnerCount, s.lessonCount, dateOnly(s.lastLessonDate), pctCell(s.coveragePercent), pctCell(s.independentRate),
+      ]);
+      res.status(200).json({
+        success: true,
+        data: {
+          filename: `codesrock-schools-${stamp}.csv`,
+          columns: ['School', 'School ID', 'Status', 'Teachers', 'Active teachers', 'Never logged in', 'Classes', 'Children',
+            'Lessons logged', 'Last lesson', 'Book covered %', 'On their own %'],
+          rows,
+        },
+      });
+      return;
+    }
+
+    if (type === 'teachers') {
+      const rows = teachers
+        .sort((a, b) => String(schoolName.get(a.schoolId) || '').localeCompare(String(schoolName.get(b.schoolId) || '')) || a.name.localeCompare(b.name))
+        .map((t) => [
+          schoolName.get(t.schoolId) || '', t.name, t.email, STATUS_TEXT[t.status], dateOnly(t.lastLogin), t.videosCompleted,
+          t.quizzesPassed, t.classCount, t.learnerCount, t.lessonCount, dateOnly(t.lastLessonDate),
+        ]);
+      res.status(200).json({
+        success: true,
+        data: {
+          filename: `codesrock-teachers-${stamp}.csv`,
+          columns: ['School', 'Teacher', 'Email', 'Status', 'Last login', 'Training videos done', 'Quizzes passed',
+            'Classes', 'Children', 'Lessons logged', 'Last lesson'],
+          rows,
+        },
+      });
+      return;
+    }
+
+    // children: one row per child, from each class's logged lessons
+    const { data: classes, error } = await supabase
+      .from('classes')
+      .select('id, name, teacher_id, school_id, curriculum_id')
+      .in('id', platform.classes.map((c: any) => c.id).concat(['00000000-0000-0000-0000-000000000000']));
+    if (error) throw error;
+    const teacherName = new Map(teachers.map((t) => [t.id, t.name]));
+
+    const perClass = await Promise.all(
+      (classes || []).map(async (cls: ClassRow) => ({ cls, progress: computeClassProgress(await loadProgressInput(cls)) }))
+    );
+    const rows = perClass.flatMap(({ cls, progress }) =>
+      progress.learners.map((l) => [
+        schoolName.get(cls.school_id) || '', cls.name, teacherName.get(cls.teacher_id) || '', l.name, l.lessonsAttended,
+        pctCell(l.attendanceRate), pctCell(l.avgScore), pctCell(l.independentRate), pctCell(l.practicalScore), pctCell(l.bookScore),
+        l.flags.filter((f) => f !== 'not_yet_assessed').map((f) => FLAG_TEXT[f] || f).join('; '),
+      ])
+    );
+    res.status(200).json({
+      success: true,
+      data: {
+        filename: `codesrock-children-${stamp}.csv`,
+        columns: ['School', 'Class', 'Teacher', 'Child', 'Lessons attended', 'Attendance %', 'Average %', 'On their own %',
+          'Hands-on %', 'In the book %', 'Needs attention'],
+        rows,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

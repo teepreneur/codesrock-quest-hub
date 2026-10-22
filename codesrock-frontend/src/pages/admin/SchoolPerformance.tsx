@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, ChevronRight, GraduationCap, Search } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ChevronRight, GraduationCap, Printer, Search } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { adminService, type TeacherStatus } from "@/services/admin.service";
 import { StatTile } from "@/components/tracking/charts";
 import { formatDate } from "@/components/tracking/labels";
+import { ExportMenu } from "@/components/admin/ExportMenu";
 
 export const STATUS_LABELS: Record<TeacherStatus, string> = {
   active: "Active",
@@ -64,7 +65,7 @@ export default function SchoolPerformance() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <Button variant="ghost" onClick={() => navigate("/admin/schools")} className="-ml-2">
+      <Button variant="ghost" onClick={() => navigate("/admin/schools")} className="-ml-2 print:hidden">
         <ArrowLeft className="mr-2 h-4 w-4" /> Back to schools
       </Button>
 
@@ -76,6 +77,15 @@ export default function SchoolPerformance() {
           <p className="text-muted-foreground">
             {[school.school_code, school.district, school.region].filter(Boolean).join(" · ")}
           </p>
+          <p className="hidden print:block text-sm text-muted-foreground">
+            CodesRock school report · {new Date().toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <ExportMenu schoolId={schoolId} types={["teachers", "children"]} />
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="mr-2 h-4 w-4" /> Print / save as PDF
+          </Button>
         </div>
       </div>
 
@@ -119,12 +129,12 @@ export default function SchoolPerformance() {
             <CardTitle className="font-heading">Teachers</CardTitle>
             <CardDescription>Login, training and classroom activity for each teacher</CardDescription>
           </div>
-          <div className="relative w-full md:w-72">
+          <div className="relative w-full md:w-72 print:hidden">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search teachers" className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="overflow-x-auto print:overflow-visible">
           {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No teachers found.</p>
           ) : (
@@ -138,14 +148,14 @@ export default function SchoolPerformance() {
                   <th className="py-2 pr-3 text-right">Quizzes passed</th>
                   <th className="py-2 pr-3 text-right">Classes</th>
                   <th className="py-2 pr-3 text-right">Lessons</th>
-                  <th className="py-2" aria-label="Open" />
+                  <th className="py-2 print:hidden" aria-label="Open" />
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((t) => (
                   <tr
                     key={t.id}
-                    className="border-b last:border-0 hover:bg-muted/40 cursor-pointer"
+                    className="border-b last:border-0 hover:bg-muted/40 cursor-pointer break-inside-avoid"
                     onClick={() => navigate(`/admin/teachers/${t.id}/performance`)}
                   >
                     <td className="py-2 pr-3">
@@ -158,7 +168,7 @@ export default function SchoolPerformance() {
                     <td className="py-2 pr-3 text-right tabular-nums">{t.quizzesPassed}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{t.classCount}</td>
                     <td className="py-2 pr-3 text-right tabular-nums">{t.lessonCount}</td>
-                    <td className="py-2 text-right"><ChevronRight className="h-4 w-4 text-muted-foreground inline" /></td>
+                    <td className="py-2 text-right print:hidden"><ChevronRight className="h-4 w-4 text-muted-foreground inline" /></td>
                   </tr>
                 ))}
               </tbody>
