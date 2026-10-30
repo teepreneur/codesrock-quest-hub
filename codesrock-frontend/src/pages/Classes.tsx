@@ -127,7 +127,7 @@ export default function Classes() {
         <div>
           <h1 className="text-3xl font-bold mb-2">My Classes 🏫</h1>
           <p className="text-muted-foreground">
-            Manage your student sections and track their learning progress
+            Every class in your school. Teachers who share a class see the same children, lessons and progress.
           </p>
         </div>
 
@@ -187,6 +187,9 @@ export default function Classes() {
                       <School className="h-3 w-3" />
                       {cls.schools?.name || 'Local High School'}
                     </CardDescription>
+                    {cls.createdByMe === false && cls.createdBy && (
+                      <p className="text-xs text-muted-foreground mt-1">Shared · created by {cls.createdBy}</p>
+                    )}
                   </div>
                   <Button variant="ghost" size="icon" className="h-8 w-8">
                     <MoreVertical className="h-4 w-4 text-muted-foreground" />

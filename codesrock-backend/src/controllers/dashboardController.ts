@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
 import logger from '../utils/logger';
 import { LEVELS, getLevelByXP } from './gamificationController';
+import { listTeacherClasses, teacherNames } from '../services/classAccess';
 
 /**
  * Get unified dashboard data for user
@@ -78,7 +79,7 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
         .eq('user_id', userId)
         .order('completed_at', { ascending: false }),
 
-      supabase.from('classes').select('id, name').eq('teacher_id', userId),
+      listTeacherClasses<{ id: string; name: string }>(userId, 'id, name').then((data) => ({ data })),
     ]);
 
     if (!user) {
@@ -139,12 +140,13 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
     const { data: recentLessons } = classIds.length
       ? await supabase
           .from('lesson_sessions')
-          .select('class_id, session_date, created_at')
+          .select('class_id, session_date, created_at, teacher_id')
           .in('class_id', classIds)
           .order('created_at', { ascending: false })
           .limit(5)
       : { data: [] as any[] };
 
+    const loggers = await teacherNames((recentLessons || []).map((l: any) => l.teacher_id));
     const activityFeed = [
       ...(recentActivities || [])
         // "Started a video" is noise next to real milestones
@@ -152,7 +154,10 @@ export const getUserDashboard = async (req: Request, res: Response): Promise<voi
         .map((a: any) => ({ type: a.type, description: a.description, xpEarned: a.xp_earned || 0, timestamp: a.created_at })),
       ...(recentLessons || []).map((l: any) => ({
         type: 'lesson_logged',
-        description: `Lesson logged for ${classNames.get(l.class_id) || 'a class'}`,
+        description:
+          l.teacher_id && l.teacher_id !== userId && loggers.get(l.teacher_id)
+            ? `${loggers.get(l.teacher_id)} logged a lesson for ${classNames.get(l.class_id) || 'a class'}`
+            : `Lesson logged for ${classNames.get(l.class_id) || 'a class'}`,
         xpEarned: 0,
         timestamp: l.created_at,
       })),

@@ -9,6 +9,9 @@ export interface Class {
   created_at: string;
   updated_at: string;
   studentCount: number;
+  /** Who created it; classes are shared with every teacher in the school */
+  createdBy?: string | null;
+  createdByMe?: boolean;
   courses?: {
     title: string;
     thumbnail?: string;

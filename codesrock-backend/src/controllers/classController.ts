@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
 import logger from '../utils/logger';
+import { listTeacherClasses, teacherNames } from '../services/classAccess';
 
 /**
  * Get all classes for a teacher
@@ -22,30 +23,31 @@ export const getTeacherClasses = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    const { data: classes, error } = await supabase
-      .from('classes')
-      .select('*, courses(title, thumbnail), schools(name), class_learners(learner_id)')
-      .eq('teacher_id', teacherId as string)
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    // Every class in the teacher's school, so teachers who share a class all see it
+    let classes: any[];
+    try {
+      classes = await listTeacherClasses<any>(teacherId as string, '*, courses(title, thumbnail), schools(name), class_learners(learner_id)');
+    } catch (error: any) {
       console.error('Error getting teacher classes:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Failed to get classes from database', 
-        error: error.message,
-        details: error.details,
-        hint: 'Ensure the "classes" table exists and you have run the migration script.'
-      });
+      res.status(500).json({ success: false, message: 'Failed to get classes from database' });
       return;
     }
+    const names = await teacherNames(classes.map((c) => c.teacher_id));
 
     // Compute student counts in memory from inline relations (resolves N+1 query)
-    const classesWithCounts = (classes || []).map((cls) => {
-      const studentCount = (cls.class_learners as any)?.length || 0;
-      const { class_learners, ...classData } = cls;
-      return { ...classData, studentCount };
-    });
+    const classesWithCounts = classes
+      .map((cls) => {
+        const studentCount = (cls.class_learners as any)?.length || 0;
+        const { class_learners, ...classData } = cls;
+        return {
+          ...classData,
+          studentCount,
+          createdBy: names.get(cls.teacher_id) || null,
+          createdByMe: cls.teacher_id === teacherId,
+        };
+      })
+      // Newest first, the teacher's own classes before colleagues'
+      .sort((a, b) => Number(b.createdByMe) - Number(a.createdByMe) || String(b.created_at).localeCompare(String(a.created_at)));
 
     res.status(200).json({
       success: true,

@@ -45,6 +45,7 @@ export interface LessonSummary {
   id: string;
   date: string;
   notes: string | null;
+  loggedBy: string | null;
   activityCount: number;
   presentCount: number;
   learnerCount: number;
@@ -176,6 +177,8 @@ export interface SchoolOverview {
 export interface MyClassSummary {
   classId: string;
   name: string;
+  createdBy: string | null;
+  createdByMe: boolean;
   learnerCount: number;
   lessonCount: number;
   lastLessonDate: string | null;

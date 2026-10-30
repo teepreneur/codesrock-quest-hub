@@ -36,6 +36,7 @@ export default function LessonsList({
                 <p className="font-semibold">{formatDate(l.date)}</p>
                 <p className="text-xs text-muted-foreground">
                   {l.activityCount} {l.activityCount === 1 ? "activity" : "activities"} · {l.presentCount} of {l.learnerCount} present
+                  {l.loggedBy ? ` · logged by ${l.loggedBy}` : ""}
                   {l.notes ? ` · ${l.notes}` : ""}
                 </p>
               </div>

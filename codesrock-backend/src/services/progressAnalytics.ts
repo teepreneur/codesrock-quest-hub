@@ -44,6 +44,7 @@ export interface Session {
   session_date: string;
   created_at: string;
   notes?: string | null;
+  teacher_id?: string | null;
 }
 
 export interface SessionActivity {

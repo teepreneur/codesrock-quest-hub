@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../config/supabase';
 import { AppError } from '../middleware/errorHandler';
+import { canAccessClass, getUserSchoolId, listTeacherClasses, teacherNames } from '../services/classAccess';
 import {
   Activity,
   Attendance,
@@ -30,15 +31,10 @@ export interface ClassRow {
   curriculum_id: string | null;
 }
 
-const getAdminSchoolId = async (userId: string): Promise<string | null> => {
-  const { data } = await supabase.from('profiles').select('school_id').eq('id', userId).single();
-  return data?.school_id || null;
-};
-
 /**
  * Load a class and check the user may see it (write = log lessons, manage
- * the roster). Teachers: their own classes. School admins: classes in their
- * school. Super admins: all. Content admins: read only.
+ * the roster). Teachers and school admins: every class in their school, since
+ * teachers often share a class. Super admins: all. Content admins: read only.
  */
 const getClassForUser = async (req: Request, classId: string, write = false): Promise<ClassRow> => {
   const { data: cls } = await supabase
@@ -49,13 +45,11 @@ const getClassForUser = async (req: Request, classId: string, write = false): Pr
 
   if (!cls) throw new AppError('Class not found', 404);
 
-  const role = req.user?.role;
   const userId = req.user!.userId;
-
-  if (role === 'super_admin') return cls;
-  if (cls.teacher_id === userId) return cls;
-  if (role === 'school_admin' && cls.school_id && cls.school_id === (await getAdminSchoolId(userId))) return cls;
-  if (role === 'content_admin' && !write) return cls;
+  const role = req.user?.role || '';
+  const quick = role === 'super_admin' || cls.teacher_id === userId;
+  const schoolId = quick ? null : await getUserSchoolId(userId);
+  if (canAccessClass({ userId, role, schoolId }, cls, write)) return cls;
 
   throw new AppError('You do not have access to this class', 403);
 };
@@ -116,7 +110,7 @@ export const loadProgressInput = async (cls: ClassRow): Promise<ProgressInput> =
   const [units, learners, sessionsRes] = await Promise.all([
     resolveCurriculumId(cls).then(loadCurriculum),
     getClassLearners(cls.id),
-    supabase.from('lesson_sessions').select('id, session_date, created_at, notes').eq('class_id', cls.id),
+    supabase.from('lesson_sessions').select('id, session_date, created_at, notes, teacher_id').eq('class_id', cls.id),
   ]);
   if (sessionsRes.error) throw sessionsRes.error;
   const sessions = (sessionsRes.data || []) as Session[];
@@ -272,6 +266,7 @@ export const listSessions = async (req: Request, res: Response, next: NextFuncti
   try {
     const cls = await getClassForUser(req, req.params.classId);
     const input = await loadProgressInput(cls);
+    const names = await teacherNames(input.sessions.map((s) => s.teacher_id));
     const sessions = [...input.sessions]
       .sort((a, b) => (b.session_date + b.created_at).localeCompare(a.session_date + a.created_at))
       .map((s) => {
@@ -280,6 +275,7 @@ export const listSessions = async (req: Request, res: Response, next: NextFuncti
           id: s.id,
           date: s.session_date,
           notes: s.notes || null,
+          loggedBy: (s.teacher_id && names.get(s.teacher_id)) || null,
           activityCount: input.sessionActivities.filter((sa) => sa.session_id === s.id).length,
           presentCount: att.filter((a) => a.present).length,
           learnerCount: att.length,
@@ -482,7 +478,7 @@ export const getOverview = async (req: Request, res: Response, next: NextFunctio
   try {
     let schoolId = (req.query.schoolId as string) || null;
     if (req.user?.role === 'school_admin') {
-      schoolId = await getAdminSchoolId(req.user.userId);
+      schoolId = await getUserSchoolId(req.user.userId);
       if (!schoolId) throw new AppError('Your account is not linked to a school', 403);
     }
 
@@ -542,24 +538,25 @@ export const getOverview = async (req: Request, res: Response, next: NextFunctio
 
 /**
  * GET /api/tracking/my-classes
- * Every class the signed-in teacher teaches, with headline progress, a
- * lesson-by-lesson trend and the children who need attention.
+ * Every class the signed-in teacher works with (theirs first, then the rest of
+ * their school's), with headline progress, a lesson-by-lesson trend and the
+ * children who need attention.
  */
 export const getMyClasses = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { data: classes, error } = await supabase
-      .from('classes')
-      .select('id, name, teacher_id, school_id, curriculum_id')
-      .eq('teacher_id', req.user!.userId)
-      .order('created_at', { ascending: true });
-    if (error) throw error;
+    const userId = req.user!.userId;
+    const classes = (await listTeacherClasses<ClassRow>(userId, 'id, name, teacher_id, school_id, curriculum_id'))
+      .sort((a, b) => Number(b.teacher_id === userId) - Number(a.teacher_id === userId));
+    const names = await teacherNames(classes.map((c) => c.teacher_id));
 
     const summaries = await Promise.all(
-      (classes || []).map(async (cls: ClassRow) => {
+      classes.map(async (cls: ClassRow) => {
         const progress = computeClassProgress(await loadProgressInput(cls));
         return {
           classId: cls.id,
           name: cls.name,
+          createdBy: names.get(cls.teacher_id) || null,
+          createdByMe: cls.teacher_id === userId,
           ...progress.summary,
           trend: progress.trend.map((t) => ({ date: t.date, independentRate: t.independentRate })),
           needsAttention: progress.needsAttention.map((l) => ({ learnerId: l.learnerId, name: l.name, flags: l.flags })),

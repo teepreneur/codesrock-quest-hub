@@ -321,6 +321,9 @@ function MyClasses({ classes, loading }: { classes: MyClassSummary[]; loading: b
                     </Badge>
                   )}
                 </div>
+                {!c.createdByMe && c.createdBy && (
+                  <p className="text-xs text-muted-foreground">Shared · created by {c.createdBy}</p>
+                )}
                 <CardDescription>
                   {c.learnerCount} children ·{" "}
                   {quiet ? (

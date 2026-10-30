@@ -8,6 +8,7 @@ type Row = Record<string, any>;
 
 const TEACHER = '11111111-1111-4111-8111-111111111111';
 const OTHER_TEACHER = '22222222-2222-4222-8222-222222222222';
+const OUTSIDE_TEACHER = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 const SCHOOL_ADMIN = '33333333-3333-4333-8333-333333333333';
 const OTHER_SCHOOL_ADMIN = '44444444-4444-4444-8444-444444444444';
 const SCHOOL = '55555555-5555-4555-8555-555555555555';
@@ -23,6 +24,7 @@ const KOJO = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const users: Record<string, Row> = {
   'teacher-token': { id: TEACHER, role: 'teacher', school_id: SCHOOL },
   'other-teacher-token': { id: OTHER_TEACHER, role: 'teacher', school_id: SCHOOL },
+  'outside-teacher-token': { id: OUTSIDE_TEACHER, role: 'teacher', school_id: OTHER_SCHOOL },
   'school-admin-token': { id: SCHOOL_ADMIN, role: 'school_admin', school_id: SCHOOL },
   'other-school-admin-token': { id: OTHER_SCHOOL_ADMIN, role: 'school_admin', school_id: OTHER_SCHOOL },
 };
@@ -56,8 +58,11 @@ const resetDb = () => {
 
 const query = (table: string) => {
   const filters: [string, any][] = [];
+  let anyOf: [string, string][] = [];
   const result = (single: boolean) => {
-    const rows = (db[table] || []).filter((r) => filters.every(([k, v]) => (Array.isArray(v) ? v.includes(r[k]) : r[k] === v)));
+    const rows = (db[table] || [])
+      .filter((r) => filters.every(([k, v]) => (Array.isArray(v) ? v.includes(r[k]) : r[k] === v)))
+      .filter((r) => anyOf.length === 0 || anyOf.some(([k, v]) => r[k] === v));
     if (single) return rows[0] ? { data: rows[0], error: null } : { data: null, error: { code: 'PGRST116' } };
     return { data: rows, error: null, count: rows.length };
   };
@@ -65,6 +70,11 @@ const query = (table: string) => {
     select: () => builder,
     eq: (k: string, v: any) => { filters.push([k, v]); return builder; },
     in: (k: string, v: any[]) => { filters.push([k, v]); return builder; },
+    // Only the "col.eq.value,col.eq.value" form the API uses
+    or: (expr: string) => {
+      anyOf = expr.split(',').map((part) => { const [k, , v] = part.split('.'); return [k, v] as [string, string]; });
+      return builder;
+    },
     order: () => builder,
     single: () => Promise.resolve(result(true)),
     then: (res: any, rej: any) => Promise.resolve(result(false)).then(res, rej),
@@ -100,8 +110,13 @@ describe('Class access', () => {
     expect(res.body.data.summary.learnerCount).toBe(2);
   });
 
-  it('blocks another teacher', async () => {
+  it('lets another teacher at the same school see it (teachers share classes)', async () => {
     const res = await request(app).get(`/api/tracking/classes/${CLASS}/progress`).set(as('other-teacher-token'));
+    expect(res.status).toBe(200);
+  });
+
+  it('blocks a teacher from another school', async () => {
+    const res = await request(app).get(`/api/tracking/classes/${CLASS}/progress`).set(as('outside-teacher-token'));
     expect(res.status).toBe(403);
   });
 
@@ -121,14 +136,32 @@ describe('Class access', () => {
 });
 
 describe('My classes (dashboard)', () => {
-  it('returns only the signed-in teacher\'s classes', async () => {
+  it('returns the classes of the teacher\'s school, marking who created each', async () => {
     const mine = await request(app).get('/api/tracking/my-classes').set(as('teacher-token'));
     expect(mine.status).toBe(200);
     expect(mine.body.data.classes.map((c: Row) => c.classId)).toEqual([CLASS]);
-    expect(mine.body.data.classes[0]).toMatchObject({ name: 'KG1', learnerCount: 2, lessonCount: 0 });
+    expect(mine.body.data.classes[0]).toMatchObject({ name: 'KG1', learnerCount: 2, lessonCount: 0, createdByMe: true });
 
-    const other = await request(app).get('/api/tracking/my-classes').set(as('other-teacher-token'));
-    expect(other.body.data.classes).toEqual([]);
+    const colleague = await request(app).get('/api/tracking/my-classes').set(as('other-teacher-token'));
+    expect(colleague.body.data.classes.map((c: Row) => c.classId)).toEqual([CLASS]);
+    expect(colleague.body.data.classes[0]).toMatchObject({ createdByMe: false, createdBy: 'T T' });
+
+    const outside = await request(app).get('/api/tracking/my-classes').set(as('outside-teacher-token'));
+    expect(outside.body.data.classes).toEqual([]);
+  });
+});
+
+describe('My Classes page', () => {
+  it('shows a class created by a colleague at the same school', async () => {
+    const res = await request(app).get(`/api/classes?teacherId=${OTHER_TEACHER}`).set(as('other-teacher-token'));
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((c: Row) => c.id)).toEqual([CLASS]);
+    expect(res.body.data[0]).toMatchObject({ createdByMe: false, createdBy: 'T T' });
+  });
+
+  it('does not show it to a teacher at another school', async () => {
+    const res = await request(app).get(`/api/classes?teacherId=${OUTSIDE_TEACHER}`).set(as('outside-teacher-token'));
+    expect(res.body.data).toEqual([]);
   });
 });
 
@@ -180,8 +213,14 @@ describe('Logging a lesson', () => {
     expect(res.status).toBe(422);
   });
 
-  it('blocks another teacher from logging lessons for this class', async () => {
+  it('lets a co-teacher at the same school log a lesson for the class', async () => {
     const res = await request(app).post(`/api/tracking/classes/${CLASS}/sessions`).set(as('other-teacher-token')).send(lesson());
+    expect(res.status).toBe(201);
+    expect(rpcCalls[0].args.payload.teacher_id).toBe(OTHER_TEACHER);
+  });
+
+  it('blocks a teacher from another school from logging lessons for this class', async () => {
+    const res = await request(app).post(`/api/tracking/classes/${CLASS}/sessions`).set(as('outside-teacher-token')).send(lesson());
     expect(res.status).toBe(403);
   });
 });
