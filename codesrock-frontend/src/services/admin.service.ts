@@ -226,10 +226,23 @@ export interface ActivationOverview {
   activeWindowDays: number;
 }
 
+export interface SchoolClass {
+  classId: string;
+  name: string;
+  createdById: string;
+  createdBy: string;
+  createdAt: string | null;
+  learnerCount: number;
+  lessonCount: number;
+  lastLessonDate: string | null;
+  learners: { id: string; name: string }[];
+}
+
 export interface SchoolPerformance {
   school: { id: string; name: string; school_code: string | null; district?: string | null; region?: string | null };
   summary: SchoolSummary;
   teachers: TeacherSummary[];
+  classes: SchoolClass[];
 }
 
 export interface TeacherPerformance {

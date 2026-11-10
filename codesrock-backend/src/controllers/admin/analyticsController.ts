@@ -11,9 +11,11 @@ import {
   weeklyLessons,
   rankSchools,
   summarizeCourses,
+  summarizeSchoolClasses,
   summarizeSchools,
   summarizeTeachers,
 } from '../../services/adminStats';
+import { teacherNames } from '../../services/classAccess';
 import { computeClassProgress } from '../../services/progressAnalytics';
 import { ClassRow, loadProgressInput } from '../trackingController';
 
@@ -217,16 +219,21 @@ export const getSchoolAnalytics = async (req: Request, res: Response, next: Next
 };
 
 /**
- * @desc    One school: summary and every teacher's activation and activity
+ * @desc    One school: summary, every teacher's activation and activity, and its classes with their children
  * @route   GET /api/admin/analytics/schools/:id/performance
  */
 export const getSchoolPerformance = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const [{ data: school }, platform] = await Promise.all([
+    const [{ data: school }, platform, classRows] = await Promise.all([
       supabase.from('schools').select('*').eq('id', req.params.id).single(),
       loadPlatform(await scopeFor(req)),
+      supabase
+        .from('classes')
+        .select('id, name, teacher_id, created_at, class_learners(learners(id, first_name, last_name, is_active))')
+        .eq('school_id', req.params.id),
     ]);
     if (!school) throw new AppError('School not found', 404);
+    if (classRows.error) throw classRows.error;
     if (!platform.schools.some((s: any) => s.id === school.id)) {
       throw new AppError('You do not have access to this school', 403);
     }
@@ -237,7 +244,10 @@ export const getSchoolPerformance = async (req: Request, res: Response, next: Ne
       .filter((t) => t.schoolId === school.id)
       .sort((a, b) => b.lessonCount - a.lessonCount || (b.lastLogin || '').localeCompare(a.lastLogin || ''));
 
-    res.status(200).json({ success: true, data: { school, summary, teachers: staff } });
+    const rows = classRows.data || [];
+    const classes = summarizeSchoolClasses(rows, platform.classOverview, await teacherNames(rows.map((c: any) => c.teacher_id)));
+
+    res.status(200).json({ success: true, data: { school, summary, teachers: staff, classes } });
   } catch (error) {
     next(error);
   }

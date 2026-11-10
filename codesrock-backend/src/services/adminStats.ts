@@ -337,3 +337,49 @@ export const weeklyLessons = (
     return { weekStart: start, lessons: inWeek.length, classes: new Set(inWeek.map((l) => l.class_id)).size };
   });
 };
+
+export interface SchoolClass {
+  classId: string;
+  name: string;
+  createdById: string;
+  createdBy: string;
+  createdAt: string | null;
+  learnerCount: number;
+  lessonCount: number;
+  lastLessonDate: string | null;
+  learners: { id: string; name: string }[];
+}
+
+/**
+ * A school's classes with who created each one and the children in it,
+ * newest first. `rows` come from classes joined to class_learners/learners;
+ * children who have left (inactive) are not listed.
+ */
+export const summarizeSchoolClasses = (
+  rows: any[],
+  classOverview: any[],
+  names: Map<string, string>
+): SchoolClass[] => {
+  const overviewByClass = new Map(classOverview.map((c) => [c.class_id, c]));
+  return rows
+    .map((c) => {
+      const learners = (c.class_learners || [])
+        .map((cl: any) => cl.learners)
+        .filter((l: any) => l && l.is_active !== false)
+        .map((l: any) => ({ id: l.id, name: `${l.first_name || ''} ${l.last_name || ''}`.trim() }))
+        .sort((a: any, b: any) => a.name.localeCompare(b.name));
+      const o = overviewByClass.get(c.id);
+      return {
+        classId: c.id,
+        name: c.name,
+        createdById: c.teacher_id,
+        createdBy: names.get(c.teacher_id) || 'Unknown',
+        createdAt: c.created_at || null,
+        learnerCount: learners.length,
+        lessonCount: Number(o?.lesson_count || 0),
+        lastLessonDate: o?.last_lesson_date || null,
+        learners,
+      };
+    })
+    .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+};

@@ -3,7 +3,7 @@
  */
 
 import {
-  activationFunnel, followUps, rankSchools, summarizeCourses, summarizeSchools, summarizeTeachers, teacherStatus, weekStart, weeklyLessons, Platform,
+  activationFunnel, followUps, rankSchools, summarizeCourses, summarizeSchoolClasses, summarizeSchools, summarizeTeachers, teacherStatus, weekStart, weeklyLessons, Platform,
 } from '../services/adminStats';
 
 const NOW = new Date('2026-10-22T12:00:00Z').getTime();
@@ -154,5 +154,32 @@ describe('weeklyLessons', () => {
       { weekStart: '2026-10-12', lessons: 1, classes: 1 },
       { weekStart: '2026-10-19', lessons: 2, classes: 2 },
     ]);
+  });
+});
+
+describe('summarizeSchoolClasses', () => {
+  it('lists each class with its creator, active children and lesson activity, newest first', () => {
+    const classes = summarizeSchoolClasses(
+      [
+        {
+          id: 'k1', name: 'KG 1', teacher_id: 't1', created_at: '2026-09-01T00:00:00Z',
+          class_learners: [
+            { learners: { id: 'l2', first_name: 'Yaw', last_name: 'B', is_active: true } },
+            { learners: { id: 'l1', first_name: 'Abena', last_name: 'A', is_active: true } },
+            { learners: { id: 'l3', first_name: 'Gone', last_name: 'C', is_active: false } },
+          ],
+        },
+        { id: 'k2', name: 'Grade 2', teacher_id: 'gone', created_at: '2026-10-01T00:00:00Z', class_learners: [] },
+      ],
+      [{ class_id: 'k1', lesson_count: 4, last_lesson_date: '2026-10-20' }],
+      new Map([['t1', 'Ama A']])
+    );
+
+    expect(classes.map((c) => c.name)).toEqual(['Grade 2', 'KG 1']);
+    expect(classes[1]).toMatchObject({
+      createdBy: 'Ama A', learnerCount: 2, lessonCount: 4, lastLessonDate: '2026-10-20',
+      learners: [{ id: 'l1', name: 'Abena A' }, { id: 'l2', name: 'Yaw B' }],
+    });
+    expect(classes[0]).toMatchObject({ createdBy: 'Unknown', learnerCount: 0, lessonCount: 0, lastLessonDate: null });
   });
 });
