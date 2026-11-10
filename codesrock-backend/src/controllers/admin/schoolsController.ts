@@ -135,11 +135,13 @@ export const getAllSchools = async (
       .order('created_at', { ascending: false })
       .range(offset, offset + limitNum - 1);
 
-    const { data: schools, error, count } = await query;
+    const { data, error, count } = await query;
 
-    if (error) {
+    // A page past the end (PGRST103) is just an empty page, not a failure
+    if (error && error.code !== 'PGRST103') {
       throw new AppError('Failed to fetch schools', 500);
     }
+    const schools = error ? [] : data;
 
     // Teachers per school and book coverage from logged lessons, in two queries
     const schoolIds = (schools || []).map((s) => s.id);

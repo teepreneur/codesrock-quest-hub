@@ -78,6 +78,17 @@ export default function UserManagement() {
     setPage(1); // Reset to first page on search
   };
 
+  // A new filter can have fewer pages than the one being viewed, so start again at page 1
+  const handleRoleFilter = (value: string) => {
+    setRoleFilter(value);
+    setPage(1);
+  };
+
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
   const handleCreateUser = () => {
     setSelectedUser(null);
     setFormDialogOpen(true);
@@ -208,7 +219,7 @@ export default function UserManagement() {
               />
             </div>
 
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <Select value={roleFilter} onValueChange={handleRoleFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
@@ -222,7 +233,7 @@ export default function UserManagement() {
               </SelectContent>
             </Select>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={handleStatusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>

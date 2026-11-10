@@ -76,13 +76,15 @@ export const getAllUsers = async (
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const { data: users, error, count } = await query
+    const { data, error, count } = await query
       .order('created_at', { ascending: false })
       .range(skip, skip + Number(limit) - 1);
 
-    if (error) {
+    // A page past the end (PGRST103) is just an empty page, not a failure
+    if (error && error.code !== 'PGRST103') {
       throw error;
     }
+    const users = error ? [] : data;
 
     // Format users with proper field names
     const formattedUsers = (users || []).map((user: any) => ({

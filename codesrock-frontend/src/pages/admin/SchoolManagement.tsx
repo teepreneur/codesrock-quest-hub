@@ -95,6 +95,11 @@ export default function SchoolManagement() {
     setPage(1);
   };
 
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
   const handleCreateSchool = () => {
     setSelectedSchool(null);
     setFormData({
@@ -277,7 +282,7 @@ export default function SchoolManagement() {
               />
             </div>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={handleStatusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
