@@ -405,6 +405,18 @@ class AdminService {
     return apiService.get<SchoolPerformance>(`/admin/analytics/schools/${schoolId}/performance`);
   }
 
+  async createSchoolClass(schoolId: string, data: { name: string; teacherId: string }) {
+    return apiService.post(`/admin/schools/${schoolId}/classes`, data);
+  }
+
+  async updateSchoolClass(schoolId: string, classId: string, data: { name?: string; teacherId?: string }) {
+    return apiService.patch(`/admin/schools/${schoolId}/classes/${classId}`, data);
+  }
+
+  async deleteSchoolClass(schoolId: string, classId: string) {
+    return apiService.delete<{ deactivatedChildren: number }>(`/admin/schools/${schoolId}/classes/${classId}`);
+  }
+
   async getActivationOverview(schoolId?: string): Promise<ActivationOverview> {
     return apiService.get<ActivationOverview>(`/admin/analytics/activation${schoolId ? `?schoolId=${schoolId}` : ''}`);
   }

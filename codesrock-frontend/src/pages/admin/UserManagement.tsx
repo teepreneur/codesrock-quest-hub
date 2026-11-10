@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -262,6 +263,16 @@ export default function UserManagement() {
               Refresh
             </Button>
           </div>
+          {roleFilter === "student" && (
+            <p className="mt-3 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+              These are older student login accounts. Children that teachers add to their classes don't have accounts, so
+              they aren't listed here. To see and manage them, open the school under{" "}
+              <Link to="/admin/schools" className="font-semibold text-primary hover:underline">
+                Schools
+              </Link>
+              ; each class lists its children.
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           {error ? (

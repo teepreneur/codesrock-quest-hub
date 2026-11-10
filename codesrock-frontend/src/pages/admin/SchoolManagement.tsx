@@ -424,7 +424,7 @@ export default function SchoolManagement() {
                               size="sm"
                               onClick={() => navigate(`/admin/schools/${school.id}/performance`)}
                               className="text-primary hover:text-primary hover:bg-primary/10"
-                              title="View Performance"
+                              title="Open school: teachers, classes and children"
                             >
                               <TrendingUp className="h-4 w-4" />
                             </Button>

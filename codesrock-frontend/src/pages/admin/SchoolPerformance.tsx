@@ -12,6 +12,8 @@ import { adminService, type TeacherStatus } from "@/services/admin.service";
 import { StatTile } from "@/components/tracking/charts";
 import { formatDate } from "@/components/tracking/labels";
 import { ExportMenu } from "@/components/admin/ExportMenu";
+import { SchoolClasses } from "@/components/admin/SchoolClasses";
+import { authService } from "@/services/auth.service";
 
 export const STATUS_LABELS: Record<TeacherStatus, string> = {
   active: "Active",
@@ -35,9 +37,9 @@ export default function SchoolPerformance() {
   const { id: schoolId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [classSearch, setClassSearch] = useState("");
 
-  const { data, isLoading, error } = useQuery({
+  const role = authService.getStoredUser()?.role;
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-school", schoolId],
     queryFn: () => adminService.getSchoolPerformance(schoolId!),
     enabled: !!schoolId,
@@ -64,16 +66,6 @@ export default function SchoolPerformance() {
   const filtered = teachers.filter(
     (t) => t.name.toLowerCase().includes(search.toLowerCase()) || t.email.toLowerCase().includes(search.toLowerCase())
   );
-  // Find a class by its name, the teacher who created it, or a child in it
-  const classQuery = classSearch.trim().toLowerCase();
-  const filteredClasses = classes.filter(
-    (c) =>
-      !classQuery ||
-      c.name.toLowerCase().includes(classQuery) ||
-      c.createdBy.toLowerCase().includes(classQuery) ||
-      c.learners.some((l) => l.name.toLowerCase().includes(classQuery))
-  );
-  const teacherIds = new Set(teachers.map((t) => t.id));
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -189,83 +181,13 @@ export default function SchoolPerformance() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-3 space-y-0">
-          <div>
-            <CardTitle className="font-heading">Classes</CardTitle>
-            <CardDescription>Every class at this school, who created it and the children in it</CardDescription>
-          </div>
-          <div className="relative w-full md:w-72 print:hidden">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search classes, teachers or children"
-              className="pl-9"
-              value={classSearch}
-              onChange={(e) => setClassSearch(e.target.value)}
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {filteredClasses.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">
-              {classes.length === 0 ? "No classes have been set up at this school yet." : "No classes match your search."}
-            </p>
-          ) : (
-            filteredClasses.map((c) => (
-              <div key={c.classId} className="rounded-xl border p-4 space-y-3 break-inside-avoid">
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-base">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Created by{" "}
-                      {teacherIds.has(c.createdById) ? (
-                        <button
-                          type="button"
-                          className="font-semibold text-foreground underline-offset-2 hover:underline"
-                          onClick={() => navigate(`/admin/teachers/${c.createdById}/performance`)}
-                        >
-                          {c.createdBy}
-                        </button>
-                      ) : (
-                        <span className="font-semibold text-foreground">{c.createdBy}</span>
-                      )}
-                      {c.createdAt && ` on ${lastLoginText(c.createdAt)}`}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {c.learnerCount} {c.learnerCount === 1 ? "child" : "children"} · {c.lessonCount}{" "}
-                      {c.lessonCount === 1 ? "lesson" : "lessons"} logged · Last lesson: {formatDate(c.lastLessonDate)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 print:hidden"
-                    onClick={() => navigate(`/classes/${c.classId}`)}
-                  >
-                    Open class <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </div>
-                {c.learners.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No children added yet.</p>
-                ) : (
-                  <ul className="flex flex-wrap gap-1.5" aria-label={`Children in ${c.name}`}>
-                    {c.learners.map((l) => (
-                      <li
-                        key={l.id}
-                        className={`rounded-full border px-2.5 py-0.5 text-xs ${
-                          classQuery && l.name.toLowerCase().includes(classQuery) ? "border-primary bg-primary/10 font-semibold" : "bg-muted/40"
-                        }`}
-                      >
-                        {l.name}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+      <SchoolClasses
+        schoolId={school.id}
+        classes={classes}
+        teachers={teachers}
+        canManage={role === "super_admin" || role === "school_admin"}
+        onChanged={refetch}
+      />
     </div>
   );
 }

@@ -9,8 +9,13 @@ import {
   permanentDeleteSchool,
   getSchoolByCode,
 } from '../../controllers/admin/schoolsController';
+import {
+  createSchoolClass,
+  updateSchoolClass,
+  deleteSchoolClass,
+} from '../../controllers/admin/schoolClassesController';
 import { protect } from '../../middleware/auth';
-import { requireAdmin, requireSuperAdmin, auditLog } from '../../middleware/roleAuth';
+import { requireAdmin, requireSchoolAdmin, requireSuperAdmin, auditLog } from '../../middleware/roleAuth';
 import { validate } from '../../middleware/validator';
 
 const router = Router();
@@ -97,6 +102,22 @@ const schoolCodeValidation = [
     .withMessage('Invalid school code format'),
 ];
 
+const classNameRule = (required: boolean) =>
+  (required ? body('name') : body('name').optional())
+    .trim()
+    .notEmpty()
+    .withMessage('Class name is required')
+    .isLength({ max: 100 })
+    .withMessage('Class name must not exceed 100 characters');
+
+const teacherIdRule = (required: boolean) =>
+  (required ? body('teacherId') : body('teacherId').optional()).isUUID().withMessage('Choose a teacher');
+
+const schoolClassParams = [
+  param('id').isUUID().withMessage('Invalid school ID'),
+  param('classId').isUUID().withMessage('Invalid class ID'),
+];
+
 const listQueryValidation = [
   query('page')
     .optional()
@@ -147,5 +168,10 @@ router.delete('/:id', requireSuperAdmin, auditLog, validate(schoolIdValidation),
 
 // Permanently delete school (super_admin only - must be deactivated first)
 router.delete('/:id/permanent', requireSuperAdmin, auditLog, validate(schoolIdValidation), permanentDeleteSchool);
+
+// A school's classes (rosters are managed through /api/tracking)
+router.post('/:id/classes', requireSchoolAdmin, auditLog, validate([param('id').isUUID().withMessage('Invalid school ID'), classNameRule(true), teacherIdRule(true)]), createSchoolClass);
+router.patch('/:id/classes/:classId', requireSchoolAdmin, auditLog, validate([...schoolClassParams, classNameRule(false), teacherIdRule(false)]), updateSchoolClass);
+router.delete('/:id/classes/:classId', requireSchoolAdmin, auditLog, validate(schoolClassParams), deleteSchoolClass);
 
 export default router;
